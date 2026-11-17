@@ -14,3 +14,6 @@ All notable changes to this project are documented here. The format follows
   GB-01…07, CH-01…07), JSON Schemas for the seven families, approved glass colors, finishes
   and materials, SAP seed (luna's 10 products plus 15 fictional ones), the H&L logo for the
   title block, content tests and decision 0008.
+- Phase 2 mock SAP service `ZHL_MM_MATERIAL_SRV`: OData v2 material lookup, `$filter`,
+  `$top`/`$skip`, `$metadata`, SKU reservation (next number per type, atomic, never
+  reissued), Basic auth, CSRF handshake, SAP-style errors, chaos switches and curl examples.
