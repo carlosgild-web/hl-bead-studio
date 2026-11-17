@@ -5,10 +5,10 @@ Every configurable value lives here; `.env.example` documents the same names.
 
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import Field, SecretStr, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 # backend/app/core/config.py -> the repo root is three levels above `app/`.
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -25,7 +25,10 @@ class Settings(BaseSettings):
     llm_provider: Literal["fake", "ollama", "anthropic"] = "fake"
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "qwen3:4b-instruct-2507"
-    anthropic_api_key: SecretStr | None = None
+    # NoDecode: importing CadQuery makes `typing.Union` look like a Sequence to `issubclass`
+    # (a side effect of its multimethod dispatch), and pydantic-settings would then try to
+    # JSON-decode every `X | None` value read from the environment.
+    anthropic_api_key: Annotated[SecretStr | None, NoDecode] = None
     anthropic_model: str = "claude-sonnet-5-5"
 
     # Mock SAP

@@ -36,3 +36,18 @@ def test_defaults_need_no_model_or_key(monkeypatch: pytest.MonkeyPatch) -> None:
 
     assert settings.llm_provider == "fake"
     assert settings.anthropic_api_key is None
+
+
+def test_api_key_from_the_environment_parses_after_importing_cadquery(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # CadQuery's multimethod dispatch makes typing.Union look like a Sequence, and
+    # pydantic-settings then tried to JSON-decode `SecretStr | None` values (config.py).
+    import cadquery  # noqa: F401
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test-not-a-real-key")
+
+    settings = Settings(_env_file=None)
+
+    assert settings.anthropic_api_key is not None
+    assert settings.anthropic_api_key.get_secret_value() == "sk-test-not-a-real-key"
