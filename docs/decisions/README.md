@@ -11,3 +11,4 @@ Short records of the design decisions and of every deviation from `PLAN.md`.
 | [0005](0005-confirmation-gate.md) | Confirmation gate for side effects | accepted |
 | [0006](0006-pregenerated-renders-online.md) | Pre-generated renders for the online demo | accepted |
 | [0007](0007-python-3-14-locally.md) | Develop on Python 3.14, support 3.12+ | accepted (deviation) |
+| [0008](0008-company-content-choices.md) | Company content choices: logo, fonts, added rules, `CUS` family | accepted (deviations) |

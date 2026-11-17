@@ -23,7 +23,7 @@ queues a catalog render in Blender. Portfolio project #4, alongside `local-rag-o
 | Agent | Own bounded tool loop, no agent framework |
 | Manual search | SQLite FTS5 over `docs/manual/` |
 | Mock SAP | Separate FastAPI service `sap-mock/`, OData v2 payloads, basic auth + CSRF, own SQLite |
-| Backend | Python 3.11+, FastAPI, SQLAlchemy, pydantic-settings, httpx |
+| Backend | Python 3.12+ (developed on 3.14, decision 0007), FastAPI, SQLAlchemy, pydantic-settings, httpx, jsonschema |
 | Frontend | React, Vite, TypeScript, Tailwind, shadcn/ui, TanStack Query, react-three-fiber, i18n ES/EN |
 | Packaging | Docker (app + sap-mock; Blender only in a local profile) |
 

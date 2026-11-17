@@ -264,7 +264,7 @@ invalid params fail with the right rule id, STEP opens in FreeCAD, drawing PDF h
 
 | Tool | Notes |
 |---|---|
-| Python 3.11+ | CadQuery installs with pip; check the wheel for your Python version in Phase 0 |
+| Python 3.12+ | CadQuery installs with pip; `cadquery-ocp` has a 3.14 wheel (decision 0007) |
 | FreeCAD 1.x | `freecadcmd.exe` path in `FREECAD_CMD` |
 | Blender 4.x or newer | `blender.exe` path in `BLENDER_BIN` |
 | Node 20+ | frontend |
@@ -274,7 +274,8 @@ invalid params fail with the right rule id, STEP opens in FreeCAD, drawing PDF h
 
 ## 8. Open questions (decide before the phase that needs them)
 
-1. Phase 1: which open-license fonts for the Initial charm (for example from Google Fonts, OFL)?
+1. ~~Phase 1: which open-license fonts for the Initial charm?~~ Decided: Pacifico, Cinzel Bold,
+   Montserrat ExtraBold (OFL), decision 0008.
 2. Phase 3: result of the FreeCAD headless spike (TechDraw or fallback).
 3. Phase 5: an image input later ("make a charm like this sketch")? Not in v1.
 4. Later: export a STEP package for the mold maker, cost estimate from mass and supplier prices
