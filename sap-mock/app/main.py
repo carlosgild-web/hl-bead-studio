@@ -1,16 +1,74 @@
-"""Mock SAP entry point: `uvicorn app.main:app --reload --port 8100`.
+"""FastAPI entry point: `uvicorn app.main:app --reload --port 8100`.
 
-Phase 2 adds the `ZHL_MM_MATERIAL_SRV` OData service, basic auth, CSRF and chaos switches.
+A mock of an SAP Gateway OData v2 service, `ZHL_MM_MATERIAL_SRV`, for the Bead Studio demo:
+it looks up materials (SKUs) and reserves new ones. Not a real SAP. See `sap-mock/README.md`.
 """
 
-from fastapi import FastAPI
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app import __version__
+from app.chaos import chaos
+from app.config import Settings
+from app.db import Database
+from app.odata import INVALID_REQUEST, RESOURCE_NOT_FOUND, SapError, error_response
+from app.routes import router
+from app.security import CsrfStore, gateway
 
-app = FastAPI(title="Mock SAP (ZHL_MM_MATERIAL_SRV)", version=__version__)
+
+def create_app(settings: Settings | None = None) -> FastAPI:
+    """Build the app. Tests pass their own `Settings` (temporary database, fixed date)."""
+    settings = settings or Settings()
+    db = Database(settings.db_path)
+
+    @asynccontextmanager
+    async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+        db.init()
+        yield
+
+    app = FastAPI(
+        title="H&L mock SAP (demo, not a real SAP)",
+        version=__version__,
+        description="Mock of an SAP Gateway OData v2 material service for Bead Studio.",
+        lifespan=lifespan,
+    )
+    app.state.settings = settings
+    app.state.db = db
+    app.state.csrf = CsrfStore()
+
+    # The last middleware added runs first: chaos, then auth and CSRF, then the route.
+    app.add_middleware(BaseHTTPMiddleware, dispatch=gateway)
+    app.add_middleware(BaseHTTPMiddleware, dispatch=chaos)
+
+    @app.exception_handler(SapError)
+    async def sap_error(_: Request, exc: SapError) -> JSONResponse:
+        return error_response(exc.status, exc.code, exc.message, exc.headers)
+
+    @app.exception_handler(RequestValidationError)
+    async def invalid_request(_: Request, exc: RequestValidationError) -> JSONResponse:
+        first = exc.errors()[0] if exc.errors() else {}
+        where = ".".join(str(part) for part in first.get("loc", ()) if part != "body")
+        message = f"Invalid request: {where or 'body'}: {first.get('msg', 'invalid value')}"
+        return error_response(400, INVALID_REQUEST, message)
+
+    @app.exception_handler(StarletteHTTPException)
+    async def http_error(_: Request, exc: StarletteHTTPException) -> JSONResponse:
+        code = RESOURCE_NOT_FOUND if exc.status_code == 404 else INVALID_REQUEST
+        return error_response(exc.status_code, code, str(exc.detail), exc.headers)
+
+    @app.get("/health")
+    def health() -> dict[str, str]:
+        """Liveness probe for compose and the backend's SapClient (no auth, no chaos)."""
+        return {"status": "ok", "service": "sap-mock", "version": __version__}
+
+    app.include_router(router)
+    return app
 
 
-@app.get("/health")
-def health() -> dict[str, str]:
-    """Liveness probe, outside the OData path and without auth."""
-    return {"status": "ok", "service": "sap-mock", "version": __version__}
+app = create_app()
