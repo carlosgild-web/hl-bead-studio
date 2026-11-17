@@ -1,0 +1,16 @@
+{
+  "app": {
+    "title": "Bead Studio",
+    "subtitle": "Hilda & Luna Beadworks · Product Design",
+    "switchLanguage": "Español"
+  },
+  "health": {
+    "label": "Backend",
+    "checking": "checking…",
+    "ok": "ok (v{{version}}, LLM: {{provider}})",
+    "down": "not reachable"
+  },
+  "viewer": {
+    "label": "3D preview (placeholder bead)"
+  }
+}
