@@ -1,0 +1,48 @@
+# Persistent data: generated designs, SQLite files, traces, render jobs (never commit)
+data/
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Generated design files outside data/ (showcase and gallery files are added explicitly)
+*.step
+*.stp
+*.stl
+*.glb
+*.blend1
+!docs/showcase/**
+
+# Python
+**/.venv/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.hypothesis/
+.coverage
+coverage.md
+htmlcov/
+*.egg-info/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+e2e/node_modules/
+e2e/test-results/
+e2e/playwright-report/
+
+# Claude Code: project settings are committed, local state is not
+.claude/*
+!.claude/settings.json
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

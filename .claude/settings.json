@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./node_modules/**)",
+      "Read(./frontend/node_modules/**)",
+      "Read(./frontend/dist/**)",
+      "Read(./data/**)",
+      "Read(./**/*.pdf)",
+      "Read(./**/*.blend)",
+      "Read(./**/*.blend1)",
+      "Read(./**/*.step)",
+      "Read(./**/*.stp)",
+      "Read(./**/*.stl)",
+      "Read(./**/*.glb)",
+      "Read(./**/.venv/**)",
+      "Read(./**/__pycache__/**)"
+    ]
+  }
+}
