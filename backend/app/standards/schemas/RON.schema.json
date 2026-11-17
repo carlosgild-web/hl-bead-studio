@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:hl-beadworks:family:RON",
+  "title": "Rondelle glass bead (RON)",
+  "description": "A flattened round bead; the hole runs along the short (height) axis.",
+  "type": "object",
+  "x-family": {
+    "code": "RON",
+    "kind": "glass_bead",
+    "material": "borosilicate",
+    "sku_prefix": "GB",
+    "name_suffix": "Rondelle",
+    "label": {
+      "en": "Rondelle",
+      "es": "Rondel"
+    }
+  },
+  "properties": {
+    "diameter_mm": {
+      "type": "number",
+      "minimum": 4.0,
+      "maximum": 20.0,
+      "default": 8.0,
+      "x-unit": "mm",
+      "x-step": 0.1,
+      "x-rule": [
+        "GB-03",
+        "GB-02"
+      ],
+      "x-label": {
+        "en": "Diameter",
+        "es": "Diámetro"
+      },
+      "description": "Outside diameter."
+    },
+    "height_mm": {
+      "type": "number",
+      "minimum": 2.0,
+      "maximum": 16.0,
+      "default": 5.0,
+      "x-unit": "mm",
+      "x-step": 0.1,
+      "x-rule": [
+        "GB-06"
+      ],
+      "x-label": {
+        "en": "Height",
+        "es": "Altura"
+      },
+      "description": "Height along the hole axis."
+    },
+    "hole_mm": {
+      "type": "number",
+      "enum": [
+        1.0,
+        1.5,
+        2.0,
+        2.5
+      ],
+      "default": 1.5,
+      "x-unit": "mm",
+      "x-rule": [
+        "GB-01",
+        "GB-02"
+      ],
+      "x-label": {
+        "en": "Hole diameter",
+        "es": "Diámetro del orificio"
+      },
+      "description": "Mandrel size; the hole runs through the bead."
+    },
+    "color": {
+      "type": "string",
+      "enum": [
+        "clear",
+        "amber",
+        "honey",
+        "desert_sand",
+        "terracotta",
+        "ruby",
+        "rose_opal",
+        "amethyst",
+        "cobalt",
+        "midnight_blue",
+        "aqua",
+        "sea_green",
+        "emerald",
+        "deep_forest",
+        "opal_white",
+        "jet"
+      ],
+      "default": "amber",
+      "x-rule": [
+        "GB-07"
+      ],
+      "x-label": {
+        "en": "Glass color",
+        "es": "Color del vidrio"
+      },
+      "description": "Color id from cad/templates/colors.json."
+    }
+  },
+  "required": [
+    "diameter_mm",
+    "height_mm",
+    "hole_mm",
+    "color"
+  ],
+  "additionalProperties": false
+}

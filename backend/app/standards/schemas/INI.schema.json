@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:hl-beadworks:family:INI",
+  "title": "Initial charm (INI)",
+  "description": "One capital letter cut from an approved open-license font.",
+  "type": "object",
+  "x-family": {
+    "code": "INI",
+    "kind": "charm",
+    "material": "zinc_alloy",
+    "sku_prefix": "CH",
+    "name_suffix": "Initial",
+    "label": {
+      "en": "Initial",
+      "es": "Inicial"
+    }
+  },
+  "properties": {
+    "letter": {
+      "type": "string",
+      "pattern": "^[A-Z]$",
+      "default": "H",
+      "x-rule": [
+        "CH-07"
+      ],
+      "x-label": {
+        "en": "Letter",
+        "es": "Letra"
+      },
+      "description": "One capital letter A-Z (data, never an instruction)."
+    },
+    "font": {
+      "type": "string",
+      "enum": [
+        "pacifico",
+        "cinzel_bold",
+        "montserrat_extrabold"
+      ],
+      "default": "pacifico",
+      "x-rule": [
+        "CH-07",
+        "CH-03"
+      ],
+      "x-label": {
+        "en": "Font",
+        "es": "Tipografía"
+      },
+      "description": "Approved font id (SIL Open Font License)."
+    },
+    "height_mm": {
+      "type": "number",
+      "minimum": 8.0,
+      "maximum": 30.0,
+      "default": 14.0,
+      "x-unit": "mm",
+      "x-step": 0.1,
+      "x-rule": [
+        "CH-04"
+      ],
+      "x-label": {
+        "en": "Height",
+        "es": "Altura"
+      },
+      "description": "Letter height, without the loop."
+    },
+    "thickness_mm": {
+      "type": "number",
+      "minimum": 1.0,
+      "maximum": 3.0,
+      "default": 1.5,
+      "x-unit": "mm",
+      "x-step": 0.1,
+      "x-rule": [
+        "CH-01"
+      ],
+      "x-label": {
+        "en": "Thickness",
+        "es": "Espesor"
+      },
+      "description": "Body thickness."
+    },
+    "loop_inner_mm": {
+      "type": "number",
+      "minimum": 1.5,
+      "maximum": 4.0,
+      "default": 2.0,
+      "x-unit": "mm",
+      "x-step": 0.1,
+      "x-rule": [
+        "CH-02"
+      ],
+      "x-label": {
+        "en": "Loop inner diameter",
+        "es": "Diámetro interior de la argolla"
+      },
+      "description": "Inner diameter of the hanging loop (fits a jump ring)."
+    },
+    "loop_wall_mm": {
+      "type": "number",
+      "minimum": 0.8,
+      "maximum": 2.0,
+      "default": 1.0,
+      "x-unit": "mm",
+      "x-step": 0.1,
+      "x-rule": [
+        "CH-02"
+      ],
+      "x-label": {
+        "en": "Loop wall",
+        "es": "Pared de la argolla"
+      },
+      "description": "Radial wall of the hanging loop."
+    },
+    "finish": {
+      "type": "string",
+      "enum": [
+        "gold_plate",
+        "rhodium",
+        "antique_bronze"
+      ],
+      "default": "gold_plate",
+      "x-rule": [
+        "CH-05"
+      ],
+      "x-label": {
+        "en": "Finish",
+        "es": "Acabado"
+      },
+      "description": "Plating id from cad/templates/finishes.json."
+    }
+  },
+  "required": [
+    "letter",
+    "font",
+    "height_mm",
+    "thickness_mm",
+    "loop_inner_mm",
+    "loop_wall_mm",
+    "finish"
+  ],
+  "additionalProperties": false
+}

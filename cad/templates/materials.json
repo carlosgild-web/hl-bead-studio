@@ -1,0 +1,21 @@
+{
+  "$comment": "Base materials. Densities feed the mass in preview_geometry (Product Design Manual 01-overview). Units: g/cm3.",
+  "materials": [
+    {
+      "id": "borosilicate",
+      "name": { "en": "Borosilicate glass", "es": "Vidrio borosilicato" },
+      "used_for": "glass_bead",
+      "density_g_cm3": 2.23,
+      "ior": 1.47,
+      "supplier": "Cristal Dorado Vidrios S.A. de C.V."
+    },
+    {
+      "id": "zinc_alloy",
+      "name": { "en": "Zinc alloy (Zamak 3)", "es": "Aleación de zinc (Zamak 3)" },
+      "used_for": "charm",
+      "density_g_cm3": 6.6,
+      "ior": null,
+      "supplier": "Fundición Peltre del Bajío"
+    }
+  ]
+}

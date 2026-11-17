@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:hl-beadworks:family:FAC",
+  "title": "Faceted glass bead (FAC)",
+  "description": "A round bead cut with flat facets in rows around the hole axis.",
+  "type": "object",
+  "x-family": {
+    "code": "FAC",
+    "kind": "glass_bead",
+    "material": "borosilicate",
+    "sku_prefix": "GB",
+    "name_suffix": "Faceted",
+    "label": {
+      "en": "Faceted",
+      "es": "Facetada"
+    }
+  },
+  "properties": {
+    "diameter_mm": {
+      "type": "number",
+      "minimum": 6.0,
+      "maximum": 20.0,
+      "default": 10.0,
+      "x-unit": "mm",
+      "x-step": 0.1,
+      "x-rule": [
+        "GB-03",
+        "GB-02",
+        "GB-05"
+      ],
+      "x-label": {
+        "en": "Diameter",
+        "es": "Diámetro"
+      },
+      "description": "Diameter across the facet corners."
+    },
+    "facet_count": {
+      "type": "integer",
+      "minimum": 8,
+      "maximum": 32,
+      "default": 16,
+      "x-rule": [
+        "GB-05"
+      ],
+      "x-label": {
+        "en": "Facets per row",
+        "es": "Facetas por fila"
+      },
+      "description": "Number of facets around the bead; must be even."
+    },
+    "facet_rows": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 3,
+      "default": 2,
+      "x-rule": [
+        "GB-05"
+      ],
+      "x-label": {
+        "en": "Facet rows",
+        "es": "Filas de facetas"
+      },
+      "description": "Rows of facets between the two hole ends."
+    },
+    "hole_mm": {
+      "type": "number",
+      "enum": [
+        1.0,
+        1.5,
+        2.0,
+        2.5
+      ],
+      "default": 1.5,
+      "x-unit": "mm",
+      "x-rule": [
+        "GB-01",
+        "GB-02"
+      ],
+      "x-label": {
+        "en": "Hole diameter",
+        "es": "Diámetro del orificio"
+      },
+      "description": "Mandrel size; the hole runs through the bead."
+    },
+    "color": {
+      "type": "string",
+      "enum": [
+        "clear",
+        "amber",
+        "honey",
+        "desert_sand",
+        "terracotta",
+        "ruby",
+        "rose_opal",
+        "amethyst",
+        "cobalt",
+        "midnight_blue",
+        "aqua",
+        "sea_green",
+        "emerald",
+        "deep_forest",
+        "opal_white",
+        "jet"
+      ],
+      "default": "amber",
+      "x-rule": [
+        "GB-07"
+      ],
+      "x-label": {
+        "en": "Glass color",
+        "es": "Color del vidrio"
+      },
+      "description": "Color id from cad/templates/colors.json."
+    }
+  },
+  "required": [
+    "diameter_mm",
+    "facet_count",
+    "facet_rows",
+    "hole_mm",
+    "color"
+  ],
+  "additionalProperties": false
+}

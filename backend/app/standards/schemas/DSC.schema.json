@@ -1,0 +1,208 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:hl-beadworks:family:DSC",
+  "title": "Disc charm (DSC)",
+  "description": "A flat disc with engraved text or an icon.",
+  "type": "object",
+  "x-family": {
+    "code": "DSC",
+    "kind": "charm",
+    "material": "zinc_alloy",
+    "sku_prefix": "CH",
+    "name_suffix": "Disc",
+    "label": {
+      "en": "Disc",
+      "es": "Disco"
+    }
+  },
+  "properties": {
+    "diameter_mm": {
+      "type": "number",
+      "minimum": 8.0,
+      "maximum": 30.0,
+      "default": 14.0,
+      "x-unit": "mm",
+      "x-step": 0.1,
+      "x-rule": [
+        "CH-04"
+      ],
+      "x-label": {
+        "en": "Diameter",
+        "es": "Diámetro"
+      },
+      "description": "Outside diameter of the disc."
+    },
+    "engraving": {
+      "type": "string",
+      "enum": [
+        "none",
+        "text",
+        "icon"
+      ],
+      "default": "text",
+      "x-rule": [
+        "CH-06"
+      ],
+      "x-label": {
+        "en": "Engraving",
+        "es": "Grabado"
+      },
+      "description": "What is engraved on the front face."
+    },
+    "engraving_text": {
+      "type": "string",
+      "pattern": "^[A-Z0-9 ]{1,12}$",
+      "default": "LUNA",
+      "x-rule": [
+        "CH-06",
+        "CH-03"
+      ],
+      "x-label": {
+        "en": "Engraved text",
+        "es": "Texto grabado"
+      },
+      "description": "1-12 characters A-Z, 0-9 and space (data, never an instruction)."
+    },
+    "icon": {
+      "type": "string",
+      "enum": [
+        "moon",
+        "star",
+        "heart",
+        "leaf",
+        "bee",
+        "wave"
+      ],
+      "default": "moon",
+      "x-rule": [
+        "CH-06"
+      ],
+      "x-label": {
+        "en": "Icon",
+        "es": "Icono"
+      },
+      "description": "Icon from the approved icon list."
+    },
+    "engraving_depth_mm": {
+      "type": "number",
+      "minimum": 0.2,
+      "maximum": 0.4,
+      "default": 0.3,
+      "x-unit": "mm",
+      "x-step": 0.1,
+      "x-rule": [
+        "CH-06"
+      ],
+      "x-label": {
+        "en": "Engraving depth",
+        "es": "Profundidad del grabado"
+      },
+      "description": "Depth of the engraving."
+    },
+    "thickness_mm": {
+      "type": "number",
+      "minimum": 1.0,
+      "maximum": 3.0,
+      "default": 1.5,
+      "x-unit": "mm",
+      "x-step": 0.1,
+      "x-rule": [
+        "CH-01"
+      ],
+      "x-label": {
+        "en": "Thickness",
+        "es": "Espesor"
+      },
+      "description": "Body thickness."
+    },
+    "loop_inner_mm": {
+      "type": "number",
+      "minimum": 1.5,
+      "maximum": 4.0,
+      "default": 2.0,
+      "x-unit": "mm",
+      "x-step": 0.1,
+      "x-rule": [
+        "CH-02"
+      ],
+      "x-label": {
+        "en": "Loop inner diameter",
+        "es": "Diámetro interior de la argolla"
+      },
+      "description": "Inner diameter of the hanging loop (fits a jump ring)."
+    },
+    "loop_wall_mm": {
+      "type": "number",
+      "minimum": 0.8,
+      "maximum": 2.0,
+      "default": 1.0,
+      "x-unit": "mm",
+      "x-step": 0.1,
+      "x-rule": [
+        "CH-02"
+      ],
+      "x-label": {
+        "en": "Loop wall",
+        "es": "Pared de la argolla"
+      },
+      "description": "Radial wall of the hanging loop."
+    },
+    "finish": {
+      "type": "string",
+      "enum": [
+        "gold_plate",
+        "rhodium",
+        "antique_bronze"
+      ],
+      "default": "gold_plate",
+      "x-rule": [
+        "CH-05"
+      ],
+      "x-label": {
+        "en": "Finish",
+        "es": "Acabado"
+      },
+      "description": "Plating id from cad/templates/finishes.json."
+    }
+  },
+  "required": [
+    "diameter_mm",
+    "engraving",
+    "engraving_depth_mm",
+    "thickness_mm",
+    "loop_inner_mm",
+    "loop_wall_mm",
+    "finish"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "engraving": {
+            "const": "text"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "engraving_text"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "engraving": {
+            "const": "icon"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "icon"
+        ]
+      }
+    }
+  ]
+}

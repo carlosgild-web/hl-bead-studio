@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:hl-beadworks:family:LEN",
+  "title": "Lentil glass bead (LEN)",
+  "description": "A lens-shaped disc; the hole runs across the diameter, through the edge.",
+  "type": "object",
+  "x-family": {
+    "code": "LEN",
+    "kind": "glass_bead",
+    "material": "borosilicate",
+    "sku_prefix": "GB",
+    "name_suffix": "Lentil",
+    "label": {
+      "en": "Lentil",
+      "es": "Lenteja"
+    }
+  },
+  "properties": {
+    "diameter_mm": {
+      "type": "number",
+      "minimum": 4.0,
+      "maximum": 20.0,
+      "default": 14.0,
+      "x-unit": "mm",
+      "x-step": 0.1,
+      "x-rule": [
+        "GB-03"
+      ],
+      "x-label": {
+        "en": "Diameter",
+        "es": "Diámetro"
+      },
+      "description": "Outside diameter of the disc."
+    },
+    "thickness_mm": {
+      "type": "number",
+      "minimum": 2.0,
+      "maximum": 14.0,
+      "default": 7.0,
+      "x-unit": "mm",
+      "x-step": 0.1,
+      "x-rule": [
+        "GB-04",
+        "GB-02"
+      ],
+      "x-label": {
+        "en": "Thickness",
+        "es": "Espesor"
+      },
+      "description": "Thickness at the center."
+    },
+    "hole_mm": {
+      "type": "number",
+      "enum": [
+        1.0,
+        1.5,
+        2.0,
+        2.5
+      ],
+      "default": 1.5,
+      "x-unit": "mm",
+      "x-rule": [
+        "GB-01",
+        "GB-02"
+      ],
+      "x-label": {
+        "en": "Hole diameter",
+        "es": "Diámetro del orificio"
+      },
+      "description": "Mandrel size; the hole runs through the bead."
+    },
+    "color": {
+      "type": "string",
+      "enum": [
+        "clear",
+        "amber",
+        "honey",
+        "desert_sand",
+        "terracotta",
+        "ruby",
+        "rose_opal",
+        "amethyst",
+        "cobalt",
+        "midnight_blue",
+        "aqua",
+        "sea_green",
+        "emerald",
+        "deep_forest",
+        "opal_white",
+        "jet"
+      ],
+      "default": "amber",
+      "x-rule": [
+        "GB-07"
+      ],
+      "x-label": {
+        "en": "Glass color",
+        "es": "Color del vidrio"
+      },
+      "description": "Color id from cad/templates/colors.json."
+    }
+  },
+  "required": [
+    "diameter_mm",
+    "thickness_mm",
+    "hole_mm",
+    "color"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,32 @@
+{
+  "$comment": "Approved charm finishes (rule CH-05), plated on zinc alloy. blender_preset names the metal material in blender/render.py (Phase 4).",
+  "finishes": [
+    {
+      "id": "gold_plate",
+      "name": { "en": "Gold plate", "es": "Baño de oro" },
+      "hex": "#d4af37",
+      "metallic": 1.0,
+      "roughness": 0.18,
+      "blender_preset": "metal_gold",
+      "plating_um": 1.0
+    },
+    {
+      "id": "rhodium",
+      "name": { "en": "Rhodium", "es": "Rodio" },
+      "hex": "#d9dde2",
+      "metallic": 1.0,
+      "roughness": 0.12,
+      "blender_preset": "metal_rhodium",
+      "plating_um": 0.5
+    },
+    {
+      "id": "antique_bronze",
+      "name": { "en": "Antique bronze", "es": "Bronce envejecido" },
+      "hex": "#8c6a43",
+      "metallic": 1.0,
+      "roughness": 0.45,
+      "blender_preset": "metal_antique_bronze",
+      "plating_um": 1.0
+    }
+  ]
+}

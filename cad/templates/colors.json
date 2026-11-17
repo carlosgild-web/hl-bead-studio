@@ -1,0 +1,21 @@
+{
+  "$comment": "Approved borosilicate glass colors (rule GB-07). Supplier codes are Cristal Dorado Vidrios rods. blender_preset: glass_clear | glass_translucent | glass_opaque.",
+  "colors": [
+    { "id": "clear", "name": { "en": "Clear", "es": "Transparente" }, "hex": "#eef4f6", "transmission": 0.98, "blender_preset": "glass_clear", "supplier_code": "CDV-B100" },
+    { "id": "amber", "name": { "en": "Amber", "es": "Ámbar" }, "hex": "#c9822b", "transmission": 0.85, "blender_preset": "glass_translucent", "supplier_code": "CDV-B210" },
+    { "id": "honey", "name": { "en": "Honey", "es": "Miel" }, "hex": "#e3a857", "transmission": 0.85, "blender_preset": "glass_translucent", "supplier_code": "CDV-B215" },
+    { "id": "desert_sand", "name": { "en": "Desert Sand", "es": "Arena del desierto" }, "hex": "#d8b98c", "transmission": 0.35, "blender_preset": "glass_translucent", "supplier_code": "CDV-B230" },
+    { "id": "terracotta", "name": { "en": "Terracotta", "es": "Terracota" }, "hex": "#c0603b", "transmission": 0.0, "blender_preset": "glass_opaque", "supplier_code": "CDV-B240" },
+    { "id": "ruby", "name": { "en": "Ruby", "es": "Rubí" }, "hex": "#9b1b30", "transmission": 0.8, "blender_preset": "glass_translucent", "supplier_code": "CDV-B310" },
+    { "id": "rose_opal", "name": { "en": "Rose Opal", "es": "Ópalo rosa" }, "hex": "#e7a3a6", "transmission": 0.3, "blender_preset": "glass_translucent", "supplier_code": "CDV-B320" },
+    { "id": "amethyst", "name": { "en": "Amethyst", "es": "Amatista" }, "hex": "#7b4fa0", "transmission": 0.8, "blender_preset": "glass_translucent", "supplier_code": "CDV-B410" },
+    { "id": "cobalt", "name": { "en": "Cobalt", "es": "Cobalto" }, "hex": "#2f45b5", "transmission": 0.8, "blender_preset": "glass_translucent", "supplier_code": "CDV-B510" },
+    { "id": "midnight_blue", "name": { "en": "Midnight Blue", "es": "Azul medianoche" }, "hex": "#1b2a5e", "transmission": 0.7, "blender_preset": "glass_translucent", "supplier_code": "CDV-B520" },
+    { "id": "aqua", "name": { "en": "Aqua", "es": "Aguamarina" }, "hex": "#5fc2c6", "transmission": 0.85, "blender_preset": "glass_translucent", "supplier_code": "CDV-B530" },
+    { "id": "sea_green", "name": { "en": "Sea Green", "es": "Verde mar" }, "hex": "#5fae9c", "transmission": 0.8, "blender_preset": "glass_translucent", "supplier_code": "CDV-B610" },
+    { "id": "emerald", "name": { "en": "Emerald", "es": "Esmeralda" }, "hex": "#1f7a4d", "transmission": 0.8, "blender_preset": "glass_translucent", "supplier_code": "CDV-B620" },
+    { "id": "deep_forest", "name": { "en": "Deep Forest", "es": "Bosque profundo" }, "hex": "#234d35", "transmission": 0.6, "blender_preset": "glass_translucent", "supplier_code": "CDV-B630" },
+    { "id": "opal_white", "name": { "en": "Opal White", "es": "Blanco ópalo" }, "hex": "#eef0f4", "transmission": 0.0, "blender_preset": "glass_opaque", "supplier_code": "CDV-B710" },
+    { "id": "jet", "name": { "en": "Jet", "es": "Azabache" }, "hex": "#151515", "transmission": 0.0, "blender_preset": "glass_opaque", "supplier_code": "CDV-B720" }
+  ]
+}

@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:hl-beadworks:family:CRS",
+  "title": "Crescent charm (CRS)",
+  "description": "A crescent moon, optionally with a star hanging inside its curve.",
+  "type": "object",
+  "x-family": {
+    "code": "CRS",
+    "kind": "charm",
+    "material": "zinc_alloy",
+    "sku_prefix": "CH",
+    "name_suffix": "Crescent",
+    "label": {
+      "en": "Crescent",
+      "es": "Media luna"
+    }
+  },
+  "properties": {
+    "height_mm": {
+      "type": "number",
+      "minimum": 8.0,
+      "maximum": 30.0,
+      "default": 16.0,
+      "x-unit": "mm",
+      "x-step": 0.1,
+      "x-rule": [
+        "CH-04"
+      ],
+      "x-label": {
+        "en": "Height",
+        "es": "Altura"
+      },
+      "description": "Height of the crescent body, without the loop."
+    },
+    "crescent_width_mm": {
+      "type": "number",
+      "minimum": 2.0,
+      "maximum": 12.0,
+      "default": 5.0,
+      "x-unit": "mm",
+      "x-step": 0.1,
+      "x-rule": [
+        "CH-03"
+      ],
+      "x-label": {
+        "en": "Crescent width",
+        "es": "Ancho de la media luna"
+      },
+      "description": "Widest width of the crescent band."
+    },
+    "has_star": {
+      "type": "boolean",
+      "default": true,
+      "x-rule": [
+        "CH-03"
+      ],
+      "x-label": {
+        "en": "Star",
+        "es": "Estrella"
+      },
+      "description": "Adds a five-point star joined to the crescent."
+    },
+    "star_diameter_mm": {
+      "type": "number",
+      "minimum": 3.0,
+      "maximum": 8.0,
+      "default": 5.0,
+      "x-unit": "mm",
+      "x-step": 0.1,
+      "x-rule": [
+        "CH-03"
+      ],
+      "x-label": {
+        "en": "Star diameter",
+        "es": "Diámetro de la estrella"
+      },
+      "description": "Diameter across the star points; ignored without a star."
+    },
+    "thickness_mm": {
+      "type": "number",
+      "minimum": 1.0,
+      "maximum": 3.0,
+      "default": 1.5,
+      "x-unit": "mm",
+      "x-step": 0.1,
+      "x-rule": [
+        "CH-01"
+      ],
+      "x-label": {
+        "en": "Thickness",
+        "es": "Espesor"
+      },
+      "description": "Body thickness."
+    },
+    "loop_inner_mm": {
+      "type": "number",
+      "minimum": 1.5,
+      "maximum": 4.0,
+      "default": 2.0,
+      "x-unit": "mm",
+      "x-step": 0.1,
+      "x-rule": [
+        "CH-02"
+      ],
+      "x-label": {
+        "en": "Loop inner diameter",
+        "es": "Diámetro interior de la argolla"
+      },
+      "description": "Inner diameter of the hanging loop (fits a jump ring)."
+    },
+    "loop_wall_mm": {
+      "type": "number",
+      "minimum": 0.8,
+      "maximum": 2.0,
+      "default": 1.0,
+      "x-unit": "mm",
+      "x-step": 0.1,
+      "x-rule": [
+        "CH-02"
+      ],
+      "x-label": {
+        "en": "Loop wall",
+        "es": "Pared de la argolla"
+      },
+      "description": "Radial wall of the hanging loop."
+    },
+    "finish": {
+      "type": "string",
+      "enum": [
+        "gold_plate",
+        "rhodium",
+        "antique_bronze"
+      ],
+      "default": "gold_plate",
+      "x-rule": [
+        "CH-05"
+      ],
+      "x-label": {
+        "en": "Finish",
+        "es": "Acabado"
+      },
+      "description": "Plating id from cad/templates/finishes.json."
+    }
+  },
+  "required": [
+    "height_mm",
+    "crescent_width_mm",
+    "has_star",
+    "star_diameter_mm",
+    "thickness_mm",
+    "loop_inner_mm",
+    "loop_wall_mm",
+    "finish"
+  ],
+  "additionalProperties": false
+}
