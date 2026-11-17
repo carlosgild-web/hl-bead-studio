@@ -9,8 +9,9 @@ designer confirms, the tool reserves a SKU in a mock SAP, builds the 3D model (C
 STL, GLB), produces a technical drawing with the H&L title block and queues a catalog render
 in Blender.
 
-> **Status:** work in progress (Phase 0, skeleton). The roadmap is in [`PLAN.md`](PLAN.md) and
-> the design decisions in [`docs/decisions/`](docs/decisions/).
+> **Status:** work in progress (Phase 3 of 9: geometry, drawings and validation work from the
+> command line; no AI or UI yet). The roadmap is in [`PLAN.md`](PLAN.md) and the design
+> decisions in [`docs/decisions/`](docs/decisions/).
 
 ## Principle: the AI guides, the code decides
 
@@ -40,6 +41,18 @@ cd frontend
 npm ci
 npm run dev
 ```
+
+Validate a design and generate its files (STEP, STL, GLB, drawing PDF, `params.json`) under
+`DESIGNS_ROOT` (default `data/designs/`):
+
+```bash
+cd backend
+python -m app.cli validate --family FAC --params examples/fac_10mm.json
+python -m app.cli generate --family FAC --params examples/fac_10mm.json     --sku GB-1034 --rev A --name "Honey Glow Faceted" --sap-material 50000134
+```
+
+Example drawings: [faceted bead](docs/showcase/GB-1034_A_drawing.pdf) and
+[crescent charm](docs/showcase/CH-2034_A_drawing.pdf).
 
 Checks: `pytest -q && ruff check . && ruff format --check .` in each Python package, and
 `npm run lint && npm test && npm run build` in `frontend/`.
