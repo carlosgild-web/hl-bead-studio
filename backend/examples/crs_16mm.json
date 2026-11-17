@@ -1,0 +1,10 @@
+{
+  "height_mm": 16.0,
+  "crescent_width_mm": 5.0,
+  "has_star": true,
+  "star_diameter_mm": 5.0,
+  "thickness_mm": 1.5,
+  "loop_inner_mm": 2.0,
+  "loop_wall_mm": 1.0,
+  "finish": "gold_plate"
+}
