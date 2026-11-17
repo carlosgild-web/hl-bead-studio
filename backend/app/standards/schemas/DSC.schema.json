@@ -20,7 +20,7 @@
       "type": "number",
       "minimum": 8.0,
       "maximum": 30.0,
-      "default": 14.0,
+      "default": 20.0,
       "x-unit": "mm",
       "x-step": 0.1,
       "x-rule": [

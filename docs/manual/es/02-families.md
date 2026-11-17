@@ -28,9 +28,9 @@ regla `CH-05`). Las alturas se miden en el cuerpo, sin la argolla (regla `CH-04`
 
 | Familia | Código | Forma | Parámetros (mm salvo indicación) | Valores por defecto |
 |---|---|---|---|---|
-| Media luna | `CRS` | Luna creciente, con o sin una estrella de cinco puntas unida dentro de su curva | `height_mm` 8.0–30.0, `crescent_width_mm` 2.0–12.0 (parte más ancha de la banda), `has_star` sí/no, `star_diameter_mm` 3.0–8.0 | 16.0, ancho 5.0, estrella 5.0 |
+| Media luna | `CRS` | Luna creciente, con o sin una estrella de cinco puntas unida dentro de su curva | `height_mm` 8.0–30.0, `crescent_width_mm` 2.0–12.0 (parte más ancha de la banda, `CH-08`), `has_star` sí/no, `star_diameter_mm` 3.0–8.0 | 16.0, ancho 5.0, estrella 5.0 |
 | Inicial | `INI` | Una letra mayúscula en una tipografía aprobada | `letter` A–Z, `font` (ver `CH-07`), `height_mm` 8.0–30.0 | "H", Pacifico, 14.0 |
-| Disco | `DSC` | Disco plano con texto o icono grabado | `diameter_mm` 8.0–30.0, `engraving` none/text/icon, `engraving_text` (ver `CH-06`), `icon`, `engraving_depth_mm` 0.2–0.4 | 14.0, texto "LUNA", profundidad 0.3 |
+| Disco | `DSC` | Disco plano con texto o icono grabado | `diameter_mm` 8.0–30.0, `engraving` none/text/icon, `engraving_text` (ver `CH-06`), `icon`, `engraving_depth_mm` 0.2–0.4 | 20.0, texto "LUNA", profundidad 0.3 |
 
 Valores por defecto de todos los dijes: espesor 1.5, diámetro interior de la argolla 2.0,
 pared de la argolla 1.0, acabado baño de oro.

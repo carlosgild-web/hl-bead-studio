@@ -32,7 +32,7 @@ plating (plating adds less than 1%).
 | 02 Families | The seven product families and their parameters |
 | 03 Identifiers | SKU, SAP material number and design revisions (`GEN-02`, `GEN-04`) |
 | 04 Glass bead rules | `GB-01` to `GB-07` |
-| 05 Charm rules | `CH-01` to `CH-07` |
+| 05 Charm rules | `CH-01` to `CH-08` |
 | 06 Naming and collections | Product names (`GEN-03`) and the three collections |
 | 07 Colors and finishes | The approved glass colors and plating finishes |
 | 08 Deliverables | Files per design, the technical drawing and the catalog render |

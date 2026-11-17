@@ -31,12 +31,18 @@ sus puntas, puntas de estrella, separaciones entre detalles y el metal que queda
 grabado (espesor − profundidad del grabado). Las puntas de la media luna y de la estrella se
 redondean con radio de 0.3 mm, así que su ancho mínimo es de 0.6 mm.
 
+Bead Studio revisa el contorno de cada dije, y cada grabado, encogiéndolo 0.3 mm y
+volviéndolo a crecer (desaparece toda parte de menos de 0.6 mm) y creciéndolo 0.3 mm y
+volviéndolo a encoger (se cierra toda separación de menos de 0.6 mm). Las esquinas agudas
+solo pierden la punta, que el moldero redondea de todos modos; una forma que se parte,
+pierde un trazo, cierra un hueco o cambia su área más de 3% no pasa.
+
 *Por qué:* 0.6 mm es el límite del molde de hule; los detalles más finos no se llenan o se
 rompen en la tómbola.
 
-*Ejemplo de incumplimiento:* texto grabado con letras de 2.0 mm: a esa altura los trazos de
-Montserrat ExtraBold miden menos de 0.6 mm. Valor válido más cercano: letras de 2.5 mm
-(`CH-06`).
+*Ejemplo de incumplimiento:* "LUNA" grabado en un disco de 18.0 mm: las letras miden 3.2 mm de
+alto y, a ese tamaño, los trazos y las separaciones de la A y la N miden menos de 0.6 mm.
+Valor válido más cercano: un disco de 19.5 mm (letras de 3.6 mm).
 
 ### CH-04 Altura del dije
 
@@ -63,8 +69,12 @@ oro.
 Un disco puede no llevar grabado, llevar texto grabado o un icono grabado.
 
 - **Texto:** 1–12 caracteres de A–Z, 0–9 y espacio, en mayúsculas, grabados en Montserrat
-  ExtraBold. La altura de letra es de al menos 2.5 mm, y el texto cabe en una línea dentro del
-  80% del diámetro del disco.
+  ExtraBold en una línea, con espaciado entre letras (una separación de 0.2 × la altura de
+  letra entre caracteres). Bead Studio usa las letras más grandes que caben dentro del 80%
+  del diámetro del disco, hasta el 35% del diámetro. Las letras miden al menos **3.0 mm** de
+  alto y el grabado cumple `CH-03`: la mayoría de los caracteres necesita 2.5–3.9 mm, la M,
+  la W y la X unos 4.5 mm y el dígito 4 6.3 mm (los huecos chicos se llenan con el
+  recubrimiento).
 - **Icono:** uno de luna (moon), estrella (star), corazón (heart), hoja (leaf), abeja (bee) u
   ola (wave).
 - **Profundidad:** 0.2–0.4 mm, dejando al menos 0.6 mm de metal debajo (`CH-03`).
@@ -76,7 +86,8 @@ instrucción para el asistente ni para ninguna herramienta.
 profundos debilitan los discos delgados. Las letras chicas se llenan con el recubrimiento.
 
 *Ejemplo de incumplimiento:* "HILDA AND LUNA" (14 caracteres). Es demasiado largo para
-cualquier disco; un texto más corto como "H AND L" cabe en un disco de 20 mm.
+cualquier disco; un texto más corto como "H AND L" cabe en un disco de 30 mm (letras de
+3.6 mm). "LUNA" necesita un disco de al menos 19.5 mm.
 
 ### CH-07 Dijes de inicial
 
@@ -85,18 +96,36 @@ Todas tienen licencia SIL Open Font License.
 
 | Id de tipografía | Tipografía | Estilo | Altura mínima |
 |---|---|---|---|
-| `pacifico` | Pacifico | Manuscrita (el estilo de CH-2033 Script Initial) | 10.0 mm |
-| `cinzel_bold` | Cinzel Bold | Mayúsculas clásicas | 12.0 mm |
+| `pacifico` | Pacifico | Manuscrita (el estilo de CH-2033 Script Initial) | 10.5 mm; Y 18.5 mm |
+| `cinzel_bold` | Cinzel Bold | Mayúsculas clásicas | 16.5 mm; sin K |
 | `montserrat_extrabold` | Montserrat ExtraBold | Sans moderna | 8.0 mm |
 
-La altura mínima mantiene el trazo más delgado de cada tipografía en 0.6 mm o más (`CH-03`).
-La argolla se coloca arriba al centro de la letra, unida a su trazo más alto.
+La altura mínima mantiene cada trazo y cada separación de la letra en 0.6 mm o más
+(`CH-03`); la altura de la letra es la de su contorno, sin la argolla. Hay dos excepciones:
+la Y de Pacifico casi cierra el lazo de su cola y necesita 18.5 mm, y Cinzel Bold dibuja su
+K en dos piezas separadas, así que no se puede fundir como un solo dije.
+
+La argolla se coloca sobre el trazo más alto cercano al eje central de la letra, unida a él
+(en una H, sobre uno de los trazos verticales).
 
 *Por qué:* solo las tipografías con licencia abierta se pueden usar en productos que vendemos,
 y las tipografías con trazos finísimos no se pueden fundir.
 
 *Ejemplo de incumplimiento:* una "A" en Cinzel Bold de 10.0 mm. Valor válido más cercano:
-12.0 mm, o Montserrat ExtraBold a 10.0 mm.
+16.5 mm, o Montserrat ExtraBold a 10.0 mm.
 
-> Nota (2026-11): las alturas mínimas son provisionales hasta medir el grosor de los trazos de
-> las tipografías en Bead Studio (fase 3).
+> Las alturas se midieron en Bead Studio el 2026-11-17 (`python -m app.cli measure-fonts`)
+> con la revisión de `CH-03`, en pasos de 0.5 mm.
+
+### CH-08 Proporciones de la media luna
+
+La banda de la media luna mide **20–45% de la altura del cuerpo** en su parte más ancha, y la
+estrella, si la hay, mide como máximo **50% de la altura** para que quepa dentro de la curva.
+La punta izquierda de la estrella entra 1.0 mm en la banda.
+
+*Por qué:* una banda más angosta se rompe en los cuernos; una más ancha cierra la curva en un
+disco. Una estrella más grande se sale de la media luna y deja separaciones de menos de
+0.6 mm junto a los cuernos.
+
+*Ejemplo de incumplimiento:* una media luna de 16.0 mm con una banda de 2.0 mm (12%). Valor
+válido más cercano: 3.2 mm, o una media luna de 10.0 mm.

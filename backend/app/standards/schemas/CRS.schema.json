@@ -40,6 +40,7 @@
       "x-unit": "mm",
       "x-step": 0.1,
       "x-rule": [
+        "CH-08",
         "CH-03"
       ],
       "x-label": {
@@ -68,6 +69,7 @@
       "x-unit": "mm",
       "x-step": 0.1,
       "x-rule": [
+        "CH-08",
         "CH-03"
       ],
       "x-label": {

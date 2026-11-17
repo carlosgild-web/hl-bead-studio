@@ -31,7 +31,7 @@ FAMILIES = {
 RULE_IDS = (
     {f"GEN-0{i}" for i in range(1, 5)}
     | {f"GB-0{i}" for i in range(1, 8)}
-    | {f"CH-0{i}" for i in range(1, 8)}
+    | {f"CH-0{i}" for i in range(1, 9)}
 )
 RULE_HEADING = re.compile(r"^#{2,3} ((?:GEN|GB|CH)-\d{2}) ", re.MULTILINE)
 RULE_MENTION = re.compile(r"\b(?:GEN|GB|CH)-\d{2}\b")

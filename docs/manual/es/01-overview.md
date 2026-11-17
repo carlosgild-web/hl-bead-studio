@@ -33,7 +33,7 @@ recubrimiento (que añade menos del 1%).
 | 02 Familias | Las siete familias de producto y sus parámetros |
 | 03 Identificadores | SKU, número de material SAP y revisiones de diseño (`GEN-02`, `GEN-04`) |
 | 04 Reglas de cuentas de vidrio | `GB-01` a `GB-07` |
-| 05 Reglas de dijes | `CH-01` a `CH-07` |
+| 05 Reglas de dijes | `CH-01` a `CH-08` |
 | 06 Nombres y colecciones | Nombres de producto (`GEN-03`) y las tres colecciones |
 | 07 Colores y acabados | Los colores de vidrio y acabados aprobados |
 | 08 Entregables | Archivos por diseño, plano técnico y render de catálogo |

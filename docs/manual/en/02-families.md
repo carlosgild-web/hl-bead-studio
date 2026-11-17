@@ -28,9 +28,9 @@ rule `CH-05`). Heights are measured on the body, without the loop (rule `CH-04`)
 
 | Family | Code | Shape | Parameters (mm unless stated) | Defaults |
 |---|---|---|---|---|
-| Crescent | `CRS` | Crescent moon, optionally with a five-point star joined inside its curve | `height_mm` 8.0–30.0, `crescent_width_mm` 2.0–12.0 (widest part of the band), `has_star` yes/no, `star_diameter_mm` 3.0–8.0 | 16.0, width 5.0, star 5.0 |
+| Crescent | `CRS` | Crescent moon, optionally with a five-point star joined inside its curve | `height_mm` 8.0–30.0, `crescent_width_mm` 2.0–12.0 (widest part of the band, `CH-08`), `has_star` yes/no, `star_diameter_mm` 3.0–8.0 | 16.0, width 5.0, star 5.0 |
 | Initial | `INI` | One capital letter in an approved font | `letter` A–Z, `font` (see `CH-07`), `height_mm` 8.0–30.0 | "H", Pacifico, 14.0 |
-| Disc | `DSC` | Flat disc with engraved text or an icon | `diameter_mm` 8.0–30.0, `engraving` none/text/icon, `engraving_text` (see `CH-06`), `icon`, `engraving_depth_mm` 0.2–0.4 | 14.0, text "LUNA", depth 0.3 |
+| Disc | `DSC` | Flat disc with engraved text or an icon | `diameter_mm` 8.0–30.0, `engraving` none/text/icon, `engraving_text` (see `CH-06`), `icon`, `engraving_depth_mm` 0.2–0.4 | 20.0, text "LUNA", depth 0.3 |
 
 Charm defaults for every family: thickness 1.5, loop inner diameter 2.0, loop wall 1.0,
 finish gold plate.
