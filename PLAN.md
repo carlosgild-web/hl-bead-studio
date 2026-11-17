@@ -45,7 +45,7 @@ reserving a SKU and generating files require the designer's confirmation in the 
 | Repo | New: `hl-bead-studio` (GitHub `carlosgild-web/hl-bead-studio`) |
 | Scope | Product: glass beads and charms (not machine parts) |
 | 3D model | **CadQuery** (Python, headless): parametric families → STEP, STL, GLB |
-| Drawing | **FreeCAD TechDraw** headless with an H&L title block template → PDF (fallback in Phase 3) |
+| Drawing | OpenCascade HLR views + H&L SVG title block → PDF in Python (decision 0009; TechDraw spike failed) |
 | Render | **Blender** headless (`blender -b -P`), Cycles CPU, background job queue |
 | Online demo | Live: parameters, validation, 3D viewer (three.js), drawing. Renders: pre-generated gallery |
 | SAP | Own copy of a mock SAP (FastAPI, OData v2 shape) with a Material/SKU entity |
@@ -110,7 +110,7 @@ backend (FastAPI)
   ├─ llm/        OllamaClient | AnthropicClient | FakeClient
   ├─ standards/  family schemas + manufacturability validators + manual search (SQLite FTS5)
   ├─ geometry/   CadQuery family builders → STEP / STL / GLB, mass and volume
-  ├─ drawing/    FreeCAD TechDraw runner (freecadcmd) + H&L title block template
+  ├─ drawing/    OpenCascade HLR views + H&L SVG title block → PDF (decision 0009)
   ├─ render/     Blender job runner (blender -b -P scripts/render.py), job queue in SQLite
   ├─ sap/        SapClient ──HTTP──► sap-mock (FastAPI, OData v2)
   └─ db/         designs, jobs, audit_log, agent_runs
@@ -198,7 +198,7 @@ hl-bead-studio/
 - **Spike first (half a day):** FreeCAD TechDraw headless from `freecadcmd` (import STEP, front
   and side views, dimensions, title block template, export PDF). If headless export is not
   reliable, fallback: CadQuery SVG projections + the same SVG title block, rendered to PDF in Python.
-  Record the result in a decision.
+  Record the result in a decision. *(Done: fallback, decision 0009.)*
 - CLI: `python -m app.cli generate --family FAC --params params.json --sku GB-1034 --rev A`.
 - Showcase files: drawing PDF of a new faceted bead and a crescent charm.
 
@@ -244,7 +244,7 @@ invalid params fail with the right rule id, STEP opens in FreeCAD, drawing PDF h
 **Done when:** 100% on Fake; real-provider results published, failures included.
 
 ### Phase 8 — Packaging and online demo
-- Docker image: Python + CadQuery + FreeCAD (if the spike passed) + built frontend. Blender is
+- Docker image: Python + CadQuery + built frontend (no FreeCAD: decision 0009). Blender is
   **not** in the online image; the render tab shows the gallery and says renders run locally.
 - `compose.yaml`: app + sap-mock (+ optional ollama, + optional blender worker profile for local use).
 - `start.cmd` / `start.sh`; Hugging Face Spaces with `LLM_PROVIDER=anthropic`, Fake fallback without a key.
@@ -265,7 +265,7 @@ invalid params fail with the right rule id, STEP opens in FreeCAD, drawing PDF h
 | Tool | Notes |
 |---|---|
 | Python 3.12+ | CadQuery installs with pip; `cadquery-ocp` has a 3.14 wheel (decision 0007) |
-| FreeCAD 1.x | `freecadcmd.exe` path in `FREECAD_CMD` |
+| FreeCAD 1.x (optional) | `freecadcmd.exe` path in `FREECAD_CMD`; only for the tests that reopen STEP files |
 | Blender 4.x or newer | `blender.exe` path in `BLENDER_BIN` |
 | Node 20+ | frontend |
 | Ollama | `qwen3:4b-instruct-2507` |
@@ -276,7 +276,8 @@ invalid params fail with the right rule id, STEP opens in FreeCAD, drawing PDF h
 
 1. ~~Phase 1: which open-license fonts for the Initial charm?~~ Decided: Pacifico, Cinzel Bold,
    Montserrat ExtraBold (OFL), decision 0008.
-2. Phase 3: result of the FreeCAD headless spike (TechDraw or fallback).
+2. ~~Phase 3: result of the FreeCAD headless spike (TechDraw or fallback).~~ Decided: fallback,
+   OpenCascade HLR views + SVG title block → PDF in Python, decision 0009.
 3. Phase 5: an image input later ("make a charm like this sketch")? Not in v1.
 4. Later: export a STEP package for the mold maker, cost estimate from mass and supplier prices
    (could reuse luna's supplier data), approval workflow.

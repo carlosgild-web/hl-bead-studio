@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Hilda & Luna Beadworks technical drawing sheet: A4 landscape, millimetres.
+     Bead Studio fills the double-brace placeholders (XML-escaped), the logo and the views.
+     Manual 08-deliverables lists the fields. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="297mm" height="210mm" viewBox="0 0 297 210">
+  <rect x="0" y="0" width="297" height="210" fill="#ffffff"/>
+  <rect x="10" y="10" width="277" height="190" fill="none" stroke="#000000" stroke-width="0.5"/>
+  <!-- VIEWS -->
+  <g font-family="Helvetica" fill="#000000">
+    <rect x="147" y="148" width="140" height="52" fill="none" stroke="#000000" stroke-width="0.5"/>
+    <line x1="147" y1="164" x2="287" y2="164" stroke="#000000" stroke-width="0.35"/>
+    <line x1="147" y1="173" x2="287" y2="173" stroke="#000000" stroke-width="0.25"/>
+    <line x1="147" y1="182" x2="287" y2="182" stroke="#000000" stroke-width="0.25"/>
+    <line x1="147" y1="191" x2="287" y2="191" stroke="#000000" stroke-width="0.25"/>
+    <line x1="166" y1="148" x2="166" y2="164" stroke="#000000" stroke-width="0.25"/>
+    <line x1="217" y1="164" x2="217" y2="200" stroke="#000000" stroke-width="0.25"/>
+    <line x1="252" y1="164" x2="252" y2="200" stroke="#000000" stroke-width="0.25"/>
+    <!-- LOGO -->
+    <text x="169" y="153" font-size="3.8" font-family="Helvetica-Bold">Hilda &amp; Luna Beadworks</text>
+    <text x="169" y="156.6" font-size="2.0" fill="#555555">Product Design · {{rule_edition}}</text>
+    <text x="169" y="162" font-size="4.0" font-family="Helvetica-Bold">{{name}}</text>
+
+    <text x="149" y="166.6" font-size="1.8" fill="#555555">SKU / REVISION</text>
+    <text x="149" y="171.2" font-size="3.6" font-family="Helvetica-Bold">{{sku}} / {{rev}}</text>
+    <text x="219" y="166.6" font-size="1.8" fill="#555555">SAP MATERIAL</text>
+    <text x="219" y="171.2" font-size="3.2">{{sap_material}}</text>
+    <text x="254" y="166.6" font-size="1.8" fill="#555555">SHEET</text>
+    <text x="254" y="171.2" font-size="3.2">1 / 1</text>
+
+    <text x="149" y="175.6" font-size="1.8" fill="#555555">FAMILY</text>
+    <text x="149" y="180.2" font-size="3.0">{{family}}</text>
+    <text x="219" y="175.6" font-size="1.8" fill="#555555">MASS (BEFORE PLATING)</text>
+    <text x="219" y="180.2" font-size="3.0">{{mass}}</text>
+    <text x="254" y="175.6" font-size="1.8" fill="#555555">SCALE</text>
+    <text x="254" y="180.2" font-size="3.0">{{scale}}</text>
+
+    <text x="149" y="184.6" font-size="1.8" fill="#555555">MATERIAL AND COLOR / FINISH</text>
+    <text x="149" y="189.2" font-size="2.8">{{material}}</text>
+    <text x="219" y="184.6" font-size="1.8" fill="#555555">UNITS / TOLERANCE</text>
+    <text x="219" y="189.2" font-size="2.8">mm / {{tolerance}}</text>
+    <text x="254" y="184.6" font-size="1.8" fill="#555555">PROJECTION</text>
+    <text x="254" y="189.2" font-size="2.8">First angle</text>
+    <g fill="none" stroke="#000000" stroke-width="0.25">
+      <path d="M272 186.2 L272 189.8 L278.5 191 L278.5 185 Z"/>
+      <circle cx="282.6" cy="188" r="3"/>
+      <circle cx="282.6" cy="188" r="1.5"/>
+    </g>
+
+    <text x="149" y="193.6" font-size="1.8" fill="#555555">DATE</text>
+    <text x="149" y="198.2" font-size="2.8">{{date}}</text>
+    <text x="219" y="193.6" font-size="1.8" fill="#555555">DRAWN BY</text>
+    <text x="219" y="198.2" font-size="2.8">{{designer}}</text>
+    <text x="254" y="193.6" font-size="1.8" fill="#555555">FILE</text>
+    <text x="254" y="198.2" font-size="2.2">{{file}}</text>
+  </g>
+</svg>

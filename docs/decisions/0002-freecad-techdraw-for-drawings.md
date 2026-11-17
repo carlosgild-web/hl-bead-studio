@@ -1,6 +1,7 @@
 # 0002: FreeCAD TechDraw for the technical drawings
 
-**Status:** accepted, pending the Phase 3 spike (2026-11-17)
+**Status:** superseded by [0009](0009-drawings-in-python.md) (2026-11-17): the headless
+TechDraw PDF export was not reliable, so the fallback below is used.
 
 ## Context
 

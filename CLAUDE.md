@@ -17,7 +17,7 @@ queues a catalog render in Blender. Portfolio project #4, alongside `local-rag-o
 | Layer | Choice |
 |---|---|
 | Geometry | CadQuery, one builder per family; GLB via trimesh |
-| Drawing | FreeCAD TechDraw headless (`freecadcmd`); fallback decided in the Phase 3 spike |
+| Drawing | OpenCascade HLR views + H&L SVG title block → PDF (svglib, reportlab); decision 0009 |
 | Render | Blender headless (`blender -b -P blender/render.py`), Cycles CPU, SQLite job queue, one worker |
 | LLM | `LLMClient`: `OllamaClient` (native tools), `AnthropicClient`, `FakeClient`; by `LLM_PROVIDER` |
 | Agent | Own bounded tool loop, no agent framework |
@@ -34,7 +34,9 @@ queues a catalog render in Blender. Portfolio project #4, alongside `local-rag-o
 cd backend && pip install -r requirements.txt -r requirements-dev.txt
 uvicorn app.main:app --reload --port 8000
 pytest -q && ruff check . && ruff format --check .
+python -m app.cli validate --family FAC --params examples/fac_10mm.json
 python -m app.cli generate --family FAC --params examples/fac_10mm.json --sku GB-1034 --rev A
+python -m app.cli measure-fonts --engraving   # the measurements behind CH-07 and CH-06
 python -m app.cli render --sku GB-1034 --rev A --finish amber
 python -m app.cli agent-eval --fake
 
@@ -72,6 +74,7 @@ npm run lint && npm test && npm run build
 - Persistent data under `DATA_DIR` (gitignored). `pathlib`, no hardcoded Windows paths.
 - Tests and CI use `FakeClient` and need no Ollama, API key, FreeCAD or Blender; tests that need
   them are marked (`@pytest.mark.freecad`, `@pytest.mark.blender`) and skipped when missing.
+  `HYPOTHESIS_PROFILE=thorough` runs the geometry property tests with 150 examples per family.
 - Only open-license fonts and assets; the logo is original.
 - Code, comments, README and decisions in English; UI and manual in Spanish and English.
 
