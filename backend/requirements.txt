@@ -4,3 +4,9 @@ pydantic-settings>=2.16
 httpx>=0.28
 sqlalchemy>=2.1
 jsonschema>=4.26
+# geometry (decision 0001), CH-03 outline analysis, drawings (decision 0009)
+cadquery>=2.8
+trimesh>=5.2
+shapely>=2.2
+svglib>=2.4
+reportlab>=5.1
