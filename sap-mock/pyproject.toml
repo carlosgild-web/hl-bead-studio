@@ -1,0 +1,27 @@
+[project]
+name = "hl-bead-sap-mock"
+version = "0.1.0"
+description = "Mock SAP material service shaped like an SAP Gateway OData v2 API (demo only)"
+requires-python = ">=3.12"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+filterwarnings = [
+    # Starlette asks TestClient users to move to httpx2. The stack keeps httpx (CLAUDE.md)
+    # until the backend's SapClient decides otherwise.
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated",
+]
+
+[tool.coverage.run]
+source = ["app"]
+
+[tool.coverage.report]
+skip_covered = true
