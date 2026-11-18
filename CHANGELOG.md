@@ -25,6 +25,15 @@ All notable changes to this project are documented here. The format follows
   spike); confined design folders, an audit log and the `validate`, `generate` and
   `measure-fonts` CLI commands; the OFL fonts in `cad/fonts/`; showcase drawings in
   `docs/showcase/`; property-based geometry tests (Hypothesis).
+- Phase 4 Blender renders (decisions 0003 and 0011): `blender/render.py` builds a studio scene
+  (seamless backdrop, three soft boxes, a turntable camera rig) around the GLB and renders a
+  1024 px PNG with Cycles on the CPU and OpenImageDenoise. It uses glass with IOR 1.47 and the
+  approved color, or gold, rhodium or antique bronze plating. A SQLite render queue with one
+  in-process worker, an atomic claim, recovery after a restart and audit rows. A bounded
+  Blender subprocess with a timeout and a captured log. Read-only render routes with
+  server-sent events. A `render` CLI command. `scripts/build_gallery.py` and the WebP gallery
+  in `docs/gallery/`. `RENDER_SAMPLES` and `RENDER_TIMEOUT_S` settings. A `blender` pytest
+  marker.
 
 ### Changed
 

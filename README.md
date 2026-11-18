@@ -9,8 +9,8 @@ designer confirms, the tool reserves a SKU in a mock SAP, builds the 3D model (C
 STL, GLB), produces a technical drawing with the H&L title block and queues a catalog render
 in Blender.
 
-> **Status:** work in progress (Phase 3 of 9: geometry, drawings and validation work from the
-> command line; no AI or UI yet). The roadmap is in [`PLAN.md`](PLAN.md) and the design
+> **Status:** work in progress (Phase 4 of 9: geometry, drawings, validation and Blender
+> catalog renders work from the command line; no AI or UI yet). The roadmap is in [`PLAN.md`](PLAN.md) and the design
 > decisions in [`docs/decisions/`](docs/decisions/).
 
 ## Principle: the AI guides, the code decides
@@ -53,6 +53,24 @@ python -m app.cli generate --family FAC --params examples/fac_10mm.json     --sk
 
 Example drawings: [faceted bead](docs/showcase/GB-1034_A_drawing.pdf) and
 [crescent charm](docs/showcase/CH-2034_A_drawing.pdf).
+
+Render a catalog image (1024 px PNG, Cycles on the CPU, in
+`<DESIGNS_ROOT>/<SKU>/<Rev>/render/`) of a generated revision. This needs Blender 4.x or newer
+(tested on 5.2) in `BLENDER_BIN`. The finish is any approved glass color for a bead or
+plating for a charm, and defaults to the design's own:
+
+```bash
+python -m app.cli render --sku GB-1034 --rev A --finish ruby
+```
+
+The backend runs one render worker. `GET /api/renders/{id}`, `/api/renders/{id}/events`
+(server-sent events) and `/api/renders/{id}/image` follow a job. Renders are queued only by
+the CLI and, from Phase 5, by the designer's confirmation.
+
+The [render gallery](docs/gallery/) for the online demo comes from the same pipeline:
+`backend/.venv/Scripts/python scripts/build_gallery.py` (or `backend/.venv/bin/python` on
+Linux and macOS) renders every design in `scripts/gallery.json` and writes small WebP images
+and `manifest.json` (decision 0011).
 
 Checks: `pytest -q && ruff check . && ruff format --check .` in each Python package, and
 `npm run lint && npm test && npm run build` in `frontend/`.
