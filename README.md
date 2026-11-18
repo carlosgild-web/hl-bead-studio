@@ -25,6 +25,17 @@ generating files happen only after the designer clicks **Confirm**.
 
 Requirements: Python 3.12+ (developed on 3.14), Node 22+.
 
+After the one-time setup below, one command starts the mock SAP (:8100), the backend (:8000)
+and the UI (:5173) and opens the browser:
+
+```bash
+start.cmd              # Windows: three windows, close them to stop
+./start.sh             # Linux and macOS: Ctrl+C stops all three
+start.cmd anthropic    # pick the LLM: fake (default), ollama or anthropic
+```
+
+On Windows, `start.cmd` finds Blender in `Program Files` when `BLENDER_BIN` is not set.
+
 ```bash
 # backend (port 8000)
 cd backend

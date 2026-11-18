@@ -58,6 +58,8 @@ All notable changes to this project are documented here. The format follows
   - H&L brand colors, ES/EN, and the "How this demo works" guide.
   - Read-only backend routes: families, validate, preview, catalog, design files and
     gallery.
+  - `start.cmd` and `start.sh`: start the mock SAP, the backend and the UI, and open the
+    browser, with an optional LLM provider argument.
   - Vitest tests for the state and the flow, and a Playwright end-to-end test on the
     FakeClient (`e2e/`, `scripts/e2e_server.py`) that also runs in CI.
 
