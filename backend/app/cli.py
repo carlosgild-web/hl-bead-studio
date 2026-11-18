@@ -4,6 +4,9 @@ validate      check parameters against the manual and print the result as JSON
 generate      write STEP, STL, GLB, drawing PDF and params.json for one revision
 measure-fonts measure the approved fonts against CH-03 (the numbers behind CH-07)
 render        render a catalog image of a generated revision with Blender
+chat          send one message to the assistant (LLM_PROVIDER; SAP must be running)
+confirm       confirm a pending action, as the designer's click would (developer use)
+cancel        cancel a pending action
 """
 
 import argparse
@@ -107,6 +110,92 @@ def _cmd_render(args: argparse.Namespace) -> int:
     return 0
 
 
+def _print_event(kind: str, data: dict[str, Any]) -> None:
+    if kind == "message":
+        print(f"\nassistant> {data['content']}\n")
+    elif kind == "thinking":
+        print(f"  (model) {data['content']}")
+    elif kind == "tool_call":
+        print(f"  -> {data['name']}({json.dumps(data['arguments'], ensure_ascii=False)})")
+    elif kind == "tool_result":
+        text = json.dumps(data["result"], ensure_ascii=False)
+        print(
+            f"  <- {'ok' if data['ok'] else 'ERROR'} {text[:300]}{'...' if len(text) > 300 else ''}"
+        )
+    elif kind == "pending_action":
+        action = data["action"]
+        print(f"  [card] {action['kind']} {action['id']}: {json.dumps(action['payload'])}")
+    elif kind in ("parameter_proposal", "preview"):
+        print(f"  [{kind}]")
+    elif kind == "error":
+        print(f"  error: {data['message']}", file=sys.stderr)
+    elif kind == "done":
+        print(
+            f"conversation {data.get('conversation_id')} run {data.get('run_id')}: {data['status']}"
+        )
+
+
+def _cmd_chat(args: argparse.Namespace) -> int:
+    from app.agent.service import AgentDeps, chat_turn
+    from app.agent.tools import PreviewCache
+    from app.db.store import Store
+    from app.llm import LLMError, make_client
+    from app.sap import SapClient
+    from app.standards.manual_search import get_manual_index
+
+    settings = get_settings()
+    if args.provider:
+        settings = settings.model_copy(update={"llm_provider": args.provider})
+    try:
+        client = make_client(settings)
+    except LLMError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 2
+    print(f"{client.provider} / {client.model}")
+    status = "error"
+    with SapClient.from_settings(settings) as sap:
+        deps = AgentDeps(
+            settings=settings,
+            store=Store(settings.data_dir),
+            client=client,
+            sap=sap,
+            manual=get_manual_index(),
+            previews=PreviewCache(),
+        )
+        for event in chat_turn(
+            deps, text=args.message, conversation_id=args.conversation, language=args.language
+        ):
+            _print_event(event.type, event.data)
+            if event.type == "done":
+                status = event.data["status"]
+    client.close()
+    return 0 if status in ("answered", "limit") else 1
+
+
+def _cmd_decide(args: argparse.Namespace) -> int:
+    from app.actions import ActionNotFound, ActionNotPending, cancel_action, confirm_action
+    from app.db.store import Store
+    from app.sap import SapClient
+
+    settings = get_settings()
+    store = Store(settings.data_dir)
+    try:
+        if args.command == "cancel":
+            action = cancel_action(args.action_id, store=store)
+            print(json.dumps(action.to_dict(), indent=2, ensure_ascii=False))
+            return 0
+        with SapClient.from_settings(settings) as sap:
+            outcome = confirm_action(args.action_id, settings=settings, store=store, sap=sap)
+    except ActionNotFound:
+        print(f"error: no action {args.action_id}", file=sys.stderr)
+        return 2
+    except ActionNotPending as error:
+        print(f"error: the action is {error.reason}", file=sys.stderr)
+        return 2
+    print(json.dumps(outcome.action.to_dict(), indent=2, ensure_ascii=False))
+    return 0 if outcome.ok else 1
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m app.cli", description=__doc__.split("\n")[0])
     commands = parser.add_subparsers(dest="command", required=True)
@@ -139,6 +228,18 @@ def main(argv: list[str] | None = None) -> int:
     )
     render.add_argument("--samples", type=int, help="Cycles samples (default RENDER_SAMPLES)")
     render.set_defaults(func=_cmd_render)
+
+    chat = commands.add_parser("chat", help="send one message to the assistant")
+    chat.add_argument("message")
+    chat.add_argument("--conversation", help="continue a conversation (its id)")
+    chat.add_argument("--language", choices=("en", "es"), default="en")
+    chat.add_argument("--provider", choices=("fake", "ollama", "anthropic"))
+    chat.set_defaults(func=_cmd_chat)
+
+    for name, text in (("confirm", "confirm a pending action"), ("cancel", "cancel one")):
+        decide = commands.add_parser(name, help=text)
+        decide.add_argument("action_id")
+        decide.set_defaults(func=_cmd_decide)
 
     args = parser.parse_args(argv)
     return args.func(args)
