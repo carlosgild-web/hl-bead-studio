@@ -39,6 +39,9 @@ jobs:
       - run: pip install -r requirements.txt -r requirements-dev.txt
       - run: ruff check .
       - run: ruff format --check .
+      - name: ruff on the Blender script and the repo scripts (backend settings)
+        if: matrix.service == 'backend'
+        run: ruff check ../blender ../scripts && ruff format --check ../blender ../scripts
       - name: pytest with coverage
         run: |
           pytest -q --cov --cov-report=term --cov-report=markdown:coverage.md
