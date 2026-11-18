@@ -21,7 +21,7 @@ from app.core.config import Settings
 from app.db import write_audit
 from app.db.store import CANCELLED, CONFIRMED, EXECUTING, FAILED, ActionRecord, Store
 from app.designs import DesignError, InvalidDesignError, RevisionExistsError, generate_design
-from app.render import RenderError, queue_render
+from app.render import BLENDER_MISSING, RenderError, blender_available, queue_render
 from app.sap import SapClient, SapError
 from app.standards.families import get_family
 from app.standards.naming import CatalogEntry, validate_product_name
@@ -49,7 +49,8 @@ class ActionNotPending(RuntimeError):
 class ActionOutcome:
     action: ActionRecord
     ok: bool
-    error_kind: str | None = None  # validation | sap_unavailable | sap | conflict | design
+    # validation | sap_unavailable | sap | conflict | design | render_unavailable
+    error_kind: str | None = None
 
 
 def _not_pending(store: Store, action_id: str) -> ActionNotPending:
@@ -197,6 +198,8 @@ def _generate(action: ActionRecord, settings: Settings, sap: SapClient) -> dict[
 
 def _render(action: ActionRecord, settings: Settings) -> dict[str, Any]:
     p = action.payload
+    if not blender_available(settings):
+        return _failure("render_unavailable", f"{BLENDER_MISSING} Nothing was queued.")
     try:
         job = queue_render(settings, p["sku"], p["rev"], p["finish"], actor=ACTOR)
     except RenderError as exc:

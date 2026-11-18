@@ -49,6 +49,7 @@ FAILURE_STATUS = {
     "conflict": 409,
     "sap_unavailable": 502,
     "sap": 502,
+    "render_unavailable": 503,
 }
 
 

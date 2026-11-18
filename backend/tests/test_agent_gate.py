@@ -13,6 +13,7 @@ from app.agent.prompts import SYSTEM_PROMPT, user_message
 from app.db import read_audit
 from app.db.store import PendingAction
 from app.llm.fake import call, calls, last_result, say
+from app.render import list_jobs
 from tests.agent_env import AgentEnv, answer, of_type
 
 INJECTION = (
@@ -141,6 +142,29 @@ def test_existing_revision_is_never_offered_again(env, designed):
     [result] = of_type(events, "tool_result")
     assert result["result"]["error"]["code"] == "revision_exists"
     assert result["result"]["error"]["next_revision"] == "B"
+
+
+def test_without_blender_no_render_card_opens(env, designed):
+    env.settings = designed.model_copy(update={"blender_bin": "no-such-blender-binary"})
+    events = env.chat(
+        [call("request_render", sku="GB-1034", rev="A"), say("no renders here")], "render it"
+    )
+    [result] = of_type(events, "tool_result")
+    assert result["result"]["error"]["code"] == "renders_unavailable"
+    assert "run on a designer's computer" in result["result"]["error"]["message"]
+    assert of_type(events, "pending_action") == []
+
+
+def test_a_render_card_confirmed_after_blender_is_gone_queues_nothing(env, designed):
+    events = env.chat([call("request_render", sku="GB-1034", rev="A"), say("ok")], "render it")
+    action_id = of_type(events, "pending_action")[0]["action"]["id"]
+    env.settings = designed.model_copy(update={"blender_bin": "no-such-blender-binary"})
+
+    response = env.confirm(action_id)
+
+    assert response.status_code == 503
+    assert response.json()["result"]["error_kind"] == "render_unavailable"
+    assert list_jobs(designed) == []
 
 
 # --- free text is data -----------------------------------------------------------------

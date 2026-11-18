@@ -12,7 +12,7 @@ from app.api.chat import router as chat_router
 from app.api.families import router as families_router
 from app.api.renders import router as renders_router
 from app.core.config import get_settings
-from app.render import RenderWorker
+from app.render import RenderWorker, blender_available
 
 
 @asynccontextmanager
@@ -36,10 +36,13 @@ app.include_router(catalog_router)
 
 
 @app.get("/api/health")
-def health() -> dict[str, str]:
-    """Liveness probe. Reports the version and which LLM provider is configured."""
+def health() -> dict[str, str | bool]:
+    """Liveness probe. Reports the version, the LLM provider and whether Blender is
+    installed (renders run only where it is)."""
+    settings = get_settings()
     return {
         "status": "ok",
         "version": __version__,
-        "llm_provider": get_settings().llm_provider,
+        "llm_provider": settings.llm_provider,
+        "renders": blender_available(settings),
     }

@@ -243,7 +243,7 @@ def test_each_missing_parameter_is_reported_once(family: str) -> None:
 
 
 @pytest.mark.parametrize(
-    "bad", [{"diameter_mm": "10"},{"diameter_mm": True}, {"diameter_mm": None}]
+    "bad", [{"diameter_mm": "10"}, {"diameter_mm": True}, {"diameter_mm": None}]
 )
 def test_wrong_types_are_schema_violations(bad: dict) -> None:
     assert check("RND", **bad).rules == ["SCHEMA"]

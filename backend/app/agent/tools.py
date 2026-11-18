@@ -34,6 +34,7 @@ from app.db.store import Store
 from app.llm.base import ToolCall, ToolSpec
 from app.render.jobs import RenderError, read_design
 from app.render.presets import RenderPresetError, finish_options, resolve_finish
+from app.render.runner import BLENDER_MISSING, blender_available
 from app.sap import SapClient, SapError, SapMaterial
 from app.standards.families import (
     FAMILY_CODES,
@@ -633,6 +634,8 @@ def request_render(args: RenderArgs, ctx: ToolContext) -> ToolResult:
         record = read_design(ctx.settings, sku, rev)
     except RenderError as exc:
         return _error("not_generated", str(exc))
+    if not blender_available(ctx.settings):
+        return _error("renders_unavailable", BLENDER_MISSING)
     kind = get_family(record["family"]).kind
     try:
         finish = resolve_finish(kind, record["params"], args.finish or None)

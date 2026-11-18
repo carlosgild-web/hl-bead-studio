@@ -6,6 +6,7 @@ after `RENDER_TIMEOUT_S`.
 """
 
 import json
+import shutil
 import subprocess
 import time
 from pathlib import Path
@@ -15,10 +16,23 @@ from app.core.config import REPO_ROOT, Settings
 
 BLENDER_SCRIPT = REPO_ROOT / "blender" / "render.py"
 LOG_PREFIX = "BEADSTUDIO:"
+BLENDER_MISSING = (
+    "Blender is not installed on this server (BLENDER_BIN), so catalog renders are not "
+    "available here: they run on a designer's computer. The render gallery shows "
+    "pre-generated renders."
+)
 
 
 class RenderFailed(Exception):
     """Blender did not produce the image; the message says why in one line."""
+
+
+def blender_available(settings: Settings) -> bool:
+    """BLENDER_BIN is an existing file or a program on PATH. Checked before a render card
+    opens and again on the click, so a server without Blender says so at once instead of
+    queuing a job that can only fail."""
+    configured = settings.blender_bin
+    return Path(configured).is_file() or shutil.which(configured) is not None
 
 
 def blender_command(settings: Settings) -> list[str]:
