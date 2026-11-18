@@ -125,6 +125,9 @@ and `manifest.json` (decision 0011).
 - **Parameters** (center): the family's fields with units and ranges. Values the assistant
   proposed stay amber until you edit them. Every edit is checked by the backend's
   validators; a violation shows its rule id and buttons with the nearest valid values.
+- **Open a card yourself**: "Reserve SKU…", "Generate files…" and "Render…" at the bottom
+  of the panel open the same confirmation cards as the assistant, with the same checks, so
+  the flow also works without a language model (decision 0014).
 - **3D model** (right): the GLB built from the valid parameters, orbit controls, the glass
   color or plating finish, and the size, volume and mass.
 - **Drawing** and **Renders** tabs: the PDF with the title block and the STEP, STL and GLB
@@ -132,7 +135,8 @@ and `manifest.json` (decision 0011).
 - **Catalog**: the SAP materials, the SKUs reserved in Bead Studio and their drawings.
 - ES/EN switch and a "How this demo works" guide.
 
-The UI reads these routes, none of which has a side effect: `GET /api/families[/{code}]`,
+`POST /api/actions` opens a card from the panel, and only the card's Confirm acts. The UI
+also reads these routes, none of which has a side effect: `GET /api/families[/{code}]`,
 `POST /api/validate`, `POST /api/preview`, `GET /api/catalog`,
 `GET /api/designs/{sku}/{rev}[/files/{kind}]` and `GET /api/gallery`.
 
@@ -145,6 +149,7 @@ whole flow in Chromium on the FakeClient, with an in-memory SAP and a stand-in f
 cd e2e
 npm ci && npx playwright install chromium
 npx playwright test            # E2E_SCREENSHOTS=<folder> saves a screenshot per step
+                               # E2E_API_PORT / E2E_UI_PORT move it off taken ports
 ```
 
 ## Related projects

@@ -58,6 +58,10 @@ All notable changes to this project are documented here. The format follows
   - H&L brand colors, ES/EN, and the "How this demo works" guide.
   - Read-only backend routes: families, validate, preview, catalog, design files and
     gallery.
+  - "Reserve SKU…", "Generate files…" and "Render…" in the parameter panel open the
+    confirmation cards without the assistant, through `POST /api/actions` with the same
+    checks as the assistant's tools (decision 0014).
+  - A "Next step" button in the chat after each confirmed card.
   - `start.cmd` and `start.sh`: start the mock SAP, the backend and the UI, and open the
     browser, with an optional LLM provider argument.
   - Vitest tests for the state and the flow, and a Playwright end-to-end test on the
