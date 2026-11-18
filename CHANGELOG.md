@@ -34,6 +34,20 @@ All notable changes to this project are documented here. The format follows
   server-sent events. A `render` CLI command. `scripts/build_gallery.py` and the WebP gallery
   in `docs/gallery/`. `RENDER_SAMPLES` and `RENDER_TIMEOUT_S` settings. A `blender` pytest
   marker.
+- Phase 5 LLM layer and agent (decisions 0004, 0005 and 0012):
+  - `LLMClient` with `OllamaClient` (native tools, recovers tool calls written as text),
+    `AnthropicClient` (Messages API over httpx, no SDK) and a scripted `FakeClient`.
+  - A bounded tool loop with twelve tools, an EN/ES system prompt and a trace per run.
+  - The confirmation gate `POST /api/actions/{id}/confirm`: validates again, runs at most
+    once, actions expire, every action is audited.
+  - `POST /api/chat` (server-sent events), plus conversation, run, action and preview GLB
+    routes.
+  - `SapClient` (Basic auth, the CSRF handshake, OData v2), FTS5 search over the manual with
+    rule ids, and the GEN-03 product name check.
+  - The `chat`, `confirm` and `cancel` CLI commands.
+  - Scripted conversations and prompt-injection tests on Fake.
+  - A backend check that corrects answers claiming a confirmation card that was never
+    opened.
 
 ### Changed
 

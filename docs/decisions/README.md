@@ -15,3 +15,4 @@ Short records of the design decisions and of every deviation from `PLAN.md`.
 | [0009](0009-drawings-in-python.md) | Technical drawings in Python (TechDraw spike result) | accepted (deviation) |
 | [0010](0010-phase-3-rules-and-geometry.md) | Phase 3 rule measurements and geometry choices | accepted (deviations) |
 | [0011](0011-phase-4-render-choices.md) | Phase 4 render choices: presets, studio, queue, gallery | accepted (deviations) |
+| [0012](0012-phase-5-agent-choices.md) | Phase 5 agent choices: Anthropic over httpx, gate, history, card check | accepted (deviations) |

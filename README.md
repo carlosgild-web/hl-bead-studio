@@ -9,9 +9,10 @@ designer confirms, the tool reserves a SKU in a mock SAP, builds the 3D model (C
 STL, GLB), produces a technical drawing with the H&L title block and queues a catalog render
 in Blender.
 
-> **Status:** work in progress (Phase 4 of 9: geometry, drawings, validation and Blender
-> catalog renders work from the command line; no AI or UI yet). The roadmap is in [`PLAN.md`](PLAN.md) and the design
-> decisions in [`docs/decisions/`](docs/decisions/).
+> **Status:** work in progress (Phase 5 of 9). Geometry, drawings, validation, Blender renders
+> and the assistant with its confirmation gate work from the API and the command line. There
+> is no UI yet. The roadmap is in [`PLAN.md`](PLAN.md) and the design decisions in
+> [`docs/decisions/`](docs/decisions/).
 
 ## Principle: the AI guides, the code decides
 
@@ -65,7 +66,37 @@ python -m app.cli render --sku GB-1034 --rev A --finish ruby
 
 The backend runs one render worker. `GET /api/renders/{id}`, `/api/renders/{id}/events`
 (server-sent events) and `/api/renders/{id}/image` follow a job. Renders are queued only by
-the CLI and, from Phase 5, by the designer's confirmation.
+the CLI and by the designer's confirmation.
+
+### The assistant
+
+`LLM_PROVIDER` picks the model:
+
+- `fake` (the default) is demo mode and needs nothing.
+- `ollama` runs locally (`OLLAMA_MODEL`, default `qwen3:4b-instruct-2507`).
+- `anthropic` needs `ANTHROPIC_API_KEY`.
+
+The assistant turns a description into parameters, checks them and the product name with the
+deterministic validators, cites rule ids from the manual, and opens confirmation cards. The
+side effects (reserving a SKU in SAP, writing the design files, queuing a render) happen
+only in `POST /api/actions/{id}/confirm` (decisions 0005 and 0012).
+
+From the command line, with the mock SAP running, `confirm` plays the designer's click:
+
+```bash
+cd backend
+python -m app.cli chat "A 10 mm faceted bead in amber for Amber Hollow; reserve a SKU" \
+  --provider anthropic
+python -m app.cli confirm <action id>          # the designer's click
+python -m app.cli chat "Generate the files" --conversation <id> --provider anthropic
+```
+
+The HTTP routes:
+
+- `POST /api/chat` streams one turn as server-sent events.
+- `GET /api/conversations/{id}` returns the conversation.
+- `GET /api/runs/{id}` returns the full trace of a run.
+- `POST /api/actions/{id}/confirm` and `/cancel` decide a card.
 
 The [render gallery](docs/gallery/) for the online demo comes from the same pipeline:
 `backend/.venv/Scripts/python scripts/build_gallery.py` (or `backend/.venv/bin/python` on
