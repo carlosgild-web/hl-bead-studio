@@ -493,6 +493,11 @@ def draft_catalog_text(args: SkuArgs, ctx: ToolContext) -> ToolResult:
         facts["dimensions_mm"] = {
             k: v for k, v in p.items() if family.parameters.get(k, {}).get("x-unit") == "mm"
         }
+        facts["features"] = {
+            k: v
+            for k, v in p.items()
+            if family.parameters.get(k, {}).get("x-unit") != "mm" and k not in ("color", "finish")
+        }
         facts["mass_g"] = record["measurements"]["mass_g"]
         if family.kind == "glass_bead":
             facts["color"] = colors()[p["color"]]["name"][ctx.language]

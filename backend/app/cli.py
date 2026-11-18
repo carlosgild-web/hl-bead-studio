@@ -242,6 +242,10 @@ def main(argv: list[str] | None = None) -> int:
         decide.set_defaults(func=_cmd_decide)
 
     args = parser.parse_args(argv)
+    # Spanish answers on a Windows console or pipe (cp1252 by default).
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
     return args.func(args)
 
 

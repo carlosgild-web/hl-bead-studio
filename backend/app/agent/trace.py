@@ -70,6 +70,11 @@ class AgentTrace:
             }
         )
 
+    def record_check(self, iteration: int, check: str) -> None:
+        """A backend check that changed the run (for example a claimed card that was not
+        opened)."""
+        self.steps.append({"type": "check", "iteration": iteration, "check": check})
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "provider": self.provider,

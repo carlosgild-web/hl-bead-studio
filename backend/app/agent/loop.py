@@ -6,6 +6,11 @@
 3. The run makes at most `max_iterations` model calls, the final answer included: the last
    allowed call offers no tools, so the model must answer with what it has.
 
+An answer that says a confirmation card is shown when none is waiting (a small local model
+copies such sentences from its earlier answers) gets one backend note and another try; if it
+still claims one, the answer is corrected. The backend knows which cards exist, so it does
+not let the text say otherwise (invariant 3 for actions).
+
 The loop yields events for the UI as they happen (`thinking`, `tool_call`, `tool_result`,
 `parameter_proposal`, `preview`, `pending_action`, `message`, `error`) and records
 everything in an `AgentTrace` (invariant 7). It never executes a side effect: the gated tools
@@ -14,6 +19,7 @@ only open confirmation cards (invariant 2).
 
 from __future__ import annotations
 
+import re
 import time
 from collections.abc import Iterator
 from dataclasses import dataclass, field
@@ -28,6 +34,37 @@ LIMIT_FALLBACK = (
     "check the parameter panel."
 )
 EMPTY_FALLBACK = "I have no answer for that. Could you rephrase it?"
+
+# An answer that says a confirmation card is shown, in English or Spanish.
+_CARD_CLAIM = re.compile(
+    r"confirmation card|card is (now )?(shown|displayed|open|waiting)|click\W{0,3}confirm"
+    r"|pending (your )?confirmation|awaiting (your )?confirmation"
+    r"|tarjeta de confirmaci[oó]n|clic en\W{0,3}confirmar|pendiente de (tu )?confirmaci[oó]n",
+    re.IGNORECASE,
+)
+CARD_CHECK = (
+    "<bead_studio_check>\nWritten by the Bead Studio backend: your answer says a confirmation "
+    "card is shown, but you called no request_ tool in this answer, so no card exists. If the "
+    "designer asked for that step, call the request_ tool now. Otherwise answer again without "
+    "saying a card is shown.\n</bead_studio_check>"
+)
+CARD_CORRECTION = (
+    "(Bead Studio: no confirmation card was opened in this answer, so nothing is waiting for "
+    "your click. Ask again for the step you want.)"
+)
+
+
+def claims_a_card(text: str) -> bool:
+    return bool(_CARD_CLAIM.search(text))
+
+
+def _card_waiting(ctx: ToolContext) -> bool:
+    """A card opened in this run, or one still pending from an earlier answer."""
+    if ctx.opened_actions:
+        return True
+    return any(
+        a.status == "pending" and not a.expired for a in ctx.store.list_actions(ctx.conversation_id)
+    )
 
 
 @dataclass(frozen=True)
@@ -59,6 +96,7 @@ def run_agent(
     conversation = list(messages)
     trace.record_input(conversation)
     specs = registry.specs
+    nudged = False
 
     for iteration in range(1, max_iterations + 1):
         last_call = iteration == max_iterations
@@ -76,11 +114,21 @@ def run_agent(
         )
 
         if not turn.tool_calls or last_call:
+            answer = turn.content.strip()
+            false_claim = claims_a_card(answer) and not _card_waiting(ctx)
+            if false_claim and not last_call and not nudged:
+                # The backend knows no card was opened: one more try, with a note. Neither
+                # the claim nor the note is kept in the conversation history.
+                nudged = True
+                trace.record_check(iteration, "card_claim_without_card")
+                conversation += [Message("assistant", answer), Message("user", CARD_CHECK)]
+                continue
             # "limit": the tools were withheld on this call (tool calls are ignored).
             status = "limit" if last_call and max_iterations > 1 else "answered"
-            answer = turn.content.strip() or (
-                LIMIT_FALLBACK if status == "limit" else EMPTY_FALLBACK
-            )
+            answer = answer or (LIMIT_FALLBACK if status == "limit" else EMPTY_FALLBACK)
+            if false_claim:
+                trace.record_check(iteration, "card_claim_corrected")
+                answer += "\n\n" + CARD_CORRECTION
             outcome.new_messages.append(Message("assistant", answer))
             outcome.answer, outcome.status = answer, status
             trace.status = status

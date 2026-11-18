@@ -271,3 +271,56 @@ def test_every_run_stores_a_trace(env):
     steps = run["trace"]["steps"]
     assert [s["type"] for s in steps] == ["model_call", "tool_call", "model_call"]
     assert json.loads(steps[1]["result"])["families"][0]["code"] == "RND"
+
+
+# --- claims about cards ------------------------------------------------------------------
+
+
+def test_a_claimed_card_without_a_card_gets_one_more_try(env):
+    def calls_after_the_note(messages, tools):
+        assert "<bead_studio_check>" in messages[-1].content
+        return call("request_reserve_sku", family="FAC", name="Amber Glow Faceted")
+
+    events = env.chat(
+        [
+            say("A confirmation card is now displayed. Please click Confirm."),
+            calls_after_the_note,
+            say("The card is waiting for your confirmation."),
+        ],
+        "reserve it",
+    )
+    assert len(of_type(events, "pending_action")) == 1
+    assert answer(events) == "The card is waiting for your confirmation."
+    run = env.http.get(f"/api/runs/{of_type(events, 'done')[0]['run_id']}").json()
+    assert {"type": "check", "iteration": 1, "check": "card_claim_without_card"} in run["trace"][
+        "steps"
+    ]
+    # The false claim and the note stay out of the stored history.
+    stored = env.store.get_messages(of_type(events, "conversation")[0]["id"])
+    assert not any("displayed" in (m.get("content") or "") for m in stored)
+
+
+def test_a_repeated_false_claim_is_corrected(env):
+    events = env.chat(
+        [
+            say("Haz clic en Confirmar en la tarjeta."),
+            say("La tarjeta de confirmación está lista."),
+        ],
+        "genera los archivos",
+        language="es",
+    )
+    text = answer(events)
+    assert text.startswith("La tarjeta de confirmación está lista.")
+    assert "no confirmation card was opened" in text
+    assert of_type(events, "pending_action") == []
+
+
+def test_mentioning_a_card_still_pending_is_not_a_false_claim(env):
+    events = env.chat(
+        [call("request_reserve_sku", family="FAC", name="Amber Glow Faceted"), say("ok")], "reserve"
+    )
+    conversation = of_type(events, "conversation")[0]["id"]
+    events = env.chat(
+        [say("The confirmation card is still waiting for you.")], "status?", conversation
+    )
+    assert answer(events) == "The confirmation card is still waiting for you."
