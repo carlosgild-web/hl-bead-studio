@@ -46,6 +46,12 @@ jobs:
         run: |
           pytest -q --cov --cov-report=term --cov-report=markdown:coverage.md
           { echo "## ${{ matrix.service }} coverage (Python ${{ matrix.python }})"; echo; cat coverage.md; } >> "$GITHUB_STEP_SUMMARY"
+      # The agent eval on the ideal FakeClient scripts: every scenario must pass (Phase 7).
+      - name: agent eval on Fake
+        if: matrix.service == 'backend'
+        run: |
+          python -m app.cli agent-eval --fake --out "$RUNNER_TEMP/eval"
+          cat "$RUNNER_TEMP"/eval/*.md >> "$GITHUB_STEP_SUMMARY"
 
   frontend:
     runs-on: ubuntu-latest
