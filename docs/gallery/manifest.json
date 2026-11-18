@@ -1,0 +1,238 @@
+{
+  "$comment": "Written by scripts/build_gallery.py. Renders run locally (decision 0006).",
+  "generated_at": "2026-11-18",
+  "resolution_px": 800,
+  "renders": [
+    {
+      "file": "GB-1001_A_midnight_blue.webp",
+      "sku": "GB-1001",
+      "rev": "A",
+      "name": "Midnight Lagoon Round",
+      "collection": "Permanente",
+      "family": "RND",
+      "finish": "midnight_blue",
+      "finish_name": {
+        "en": "Midnight Blue",
+        "es": "Azul medianoche"
+      },
+      "bbox_mm": [
+        8.0,
+        8.0,
+        7.86
+      ],
+      "mass_g": 0.567,
+      "samples": 64,
+      "render_s": 55.8
+    },
+    {
+      "file": "GB-1002_A_desert_sand.webp",
+      "sku": "GB-1002",
+      "rev": "A",
+      "name": "Desert Sand Faceted",
+      "collection": "Permanente",
+      "family": "FAC",
+      "finish": "desert_sand",
+      "finish_name": {
+        "en": "Desert Sand",
+        "es": "Arena del desierto"
+      },
+      "bbox_mm": [
+        10.0,
+        10.0,
+        7.0
+      ],
+      "mass_g": 1.167,
+      "samples": 64,
+      "render_s": 58.0
+    },
+    {
+      "file": "GB-1017_A_opal_white.webp",
+      "sku": "GB-1017",
+      "rev": "A",
+      "name": "Morning Fog Lentil",
+      "collection": "Permanente",
+      "family": "LEN",
+      "finish": "opal_white",
+      "finish_name": {
+        "en": "Opal White",
+        "es": "Blanco ópalo"
+      },
+      "bbox_mm": [
+        12.0,
+        6.0,
+        11.91
+      ],
+      "mass_g": 0.904,
+      "samples": 64,
+      "render_s": 51.1
+    },
+    {
+      "file": "GB-1020_A_aqua.webp",
+      "sku": "GB-1020",
+      "rev": "A",
+      "name": "Sea Glass Rondelle",
+      "collection": "Coastal Garden",
+      "family": "RON",
+      "finish": "aqua",
+      "finish_name": {
+        "en": "Aqua",
+        "es": "Aguamarina"
+      },
+      "bbox_mm": [
+        6.0,
+        6.0,
+        4.0
+      ],
+      "mass_g": 0.186,
+      "samples": 64,
+      "render_s": 65.6
+    },
+    {
+      "file": "GB-1034_A_honey.webp",
+      "sku": "GB-1034",
+      "rev": "A",
+      "name": "Honey Glow Faceted",
+      "collection": "Amber Hollow",
+      "family": "FAC",
+      "finish": "honey",
+      "finish_name": {
+        "en": "Honey",
+        "es": "Miel"
+      },
+      "bbox_mm": [
+        10.0,
+        10.0,
+        8.0
+      ],
+      "mass_g": 0.792,
+      "samples": 64,
+      "render_s": 65.3
+    },
+    {
+      "file": "GB-1034_A_ruby.webp",
+      "sku": "GB-1034",
+      "rev": "A",
+      "name": "Honey Glow Faceted",
+      "collection": "Amber Hollow",
+      "family": "FAC",
+      "finish": "ruby",
+      "finish_name": {
+        "en": "Ruby",
+        "es": "Rubí"
+      },
+      "bbox_mm": [
+        10.0,
+        10.0,
+        8.0
+      ],
+      "mass_g": 0.792,
+      "samples": 64,
+      "render_s": 60.6
+    },
+    {
+      "file": "CH-2004_A_antique_bronze.webp",
+      "sku": "CH-2004",
+      "rev": "A",
+      "name": "Crescent Moon & Star",
+      "collection": "Permanente",
+      "family": "CRS",
+      "finish": "antique_bronze",
+      "finish_name": {
+        "en": "Antique bronze",
+        "es": "Bronce envejecido"
+      },
+      "bbox_mm": [
+        10.76,
+        19.13,
+        1.5
+      ],
+      "mass_g": 0.989,
+      "samples": 64,
+      "render_s": 48.7
+    },
+    {
+      "file": "CH-2004_A_gold_plate.webp",
+      "sku": "CH-2004",
+      "rev": "A",
+      "name": "Crescent Moon & Star",
+      "collection": "Permanente",
+      "family": "CRS",
+      "finish": "gold_plate",
+      "finish_name": {
+        "en": "Gold plate",
+        "es": "Baño de oro"
+      },
+      "bbox_mm": [
+        10.76,
+        19.13,
+        1.5
+      ],
+      "mass_g": 0.989,
+      "samples": 64,
+      "render_s": 48.9
+    },
+    {
+      "file": "CH-2004_A_rhodium.webp",
+      "sku": "CH-2004",
+      "rev": "A",
+      "name": "Crescent Moon & Star",
+      "collection": "Permanente",
+      "family": "CRS",
+      "finish": "rhodium",
+      "finish_name": {
+        "en": "Rhodium",
+        "es": "Rodio"
+      },
+      "bbox_mm": [
+        10.76,
+        19.13,
+        1.5
+      ],
+      "mass_g": 0.989,
+      "samples": 64,
+      "render_s": 48.9
+    },
+    {
+      "file": "CH-2014_A_rhodium.webp",
+      "sku": "CH-2014",
+      "rev": "A",
+      "name": "Block Initial (A-Z)",
+      "collection": "Permanente",
+      "family": "INI",
+      "finish": "rhodium",
+      "finish_name": {
+        "en": "Rhodium",
+        "es": "Rodio"
+      },
+      "bbox_mm": [
+        10.64,
+        17.3,
+        1.5
+      ],
+      "mass_g": 0.846,
+      "samples": 64,
+      "render_s": 48.8
+    },
+    {
+      "file": "CH-2028_A_antique_bronze.webp",
+      "sku": "CH-2028",
+      "rev": "A",
+      "name": "Amber Leaf Disc",
+      "collection": "Amber Hollow",
+      "family": "DSC",
+      "finish": "antique_bronze",
+      "finish_name": {
+        "en": "Antique bronze",
+        "es": "Bronce envejecido"
+      },
+      "bbox_mm": [
+        16.0,
+        19.3,
+        1.5
+      ],
+      "mass_g": 1.974,
+      "samples": 64,
+      "render_s": 49.7
+    }
+  ]
+}

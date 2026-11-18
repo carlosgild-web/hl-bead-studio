@@ -1,0 +1,104 @@
+{
+  "$comment": "Designs rendered by scripts/build_gallery.py for docs/gallery/ (decision 0006). Catalog products from the SAP seed, modelled with the family builders, plus the Phase 3 showcase bead. Each finish is one render.",
+  "designs": [
+    {
+      "sku": "GB-1001",
+      "rev": "A",
+      "name": "Midnight Lagoon Round",
+      "collection": "Permanente",
+      "family": "RND",
+      "params": { "diameter_mm": 8.0, "hole_mm": 1.5, "color": "midnight_blue" },
+      "finishes": ["midnight_blue"]
+    },
+    {
+      "sku": "GB-1002",
+      "rev": "A",
+      "name": "Desert Sand Faceted",
+      "collection": "Permanente",
+      "family": "FAC",
+      "params": { "diameter_mm": 10.0, "facet_count": 16, "facet_rows": 1, "hole_mm": 1.5, "color": "desert_sand" },
+      "finishes": ["desert_sand"]
+    },
+    {
+      "sku": "GB-1017",
+      "rev": "A",
+      "name": "Morning Fog Lentil",
+      "collection": "Permanente",
+      "family": "LEN",
+      "params": { "diameter_mm": 12.0, "thickness_mm": 6.0, "hole_mm": 1.5, "color": "opal_white" },
+      "finishes": ["opal_white"]
+    },
+    {
+      "sku": "GB-1020",
+      "rev": "A",
+      "name": "Sea Glass Rondelle",
+      "collection": "Coastal Garden",
+      "family": "RON",
+      "params": { "diameter_mm": 6.0, "height_mm": 4.0, "hole_mm": 1.5, "color": "aqua" },
+      "finishes": ["aqua"]
+    },
+    {
+      "sku": "GB-1034",
+      "rev": "A",
+      "name": "Honey Glow Faceted",
+      "collection": "Amber Hollow",
+      "family": "FAC",
+      "params": { "diameter_mm": 10.0, "facet_count": 16, "facet_rows": 2, "hole_mm": 1.5, "color": "honey" },
+      "finishes": ["honey", "ruby"]
+    },
+    {
+      "sku": "CH-2004",
+      "rev": "A",
+      "name": "Crescent Moon & Star",
+      "collection": "Permanente",
+      "family": "CRS",
+      "params": {
+        "height_mm": 16.0,
+        "crescent_width_mm": 5.0,
+        "has_star": true,
+        "star_diameter_mm": 5.0,
+        "thickness_mm": 1.5,
+        "loop_inner_mm": 2.0,
+        "loop_wall_mm": 1.0,
+        "finish": "gold_plate"
+      },
+      "finishes": ["gold_plate", "rhodium", "antique_bronze"]
+    },
+    {
+      "sku": "CH-2014",
+      "rev": "A",
+      "name": "Block Initial (A-Z)",
+      "collection": "Permanente",
+      "family": "INI",
+      "params": {
+        "letter": "L",
+        "font": "montserrat_extrabold",
+        "height_mm": 14.0,
+        "thickness_mm": 1.5,
+        "loop_inner_mm": 2.0,
+        "loop_wall_mm": 1.0,
+        "finish": "rhodium"
+      },
+      "finishes": ["rhodium"]
+    },
+    {
+      "sku": "CH-2028",
+      "rev": "A",
+      "name": "Amber Leaf Disc",
+      "collection": "Amber Hollow",
+      "family": "DSC",
+      "params": {
+        "diameter_mm": 16.0,
+        "engraving": "icon",
+        "engraving_text": "LUNA",
+        "icon": "leaf",
+        "engraving_depth_mm": 0.3,
+        "thickness_mm": 1.5,
+        "loop_inner_mm": 2.0,
+        "loop_wall_mm": 1.0,
+        "finish": "antique_bronze"
+      },
+      "finishes": ["antique_bronze"]
+    }
+  ]
+}
