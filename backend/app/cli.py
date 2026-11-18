@@ -5,6 +5,7 @@ generate      write STEP, STL, GLB, drawing PDF and params.json for one revision
 measure-fonts measure the approved fonts against CH-03 (the numbers behind CH-07)
 render        render a catalog image of a generated revision with Blender
 chat          send one message to the assistant (LLM_PROVIDER; SAP must be running)
+agent-eval    run the evaluation scenarios (--fake in CI, or --provider ollama|anthropic)
 confirm       confirm a pending action, as the designer's click would (developer use)
 cancel        cancel a pending action
 """
@@ -172,6 +173,46 @@ def _cmd_chat(args: argparse.Namespace) -> int:
     return 0 if status in ("answered", "limit") else 1
 
 
+def _cmd_agent_eval(args: argparse.Namespace) -> int:
+    from app.eval.harness import fake_clients
+    from app.eval.report import ScenarioResult, run_eval, write_report
+    from app.eval.scenarios import get_scenarios
+    from app.llm import LLMError, make_client
+
+    try:
+        scenarios = get_scenarios(args.scenario)
+    except KeyError as error:
+        print(f"error: {error.args[0]}", file=sys.stderr)
+        return 2
+    settings = get_settings()
+    provider = "fake" if args.fake else args.provider or settings.llm_provider
+    settings = settings.model_copy(update={"llm_provider": provider})
+    if provider == "fake":
+        clients = fake_clients
+    else:
+        try:
+            make_client(settings).close()  # fail early on a missing key
+        except LLMError as error:
+            print(f"error: {error}", file=sys.stderr)
+            return 2
+        clients = lambda turn: make_client(settings)  # noqa: E731
+
+    def progress(result: ScenarioResult) -> None:
+        failed = ", ".join(c.name for c in result.failed)
+        status = "pass" if result.passed else f"FAIL ({failed})"
+        print(f"  {result.scenario.id:28} {status}  [{result.run.seconds:.0f} s]", flush=True)
+
+    print(f"agent-eval: {len(scenarios)} scenarios on {provider}")
+    report = run_eval(scenarios, clients, settings, on_result=progress)
+    print(f"{report.provider} / {report.model}: {report.passed}/{report.total} pass")
+    for name, (passed, scored) in report.check_rates().items():
+        print(f"  {name:20} {passed}/{scored}")
+    if args.out:
+        md, js = write_report(report, Path(args.out))
+        print(f"wrote {md} and {js.name}")
+    return 0 if report.passed == report.total else 1
+
+
 def _cmd_decide(args: argparse.Namespace) -> int:
     from app.actions import ActionNotFound, ActionNotPending, cancel_action, confirm_action
     from app.db.store import Store
@@ -235,6 +276,14 @@ def main(argv: list[str] | None = None) -> int:
     chat.add_argument("--language", choices=("en", "es"), default="en")
     chat.add_argument("--provider", choices=("fake", "ollama", "anthropic"))
     chat.set_defaults(func=_cmd_chat)
+
+    evaluation = commands.add_parser("agent-eval", help="run the agent evaluation scenarios")
+    which = evaluation.add_mutually_exclusive_group()
+    which.add_argument("--fake", action="store_true", help="the ideal scripts (no model; CI)")
+    which.add_argument("--provider", choices=("fake", "ollama", "anthropic"))
+    evaluation.add_argument("--scenario", action="append", help="run only this id (repeatable)")
+    evaluation.add_argument("--out", help="folder for the Markdown and JSON report")
+    evaluation.set_defaults(func=_cmd_agent_eval)
 
     for name, text in (("confirm", "confirm a pending action"), ("cancel", "cancel one")):
         decide = commands.add_parser(name, help=text)
