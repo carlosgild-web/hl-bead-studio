@@ -8,8 +8,9 @@ import { defineConfig, devices } from '@playwright/test'
  * with an in-memory SAP and a stand-in for Blender (scripts/e2e_server.py), and the Vite
  * dev server proxying /api to it.
  */
-const API_PORT = 8010
-const UI_PORT = 5174
+// E2E_API_PORT and E2E_UI_PORT move the test off ports that are taken.
+const API_PORT = Number(process.env.E2E_API_PORT ?? 8010)
+const UI_PORT = Number(process.env.E2E_UI_PORT ?? 5174)
 const venvPython = join(
   '..',
   'backend',

@@ -93,3 +93,47 @@ test('a designer takes a faceted bead from a description to a render', async ({ 
   await expect(row.getByRole('link', { name: 'Rev A' })).toBeVisible()
   await snap(page, '5-catalog')
 })
+
+/** The same flow without the assistant: the panel's buttons open the cards. */
+test('a designer reserves, generates and renders from the panel alone', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('combobox', { name: 'Family' }).click()
+  await page.getByRole('option', { name: /Round/ }).click()
+  await expect(page.getByText(/Meets the Product Design Manual/)).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Render…' })).toBeDisabled()
+
+  // Reserve: a name that breaks GEN-03 is refused before any card exists.
+  await page.getByRole('button', { name: 'Reserve SKU…' }).click()
+  const reserveForm = page.getByRole('form', { name: 'Reserve SKU…' })
+  await reserveForm.getByLabel('Product name').fill('blue bead')
+  await reserveForm.getByRole('button', { name: 'Open card' }).click()
+  await expect(reserveForm.getByRole('alert')).toContainText('GEN-03')
+  await reserveForm.getByLabel('Product name').fill('Harbor Light Round')
+  await reserveForm.getByLabel('Collection').selectOption('Coastal Garden')
+  await reserveForm.getByRole('button', { name: 'Open card' }).click()
+  const reserve = page.getByRole('article', { name: 'Reserve SKU in SAP' })
+  await reserve.getByRole('button', { name: 'Confirm' }).click()
+  await expect(reserve).toContainText(/Reserved GB-\d{4}/)
+  const sku = (await reserve.getByText(/Reserved GB-\d{4}/).textContent())!.match(/GB-\d{4}/)![0]
+
+  // Generate: the SKU comes from the reservation.
+  await page.getByRole('button', { name: 'Generate files…' }).click()
+  const generateForm = page.getByRole('form', { name: 'Generate files…' })
+  await expect(generateForm.getByLabel('SKU')).toHaveValue(sku)
+  await generateForm.getByRole('button', { name: 'Open card' }).click()
+  const generate = page.getByRole('article', { name: 'Generate design files' })
+  await generate.getByRole('button', { name: 'Confirm' }).click()
+  await expect(generate).toContainText(`Files written for ${sku} rev A`, { timeout: 60_000 })
+  await expect(page.locator(`iframe[title="Technical drawing ${sku} rev A"]`)).toBeVisible()
+
+  // Render in the color chosen in the viewer.
+  await page.getByRole('radio', { name: 'Sea Green' }).click()
+  await page.getByRole('button', { name: 'Render…' }).click()
+  const renderForm = page.getByRole('form', { name: 'Render…' })
+  await expect(renderForm).toContainText('Sea Green')
+  await renderForm.getByRole('button', { name: 'Open card' }).click()
+  const render = page.getByRole('article', { name: 'Queue catalog render' })
+  await expect(render).toContainText('sea_green')
+  await render.getByRole('button', { name: 'Confirm' }).click()
+  await expect(page.getByRole('img', { name: new RegExp(`Render of ${sku}`) })).toBeVisible()
+})

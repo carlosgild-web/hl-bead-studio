@@ -1,5 +1,6 @@
 import type {
   ActionKind,
+  OpenCardRequest,
   CatalogItem,
   ChatEvent,
   DesignRecord,
@@ -76,6 +77,9 @@ export const api = {
    */
   confirm: async (id: string): Promise<PendingAction> => decided(`/api/actions/${id}/confirm`),
   cancel: async (id: string): Promise<PendingAction> => decided(`/api/actions/${id}/cancel`),
+  /** Opens a card only; the designer's Confirm still decides (invariant 2). */
+  openCard: (body: OpenCardRequest) =>
+    post<{ conversation_id: string; action: PendingAction }>('/api/actions', body),
 }
 
 async function decided(url: string): Promise<PendingAction> {

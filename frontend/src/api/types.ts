@@ -45,6 +45,7 @@ export interface FamilyInfo {
   parameters: Record<string, ParameterInfo>
   defaults: Params
   option_parameter: 'color' | 'finish'
+  collections: string[]
   swatches: Swatch[]
 }
 
@@ -117,6 +118,20 @@ export interface PendingAction {
   created_at: string
   expires_at: string
   decided_at: string | null
+}
+
+/** `POST /api/actions`: a card the designer opens from the panel (decision 0014). */
+export interface OpenCardRequest {
+  kind: ActionKind
+  conversation_id: string | null
+  language: Language
+  family?: string
+  name?: string
+  collection?: string
+  sku?: string
+  rev?: string
+  params?: Params
+  finish?: string
 }
 
 export interface RenderJob {

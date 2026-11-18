@@ -13,6 +13,7 @@ from app.agent.tools import build_preview, family_info, normalize_params, valida
 from app.api.deps import PreviewsDep
 from app.core.content import colors, finishes, materials
 from app.standards.families import Family, UnknownFamilyError, all_families, get_family
+from app.standards.naming import COLLECTIONS
 from app.standards.validators import validate_parameters
 
 router = APIRouter(prefix="/api", tags=["families"])
@@ -67,6 +68,7 @@ def get_family_info(code: str, lang: Language = "en") -> dict[str, Any]:
         if "x-step" in prop:
             info["parameters"][name]["step"] = prop["x-step"]
     info["material"] = materials()[family.material]["name"][lang]
+    info["collections"] = list(COLLECTIONS)
     info["option_parameter"] = "color" if family.kind == "glass_bead" else "finish"
     info["swatches"] = _swatches(family, lang)
     info.pop(info["option_parameter"] + "s", None)

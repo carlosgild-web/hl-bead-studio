@@ -19,6 +19,7 @@ import {
 import { cn } from '@/lib/utils'
 
 import { useFamilyInfo, useLanguage, usePanelPreview, useStudio } from './context'
+import { PanelActions } from './PanelActions'
 
 function formatValue(value: ParamValue): string {
   return typeof value === 'number' ? String(Number(value.toFixed(3))) : String(value)
@@ -304,6 +305,7 @@ export function ParameterPanel() {
             ))}
           </div>
           <ValidationSummary validation={validation} pending={preview.isFetching} />
+          <PanelActions family={info.data} validation={validation} />
           {preview.isError && (
             <p className="text-sm text-destructive" role="alert">
               {t('panel.checkFailed')}

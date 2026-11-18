@@ -46,7 +46,27 @@
     "edition": "reglas {{edition}}",
     "violations": "Reglas incumplidas",
     "nearest": "Valor válido más cercano:",
-    "checkFailed": "No se pudo comprobar; ¿está el backend en marcha?"
+    "checkFailed": "No se pudo comprobar; ¿está el backend en marcha?",
+    "actions": {
+      "title": "Abre tú una tarjeta",
+      "hint": "Cada botón abre una tarjeta de confirmación en el chat, con las mismas comprobaciones que usa el asistente. Nada ocurre hasta que pulses Confirmar.",
+      "reserve": "Reservar SKU…",
+      "generate": "Generar archivos…",
+      "render": "Renderizar…",
+      "name": "Nombre del producto",
+      "namePlaceholder": "De dos a cuatro palabras, terminando en «{{suffix}}»",
+      "collection": "Colección",
+      "none": "Ninguna",
+      "sku": "SKU",
+      "rev": "Revisión",
+      "finish": "Color / acabado",
+      "open": "Abrir tarjeta",
+      "close": "Cerrar",
+      "needFamily": "Elige primero una familia.",
+      "needValid": "Corrige primero las reglas incumplidas.",
+      "needSku": "Reserva primero un SKU, o escribe uno existente.",
+      "needDesign": "Genera primero los archivos."
+    }
   },
   "viewer": {
     "title": "Modelo 3D",

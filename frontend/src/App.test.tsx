@@ -28,6 +28,7 @@ const FAC: FamilyInfo = {
   },
   defaults: { diameter_mm: 10, hole_mm: 1.5, color: 'amber' },
   option_parameter: 'color',
+  collections: ['Permanente', 'Coastal Garden', 'Amber Hollow'],
   swatches: [
     { id: 'amber', name: 'Amber', hex: '#c9822b', transmission: 0.85, metallic: 0, roughness: 0.05 },
     { id: 'cobalt', name: 'Cobalt', hex: '#2f45b5', transmission: 0.8, metallic: 0, roughness: 0.05 },
@@ -140,6 +141,18 @@ function backend(overrides: Record<string, (init?: RequestInit) => Response> = {
         result: { ok: true, sku: 'GB-1034', sap_material: '50000134', name: 'Amber Glow Faceted', status: 'IN_DESIGN' },
       })
     if (key === 'GET /api/gallery') return json({ generated_at: null, renders: [] })
+    if (key === 'POST /api/actions') {
+      const body = JSON.parse(String(init?.body)) as { name?: string }
+      if (body.name === 'amber bead')
+        return json(
+          {
+            detail: 'The name breaks GEN-03.',
+            result: { violations: [{ rule: 'GEN-03', message: "the last word must be 'Faceted'" }] },
+          },
+          422,
+        )
+      return json({ conversation_id: 'conv9', action: { ...reserveCard, conversation_id: 'conv9' } })
+    }
     return json({ detail: `unexpected ${key}` }, 404)
   })
   vi.stubGlobal('fetch', fetchMock)
@@ -257,5 +270,38 @@ describe('App', () => {
     expect(within(alert).getByText('GB-02')).toBeInTheDocument()
     fireEvent.click(within(alert).getByRole('button', { name: 'hole_mm = 0.8' }))
     await waitFor(() => expect(screen.getByLabelText('Hole')).toHaveValue(0.8))
+  })
+
+  it('the panel opens a reserve card without the assistant; only Confirm reserves', async () => {
+    const calls = backend()
+    renderApp()
+
+    fireEvent.click(await screen.findByRole('combobox', { name: 'Family' }))
+    fireEvent.click(await screen.findByRole('option', { name: /Faceted bead/ }))
+    expect(await screen.findByText(/Meets the Product Design Manual/)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reserve SKU…' }))
+    const form = screen.getByRole('form', { name: 'Reserve SKU…' })
+    fireEvent.change(within(form).getByLabelText('Product name'), { target: { value: 'amber bead' } })
+    fireEvent.click(within(form).getByRole('button', { name: 'Open card' }))
+    expect(await within(form).findByRole('alert')).toHaveTextContent('GEN-03')
+
+    fireEvent.change(within(form).getByLabelText('Product name'), { target: { value: 'Amber Glow Faceted' } })
+    fireEvent.change(within(form).getByLabelText('Collection'), { target: { value: 'Amber Hollow' } })
+    fireEvent.click(within(form).getByRole('button', { name: 'Open card' }))
+
+    const card = await screen.findByRole('article', { name: 'Reserve SKU in SAP' })
+    expect(calls.filter((c) => c.url === '/api/actions').at(-1)?.body).toMatchObject({
+      kind: 'reserve_sku',
+      family: 'FAC',
+      name: 'Amber Glow Faceted',
+      collection: 'Amber Hollow',
+      conversation_id: null,
+    })
+    expect(calls.some((c) => c.url.includes('/confirm'))).toBe(false)
+    // Generate and render stay closed until there is something to generate or render.
+    expect(screen.getByRole('button', { name: 'Render…' })).toBeDisabled()
+    fireEvent.click(within(card).getByRole('button', { name: 'Confirm' }))
+    expect(await within(card).findByText('Reserved GB-1034')).toBeInTheDocument()
   })
 })

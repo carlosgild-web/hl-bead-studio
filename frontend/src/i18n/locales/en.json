@@ -46,7 +46,27 @@
     "edition": "rules {{edition}}",
     "violations": "Rule violations",
     "nearest": "Nearest valid:",
-    "checkFailed": "The check could not run; is the backend up?"
+    "checkFailed": "The check could not run; is the backend up?",
+    "actions": {
+      "title": "Open a card yourself",
+      "hint": "Each button opens a confirmation card in the chat, with the same checks the assistant uses. Nothing happens until you click Confirm.",
+      "reserve": "Reserve SKU…",
+      "generate": "Generate files…",
+      "render": "Render…",
+      "name": "Product name",
+      "namePlaceholder": "Two to four words ending in “{{suffix}}”",
+      "collection": "Collection",
+      "none": "None",
+      "sku": "SKU",
+      "rev": "Revision",
+      "finish": "Color / finish",
+      "open": "Open card",
+      "close": "Close",
+      "needFamily": "Choose a family first.",
+      "needValid": "Fix the rule violations first.",
+      "needSku": "Reserve a SKU first, or type an existing one.",
+      "needDesign": "Generate the files first."
+    }
   },
   "viewer": {
     "title": "3D model",
