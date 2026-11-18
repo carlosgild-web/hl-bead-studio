@@ -208,7 +208,7 @@ def _cmd_agent_eval(args: argparse.Namespace) -> int:
     for name, (passed, scored) in report.check_rates().items():
         print(f"  {name:20} {passed}/{scored}")
     if args.out:
-        md, js = write_report(report, Path(args.out))
+        md, js = write_report(report, Path(args.out), args.label or "")
         print(f"wrote {md} and {js.name}")
     return 0 if report.passed == report.total else 1
 
@@ -283,6 +283,7 @@ def main(argv: list[str] | None = None) -> int:
     which.add_argument("--provider", choices=("fake", "ollama", "anthropic"))
     evaluation.add_argument("--scenario", action="append", help="run only this id (repeatable)")
     evaluation.add_argument("--out", help="folder for the Markdown and JSON report")
+    evaluation.add_argument("--label", help="suffix of the report file names, e.g. run2")
     evaluation.set_defaults(func=_cmd_agent_eval)
 
     for name, text in (("confirm", "confirm a pending action"), ("cancel", "cancel one")):

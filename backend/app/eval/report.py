@@ -199,11 +199,13 @@ def run_eval(
     return report
 
 
-def write_report(report: EvalReport, out_dir: Path) -> tuple[Path, Path]:
-    """`<date>-<provider>-<model>.md` and `.json` in `out_dir`."""
+def write_report(report: EvalReport, out_dir: Path, label: str = "") -> tuple[Path, Path]:
+    """`<date>-<provider>-<model>[-<label>].md` and `.json` in `out_dir`."""
     out_dir.mkdir(parents=True, exist_ok=True)
     model = "".join(ch if ch.isalnum() or ch in ".-" else "-" for ch in report.model)
     stem = f"{report.started:%Y-%m-%d}-{report.provider}-{model}"
+    if label:
+        stem += "-" + "".join(ch if ch.isalnum() or ch == "-" else "-" for ch in label)
     md, js = out_dir / f"{stem}.md", out_dir / f"{stem}.json"
     md.write_text(report.to_markdown(), encoding="utf-8")
     js.write_text(

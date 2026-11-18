@@ -817,10 +817,10 @@ INJECTION = (
                 ),
             ),
         ),
+        # Like the other rule scenarios, the assistant must cite the rule and offer the nearest
+        # value; putting it in the panel is not required (the designer asked for 0.5 mm).
         Expect(
             family="CRS",
-            params={**CRS_16, "loop_wall_mm": 0.8},
-            valid=True,
             rules=("CH-02",),
             mentions=(r"0[.,]8" + MM,),
             optional_cards=("reserve_sku",),
