@@ -234,8 +234,16 @@ def test_unknown_and_missing_parameters_are_schema_violations() -> None:
     assert suggestions(result, "SCHEMA") == {"hole_mm": 1.5}
 
 
+@pytest.mark.parametrize("family", FAMILY_CODES)
+def test_each_missing_parameter_is_reported_once(family: str) -> None:
+    result = validate_parameters(family, {})
+
+    missing = [v.parameters for v in result.violations]
+    assert len(missing) == len(set(missing)) == len(get_family(family).parameters)
+
+
 @pytest.mark.parametrize(
-    "bad", [{"diameter_mm": "10"}, {"diameter_mm": True}, {"diameter_mm": None}]
+    "bad", [{"diameter_mm": "10"},{"diameter_mm": True}, {"diameter_mm": None}]
 )
 def test_wrong_types_are_schema_violations(bad: dict) -> None:
     assert check("RND", **bad).rules == ["SCHEMA"]

@@ -144,8 +144,11 @@ def _schema_violations(family: Family, params: dict[str, Any]) -> list[Violation
                 )
             continue
         if kind == "required":
+            # The schema repeats `required` in its conditional branches: report each once.
+            reported = {n for v in found if v.rule == "SCHEMA" for n in v.parameters}
             for name in error.validator_value:
-                if name not in error.instance:
+                if name not in error.instance and name not in reported:
+                    reported.add(name)
                     default = family.parameters[name]["default"]
                     found.append(
                         Violation(
