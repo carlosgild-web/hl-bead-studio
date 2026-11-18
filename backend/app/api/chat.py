@@ -23,7 +23,9 @@ from app.api.deps import (
     SapFactoryDep,
     SettingsDep,
     StoreDep,
+    rate_limit,
 )
+from app.core.limits import enforce_token_cap
 from app.llm import LLMError
 
 router = APIRouter(prefix="/api", tags=["assistant"])
@@ -61,7 +63,7 @@ def _panel(panel: Panel | None) -> dict[str, Any] | None:
     return {"family": panel.family, "params": params}
 
 
-@router.post("/chat")
+@router.post("/chat", dependencies=[rate_limit("chat")])
 def chat(
     body: ChatRequest,
     settings: SettingsDep,
@@ -73,6 +75,7 @@ def chat(
 ) -> StreamingResponse:
     if body.conversation_id and not store.conversation_exists(body.conversation_id):
         raise HTTPException(404, "Conversation not found")
+    enforce_token_cap(settings, store)
 
     def stream() -> Iterator[str]:
         try:

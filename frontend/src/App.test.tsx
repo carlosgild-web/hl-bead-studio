@@ -254,6 +254,19 @@ describe('App', () => {
     )
   })
 
+  it('a refused chat turn shows the reason the backend gives', async () => {
+    const reason = "The assistant's daily budget for this demo is used up; it resets at 00:00 UTC."
+    backend({ 'POST /api/chat': () => json({ detail: reason }, 429) })
+    renderApp()
+
+    fireEvent.change(screen.getByLabelText('Describe the bead or charm…'), {
+      target: { value: 'A 10 mm faceted amber bead' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(await screen.findByText(reason, { exact: false })).toBeInTheDocument()
+  })
+
   it('an edit clears the highlight, revalidates, and shows the rule id with the nearest value', async () => {
     backend()
     renderApp()

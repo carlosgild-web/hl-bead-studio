@@ -36,6 +36,7 @@ from app.api.deps import (
     SapFactoryDep,
     SettingsDep,
     StoreDep,
+    rate_limit,
 )
 from app.sap import SapError
 from app.standards.families import UnknownFamilyError
@@ -81,7 +82,7 @@ def _refused(result: ToolResult) -> JSONResponse:
     return JSONResponse({"detail": message, "result": result.content}, status_code=422)
 
 
-@router.post("")
+@router.post("", dependencies=[rate_limit("actions")])
 def open_card(
     body: OpenCard,
     settings: SettingsDep,
@@ -146,7 +147,7 @@ def get_action(action_id: str, store: StoreDep) -> dict[str, Any]:
     return action.to_dict()
 
 
-@router.post("/{action_id}/confirm")
+@router.post("/{action_id}/confirm", dependencies=[rate_limit("actions")])
 def confirm(
     action_id: str,
     settings: SettingsDep,
@@ -167,7 +168,7 @@ def confirm(
     return JSONResponse(outcome.action.to_dict(), status_code=status)
 
 
-@router.post("/{action_id}/cancel")
+@router.post("/{action_id}/cancel", dependencies=[rate_limit("actions")])
 def cancel(action_id: str, store: StoreDep) -> JSONResponse:
     try:
         action = cancel_action(action_id, store=store)

@@ -51,6 +51,13 @@ class Settings(BaseSettings):
     # Agent
     agent_max_iterations: int = Field(default=6, ge=1, le=20)
 
+    # Online safety (0 = off): requests per minute per client address and route group
+    # (chat, actions, preview), model tokens per UTC day, and the age in hours after which
+    # generated designs and their renders are deleted.
+    rate_limit_per_minute: int = Field(default=30, ge=0, le=10_000)
+    daily_token_cap: int = Field(default=0, ge=0)
+    designs_retention_hours: float = Field(default=0, ge=0)
+
     @field_validator("designs_root", "data_dir")
     @classmethod
     def _relative_to_repo(cls, path: Path) -> Path:

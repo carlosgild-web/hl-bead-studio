@@ -11,19 +11,25 @@ from app.api.catalog import router as catalog_router
 from app.api.chat import router as chat_router
 from app.api.families import router as families_router
 from app.api.renders import router as renders_router
+from app.cleanup import CleanupThread
 from app.core.config import get_settings
 from app.render import RenderWorker, blender_available
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    """Start the single render worker with the app and stop it on shutdown."""
-    worker = RenderWorker(get_settings())
+    """Start the single render worker and the design cleanup (when enabled) with the app,
+    and stop them on shutdown."""
+    settings = get_settings()
+    worker = RenderWorker(settings)
     worker.start()
     app.state.render_worker = worker
+    cleanup = CleanupThread(settings)
+    cleanup.start()
     try:
         yield
     finally:
+        cleanup.stop()
         worker.stop()
 
 

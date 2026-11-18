@@ -14,11 +14,13 @@ def make_settings(tmp_path: Path, **overrides) -> Settings:
     """Settings that ignore the developer's `.env` and write under `tmp_path`.
 
     BLENDER_BIN names a file that exists (this Python), so the render cards and the gate's
-    Blender check pass; no test runs it as Blender (they pass `command=` or override it)."""
+    Blender check pass; no test runs it as Blender (they pass `command=` or override it).
+    The rate limit is off: the limiter is shared by the whole test session."""
     values = {
         "data_dir": tmp_path / "data",
         "designs_root": tmp_path / "designs",
         "blender_bin": sys.executable,
+        "rate_limit_per_minute": 0,
     }
     values.update(overrides)
     return Settings(_env_file=None, **values)

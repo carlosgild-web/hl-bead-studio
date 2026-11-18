@@ -141,7 +141,16 @@ export async function streamChat(
     signal,
   })
   if (!response.ok || !response.body) {
-    throw new ApiError(response.status, `HTTP ${response.status}`, await response.text())
+    // A refusal (rate limit, daily token cap, unknown conversation) says why in `detail`.
+    const text = await response.text()
+    let detail = `HTTP ${response.status}`
+    try {
+      const parsed: unknown = JSON.parse(text)
+      if (parsed && typeof parsed === 'object' && 'detail' in parsed) detail = String(parsed.detail)
+    } catch {
+      // not JSON: keep the status
+    }
+    throw new ApiError(response.status, detail, text)
   }
   const reader = response.body.pipeThrough(new TextDecoderStream()).getReader()
   let buffer = ''

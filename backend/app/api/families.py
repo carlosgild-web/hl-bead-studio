@@ -10,7 +10,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from app.agent.tools import build_preview, family_info, normalize_params, validation_summary
-from app.api.deps import PreviewsDep
+from app.api.deps import PreviewsDep, rate_limit
 from app.core.content import colors, finishes, materials
 from app.standards.families import Family, UnknownFamilyError, all_families, get_family
 from app.standards.naming import COLLECTIONS
@@ -84,7 +84,7 @@ def validate(body: ParamsBody) -> dict[str, Any]:
     )
 
 
-@router.post("/preview")
+@router.post("/preview", dependencies=[rate_limit("preview")])
 def preview(body: ParamsBody, previews: PreviewsDep) -> dict[str, Any]:
     """Build the model in memory after the designer edits the panel. Answers the validation
     and, when valid, the preview's GLB url and measurements."""

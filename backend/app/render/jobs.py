@@ -172,6 +172,20 @@ def list_jobs(
         return [job.to_dict() for job in session.scalars(query)]
 
 
+def forget_jobs(settings: Settings, sku: str, rev: str) -> int:
+    """Delete the finished jobs of a revision whose files were removed (`app.cleanup`)."""
+    with Session(_engine(settings.data_dir)) as session:
+        jobs = session.scalars(
+            select(RenderJob).where(
+                RenderJob.sku == sku, RenderJob.rev == rev, RenderJob.status.in_(FINAL_STATUSES)
+            )
+        ).all()
+        for job in jobs:
+            session.delete(job)
+        session.commit()
+        return len(jobs)
+
+
 def _claim(settings: Settings, job_id: int) -> dict[str, Any] | None:
     """Move one job from queued to running; `None` if someone else got it first."""
     with Session(_engine(settings.data_dir)) as session:

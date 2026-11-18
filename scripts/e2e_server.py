@@ -91,6 +91,12 @@ def main() -> None:
             "LLM_PROVIDER": "fake",
             "DATA_DIR": str(work / "data"),
             "DESIGNS_ROOT": str(work / "designs"),
+            # A file that exists, so the render card's Blender check passes; the worker runs
+            # fake_blender.py instead (below).
+            "BLENDER_BIN": sys.executable,
+            "RATE_LIMIT_PER_MINUTE": "0",
+            "DAILY_TOKEN_CAP": "0",
+            "DESIGNS_RETENTION_HOURS": "0",
         }
     )
     sys.path.insert(0, str(BACKEND))

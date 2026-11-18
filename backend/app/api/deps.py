@@ -4,12 +4,13 @@ use a scripted FakeClient and the in-memory SAP stand-in."""
 from collections.abc import Callable
 from functools import lru_cache
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import Depends, Request
 
 from app.agent.tools import PreviewCache
 from app.core.config import Settings, get_settings
+from app.core.limits import RateLimiter, enforce_rate_limit, get_rate_limiter
 from app.db.store import Store
 from app.llm import LLMClient, make_client
 from app.sap import SapClient
@@ -50,6 +51,19 @@ def get_render_notify(request: Request) -> Callable[[], None]:
     """Wakes the render worker after a render is queued (no-op without a worker)."""
     worker = getattr(request.app.state, "render_worker", None)
     return worker.notify if worker is not None else (lambda: None)
+
+
+def rate_limit(group: str) -> Any:
+    """A route dependency: at most RATE_LIMIT_PER_MINUTE requests per client and group."""
+
+    def dependency(
+        request: Request,
+        settings: SettingsDep,
+        limiter: Annotated[RateLimiter, Depends(get_rate_limiter)],
+    ) -> None:
+        enforce_rate_limit(group, request, settings, limiter)
+
+    return Depends(dependency)
 
 
 StoreDep = Annotated[Store, Depends(get_store)]
