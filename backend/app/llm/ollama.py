@@ -40,7 +40,10 @@ class OllamaClient(LLMClient):
         self._http = httpx.Client(base_url=self._base_url, timeout=timeout, transport=transport)
         self._ids = itertools.count(1)
 
-    def chat(self, messages: list[Message], tools: list[ToolSpec]) -> ChatTurn:
+    def chat(
+        self, messages: list[Message], tools: list[ToolSpec], *, allow_tools: bool = True
+    ) -> ChatTurn:
+        tools = tools if allow_tools else []  # Ollama reads tool calls in history without them
         body: dict[str, Any] = {
             "model": self.model,
             "messages": [_to_ollama(m) for m in messages],

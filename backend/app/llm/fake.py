@@ -61,6 +61,7 @@ class FakeScriptExhausted(LLMError):
 class RecordedCall:
     messages: list[Message]
     tools: list[ToolSpec]
+    allow_tools: bool = True
 
 
 class FakeClient(LLMClient):
@@ -76,8 +77,11 @@ class FakeClient(LLMClient):
     def remaining(self) -> int:
         return 0 if self._script is None else len(self._script) - self._position
 
-    def chat(self, messages: list[Message], tools: list[ToolSpec]) -> ChatTurn:
-        self.calls.append(RecordedCall(list(messages), list(tools)))
+    def chat(
+        self, messages: list[Message], tools: list[ToolSpec], *, allow_tools: bool = True
+    ) -> ChatTurn:
+        self.calls.append(RecordedCall(list(messages), list(tools), allow_tools))
+        offered = tools if allow_tools else []
         if self._script is None:
             return ChatTurn(content=DEMO_NOTICE)
         if self._position >= len(self._script):
@@ -87,4 +91,4 @@ class FakeClient(LLMClient):
             )
         step = self._script[self._position]
         self._position += 1
-        return step if isinstance(step, ChatTurn) else step(list(messages), list(tools))
+        return step if isinstance(step, ChatTurn) else step(list(messages), list(offered))

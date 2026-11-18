@@ -20,6 +20,7 @@ MAX_LENGTH = 40  # SAP material description (MAKTX)
 WORDS = (2, 4)
 _WORD = re.compile(r"^[A-Z][a-z]+(?:['-][A-Za-z][a-z]*)*$")
 SIMILAR_LIMIT = 5
+COLLECTIONS = ("Permanente", "Coastal Garden", "Amber Hollow")  # manual 06, Collections
 
 
 @dataclass(frozen=True)

@@ -103,8 +103,12 @@ class LLMClient(ABC):
     model: str = "unknown"
 
     @abstractmethod
-    def chat(self, messages: list[Message], tools: list[ToolSpec]) -> ChatTurn:
-        """One non-streaming chat turn. An empty `tools` list means: answer in text."""
+    def chat(
+        self, messages: list[Message], tools: list[ToolSpec], *, allow_tools: bool = True
+    ) -> ChatTurn:
+        """One non-streaming chat turn. `allow_tools=False` (or no tools) means: answer in
+        text. The tools are still passed then, because a provider may need their
+        definitions to read the tool calls already in the history."""
 
     def close(self) -> None:  # noqa: B027 - optional hook, most clients hold nothing
         """Release the client's connections."""

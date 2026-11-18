@@ -65,7 +65,9 @@ class AnthropicClient(LLMClient):
             },
         )
 
-    def chat(self, messages: list[Message], tools: list[ToolSpec]) -> ChatTurn:
+    def chat(
+        self, messages: list[Message], tools: list[ToolSpec], *, allow_tools: bool = True
+    ) -> ChatTurn:
         system, converted = to_anthropic(messages)
         body: dict[str, Any] = {
             "model": self.model,
@@ -82,6 +84,8 @@ class AnthropicClient(LLMClient):
                 {"name": t.name, "description": t.description, "input_schema": t.parameters}
                 for t in tools
             ]
+            if not allow_tools:
+                body["tool_choice"] = {"type": "none"}
         data = self._post(body)
         return from_anthropic(data)
 

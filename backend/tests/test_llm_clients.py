@@ -219,3 +219,20 @@ def test_factory_ollama(tmp_path):
     client = make_client(make_settings(tmp_path, llm_provider="ollama", ollama_model="q"))
     assert (client.provider, client.model) == ("ollama", "q")
     client.close()
+
+
+def test_last_call_keeps_the_tools_but_turns_them_off():
+    seen = {}
+
+    def anthropic(request):
+        seen["anthropic"] = json.loads(request.content)
+        return httpx.Response(200, json=_anthropic_reply([{"type": "text", "text": "ok"}]))
+
+    def ollama(request):
+        seen["ollama"] = json.loads(request.content)
+        return httpx.Response(200, json={"message": {"content": "ok"}})
+
+    AnthropicClient("k", "m", transport=_mock(anthropic)).chat([], TOOLS, allow_tools=False)
+    OllamaClient("http://o", "m", transport=_mock(ollama)).chat([], TOOLS, allow_tools=False)
+    assert seen["anthropic"]["tool_choice"] == {"type": "none"} and seen["anthropic"]["tools"]
+    assert "tools" not in seen["ollama"]
