@@ -17,12 +17,23 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     stateRef.current = state
   }, [state])
 
+  // The rule edition of the latest proposal: a preview event carries no validation of its own.
+  const edition = useRef('')
+
   const onEvent = useCallback(
     (event: ChatEvent) => {
+      if (event.type === 'parameter_proposal') edition.current = event.data.validation.rule_edition
       if (event.type === 'preview') {
         // The assistant built this preview already: the viewer uses it without a rebuild.
         const { family, params } = event.data
-        const validation = { valid: true, family, params, violations: [], notes: [], rule_edition: '' }
+        const validation = {
+          valid: true,
+          family,
+          params,
+          violations: [],
+          notes: [],
+          rule_edition: edition.current,
+        }
         queryClient.setQueryData<PreviewResponse>(['preview', family, paramsKey(params)], {
           validation,
           preview: event.data,

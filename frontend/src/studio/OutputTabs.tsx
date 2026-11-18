@@ -114,7 +114,7 @@ export function Gallery() {
     <div className="space-y-2">
       <h3 className="text-sm font-semibold">{t('outputs.gallery')}</h3>
       <p className="text-xs text-muted-foreground">{t('outputs.galleryNote')}</p>
-      <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 2xl:grid-cols-6">
         {gallery.data.renders.map((r) => (
           <li key={r.file} className="overflow-hidden rounded-md border bg-card">
             <img src={r.url} alt={`${r.name}, ${r.finish_name[language]}`} loading="lazy" className="aspect-square w-full object-cover" />

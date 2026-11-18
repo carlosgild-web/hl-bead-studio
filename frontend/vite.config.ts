@@ -19,9 +19,10 @@ export default defineConfig({
     chunkSizeWarningLimit: 1100,
   },
   server: {
-    // The FastAPI backend (uvicorn app.main:app --port 8000).
+    // The FastAPI backend (uvicorn app.main:app --port 8000); the e2e test points
+    // BEAD_API_URL at its own backend.
     proxy: {
-      '/api': 'http://localhost:8000',
+      '/api': process.env.BEAD_API_URL ?? 'http://localhost:8000',
     },
   },
   test: {

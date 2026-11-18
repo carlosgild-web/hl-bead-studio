@@ -52,7 +52,7 @@ function Field({
   let control
   if (isOption) {
     control = (
-      <Select value={value === undefined ? undefined : String(value)} onValueChange={onChange}>
+      <Select value={value === undefined ? '' : String(value)} onValueChange={onChange}>
         <SelectTrigger id={id} className="w-full" aria-invalid={invalid}>
           <SelectValue placeholder="—" />
         </SelectTrigger>
@@ -67,15 +67,17 @@ function Field({
       </Select>
     )
   } else if (info.enum) {
+    const numeric = info.type === 'number' || info.type === 'integer'
     control = (
-      <Select value={value === undefined ? undefined : String(value)} onValueChange={onChange}>
+      <Select value={value === undefined ? '' : String(value)} onValueChange={(v) => onChange(numeric ? Number(v) : v)}>
         <SelectTrigger id={id} className="w-full" aria-invalid={invalid}>
           <SelectValue placeholder="—" />
         </SelectTrigger>
         <SelectContent>
           {info.enum.map((option) => (
-            <SelectItem key={option} value={option}>
+            <SelectItem key={option} value={String(option)}>
               {option}
+              {info.unit && ` ${info.unit}`}
             </SelectItem>
           ))}
         </SelectContent>
@@ -160,7 +162,10 @@ function ValidationSummary({ validation, pending }: { validation?: Validation; p
     return (
       <div className="flex items-center gap-2 rounded-md border border-success/40 bg-success/10 px-3 py-2 text-sm text-success" role="status">
         <CheckCircle2 className="size-4" />
-        {t('panel.valid', { edition: validation.rule_edition })}
+        {t('panel.valid')}
+        {validation.rule_edition && (
+          <span className="text-xs opacity-80">· {t('panel.edition', { edition: validation.rule_edition })}</span>
+        )}
         {pending && <Loader2 className="ml-auto size-4 animate-spin" />}
       </div>
     )
@@ -243,7 +248,7 @@ export function ParameterPanel() {
           {t('panel.family')}
         </label>
         <Select
-          value={state.family ?? undefined}
+          value={state.family ?? ''}
           onValueChange={(code) => dispatch({ type: 'chooseFamily', family: code })}
         >
           <SelectTrigger id="family" className="w-full">

@@ -19,7 +19,7 @@ export interface ParameterInfo {
   minimum?: number
   maximum?: number
   step?: number
-  enum?: string[]
+  enum?: (string | number)[]
   default?: ParamValue
   rules: string[]
   description?: string

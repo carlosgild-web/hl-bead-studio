@@ -34,7 +34,8 @@
     "empty": "Choose a family, or describe the product in the chat and the assistant fills these in.",
     "material": "Material: {{material}} ({{density}} g/cm³). All lengths in mm.",
     "proposed": "assistant",
-    "valid": "Meets the Product Design Manual (rules {{edition}})",
+    "valid": "Meets the Product Design Manual",
+    "edition": "rules {{edition}}",
     "violations": "Rule violations",
     "nearest": "Nearest valid:",
     "checkFailed": "The check could not run; is the backend up?"

@@ -34,7 +34,8 @@
     "empty": "Elige una familia, o describe el producto en el chat y el asistente rellena estos campos.",
     "material": "Material: {{material}} ({{density}} g/cm³). Todas las longitudes en mm.",
     "proposed": "asistente",
-    "valid": "Cumple el Manual de Diseño de Producto (reglas {{edition}})",
+    "valid": "Cumple el Manual de Diseño de Producto",
+    "edition": "reglas {{edition}}",
     "violations": "Reglas incumplidas",
     "nearest": "Valor válido más cercano:",
     "checkFailed": "No se pudo comprobar; ¿está el backend en marcha?"
