@@ -9,6 +9,7 @@ import pytest
 from sqlalchemy import update
 from sqlalchemy.orm import Session
 
+from app.agent.loop import claims_a_card
 from app.agent.prompts import SYSTEM_PROMPT, user_message
 from app.db import read_audit
 from app.db.store import PendingAction
@@ -337,6 +338,36 @@ def test_a_repeated_false_claim_is_corrected(env):
     assert text.startswith("La tarjeta de confirmación está lista.")
     assert "no confirmation card was opened" in text
     assert of_type(events, "pending_action") == []
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "A confirmation card is now displayed. Please click Confirm.",  # qwen3 4B, Phase 5
+        "The reservation card for Deep Cobalt Round is waiting for your confirmation.",
+        "Please click Confirm.",
+        "Haz clic en Confirmar en la tarjeta.",
+        "La tarjeta de confirmación está lista.",
+        "Abrí la tarjeta. Está esperando tu confirmación y todavía no se reservó nada.",
+    ],
+)
+def test_claims_of_a_card_shown(text):
+    assert claims_a_card(text)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        # Right answers that the Phase 7 eval saw corrected (Anthropic, 2026-11-18).
+        "No. You cancelled the confirmation card, so no SKU was reserved. No card is open now.",
+        "I tried again and got the same error. No confirmation card exists for this request.",
+        "If you still want it, I'll open a new reservation card and you can click Confirm.",
+        "Nothing is reserved until you click Confirm.",
+        "No hay ninguna tarjeta abierta; si quieres, la tarjeta estará lista cuando la pidas.",
+    ],
+)
+def test_mentions_of_a_card_that_are_not_claims(text):
+    assert not claims_a_card(text)
 
 
 def test_mentioning_a_card_still_pending_is_not_a_false_claim(env):

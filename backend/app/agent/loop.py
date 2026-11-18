@@ -35,13 +35,28 @@ LIMIT_FALLBACK = (
 )
 EMPTY_FALLBACK = "I have no answer for that. Could you rephrase it?"
 
-# An answer that says a confirmation card is shown, in English or Spanish.
+# Phrases that say a card is shown or waiting now, in English or Spanish. Mentioning a card
+# is not a claim ("you cancelled the confirmation card", "no confirmation card exists"):
+# the Phase 7 eval found that matching every mention corrected right answers.
 _CARD_CLAIM = re.compile(
-    r"confirmation card|card is (now )?(shown|displayed|open|waiting)|click\W{0,3}confirm"
-    r"|pending (your )?confirmation|awaiting (your )?confirmation"
-    r"|tarjeta de confirmaci[oó]n|clic en\W{0,3}confirmar|pendiente de (tu )?confirmaci[oó]n",
+    r"\bcard\b[^.\n]{0,40}?\b(is|are)\s+(now\s+|still\s+)?"
+    r"(shown|displayed|open|opened|waiting|ready|pending|available)\b"
+    r"|click\W{0,3}confirm|(waiting|awaiting) (for )?your (confirmation|click)"
+    r"|pending (your )?confirmation"
+    r"|tarjeta\b[^.\n]{0,40}?\best[aá]\s+(ahora\s+|a[uú]n\s+|todav[ií]a\s+)?"
+    r"(lista|abierta|esperando|visible|pendiente)"
+    r"|clic en\W{0,3}confirmar|esperando (tu|su) (confirmaci[oó]n|clic)"
+    r"|pendiente de (tu |su )?confirmaci[oó]n",
     re.IGNORECASE,
 )
+# A claim is not one when its clause is negative or conditional ("No card is open now",
+# "if you want, I'll open a card and you can click Confirm").
+_NOT_A_CLAIM = re.compile(
+    r"\b(no|not|never|nothing|none|without|if|once|when|until|will|can|could|would)\b|n't|'ll"
+    r"|\b(nunca|nada|ning[uú]n|ninguna|sin|si|cuando|hasta|puedo|podr[eé]|abrir[eé])\b",
+    re.IGNORECASE,
+)
+_CLAUSE_START = re.compile(r"[.;:!?\n,]")
 CARD_CHECK = (
     "<bead_studio_check>\nWritten by the Bead Studio backend: your answer says a confirmation "
     "card is shown, but you called no request_ tool in this answer, so no card exists. If the "
@@ -55,7 +70,13 @@ CARD_CORRECTION = (
 
 
 def claims_a_card(text: str) -> bool:
-    return bool(_CARD_CLAIM.search(text))
+    for match in _CARD_CLAIM.finditer(text):
+        before = text[: match.start()]
+        starts = [m.end() for m in _CLAUSE_START.finditer(before)]
+        clause = before[starts[-1] if starts else 0 :]
+        if not _NOT_A_CLAIM.search(clause):
+            return True
+    return False
 
 
 def _card_waiting(ctx: ToolContext) -> bool:
