@@ -2,7 +2,8 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* shadcn/ui design tokens (neutral base). H&L brand colors replace them in Phase 6. */
+/* shadcn/ui design tokens in the Hilda & Luna palette (from the logo, cad/templates/hl_logo.svg):
+   navy #18204a, cobalt #2f45b5, sea green #5fae9c, amber #e39a2d, rose #e7a3a6. */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -22,6 +23,13 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-brand-navy: #18204a;
+  --color-brand-cobalt: #2f45b5;
+  --color-brand-sea: #5fae9c;
+  --color-brand-amber: #e39a2d;
+  --color-brand-rose: #e7a3a6;
+  --color-proposed: var(--proposed);
+  --color-success: var(--success);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -30,45 +38,50 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --background: #faf8f4;
+  --foreground: #18204a;
+  --card: #ffffff;
+  --card-foreground: #18204a;
+  --popover: #ffffff;
+  --popover-foreground: #18204a;
+  --primary: #2f45b5;
+  --primary-foreground: #ffffff;
+  --secondary: #eef0f8;
+  --secondary-foreground: #18204a;
+  --muted: #f1eee8;
+  --muted-foreground: #5b6080;
+  --accent: #eef0f8;
+  --accent-foreground: #18204a;
+  --destructive: #b42318;
+  --border: #e4e0d8;
+  --input: #d9d5cc;
+  --ring: #2f45b5;
+  /* a value the assistant filled in and the designer has not touched yet */
+  --proposed: #fdf3e2;
+  --success: #2f7d6b;
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --background: #10142f;
+  --foreground: #eef0f8;
+  --card: #18204a;
+  --card-foreground: #eef0f8;
+  --popover: #18204a;
+  --popover-foreground: #eef0f8;
+  --primary: #7d8ff0;
+  --primary-foreground: #10142f;
+  --secondary: #232c5c;
+  --secondary-foreground: #eef0f8;
+  --muted: #1d2552;
+  --muted-foreground: #a8aed0;
+  --accent: #232c5c;
+  --accent-foreground: #eef0f8;
+  --destructive: #f97066;
+  --border: rgb(255 255 255 / 12%);
+  --input: rgb(255 255 255 / 18%);
+  --ring: #7d8ff0;
+  --proposed: #3a2f1a;
+  --success: #6cc4ad;
 }
 
 @layer base {
@@ -81,5 +94,20 @@
   button:not(:disabled),
   [role='button']:not(:disabled) {
     cursor: pointer;
+  }
+}
+
+@keyframes dialog-drawer-in {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+}
+.dialog-drawer {
+  animation: dialog-drawer-in 220ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dialog-drawer {
+    animation: none;
   }
 }

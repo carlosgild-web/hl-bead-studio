@@ -2,7 +2,9 @@
   "app": {
     "title": "Bead Studio",
     "subtitle": "Hilda & Luna Beadworks · Diseño de Producto",
-    "switchLanguage": "English"
+    "switchLanguage": "English",
+    "nav": "Vistas",
+    "views": { "studio": "Estudio", "catalog": "Catálogo" }
   },
   "health": {
     "label": "Backend",
@@ -10,7 +12,113 @@
     "ok": "ok (v{{version}}, LLM: {{provider}})",
     "down": "no disponible"
   },
+  "chat": {
+    "title": "Asistente de diseño",
+    "intro": "Describe una cuenta de vidrio o un charm. El asistente propone parámetros y cita el manual; las reglas las comprueba el código y nada se reserva ni se genera hasta que confirmes.",
+    "example1": "Una cuenta facetada de 10 mm en ámbar para la colección Amber Hollow",
+    "example2": "Un charm de luna creciente con estrella, baño de oro, 16 mm de alto",
+    "example3": "An 8 mm round cobalt bead with a 1.5 mm hole",
+    "placeholder": "Describe la cuenta o el charm…",
+    "send": "Enviar",
+    "thinking": "El asistente está trabajando…",
+    "steps_one": "{{count}} herramienta usada",
+    "steps_other": "{{count}} herramientas usadas",
+    "stepFailed": "falló"
+  },
+  "panel": {
+    "title": "Parámetros",
+    "family": "Familia",
+    "chooseFamily": "Elige una familia",
+    "beads": "Cuentas de vidrio",
+    "charms": "Charms",
+    "empty": "Elige una familia, o describe el producto en el chat y el asistente rellena estos campos.",
+    "material": "Material: {{material}} ({{density}} g/cm³). Todas las longitudes en mm.",
+    "proposed": "asistente",
+    "valid": "Cumple el Manual de Diseño de Producto (reglas {{edition}})",
+    "violations": "Reglas incumplidas",
+    "nearest": "Valor válido más cercano:",
+    "checkFailed": "No se pudo comprobar; ¿está el backend en marcha?"
+  },
   "viewer": {
-    "label": "Vista 3D (cuenta de ejemplo)"
+    "title": "Modelo 3D",
+    "label": "Modelo 3D de {{family}}",
+    "empty": "El modelo aparece aquí cuando los parámetros son válidos.",
+    "invalid": "Corrige las reglas incumplidas para ver el modelo.",
+    "building": "Construyendo el modelo",
+    "color": "Color del vidrio",
+    "finish": "Acabado del baño",
+    "measurements": "Medidas",
+    "size": "Tamaño",
+    "volume": "Volumen",
+    "mass": "Masa"
+  },
+  "outputs": {
+    "drawing": "Plano",
+    "renders": "Renders",
+    "noDesign": "El plano aparece aquí cuando confirmas una tarjeta de Generar diseño.",
+    "drawingTitle": "Plano técnico {{sku}} rev {{rev}}",
+    "scale": "Escala {{scale}}",
+    "noRender": "No hay renders en cola en esta sesión. Los renders se hacen en local con Blender; abajo está la galería pregenerada.",
+    "renderJob": "Render #{{id}}",
+    "renderAlt": "Render de {{sku}} en {{finish}}",
+    "gallery": "Galería de renders del catálogo",
+    "galleryNote": "Renderizados en local con Blender (Cycles) e incluidos para la demo online."
+  },
+  "renderStatus": {
+    "queued": "en cola",
+    "running": "renderizando",
+    "done": "terminado",
+    "failed": "falló"
+  },
+  "card": {
+    "title": {
+      "reserve_sku": "Reservar SKU en SAP",
+      "generate_design": "Generar archivos del diseño",
+      "render": "Poner en cola un render"
+    },
+    "status": {
+      "pending": "pendiente de tu confirmación",
+      "executing": "en curso…",
+      "confirmed": "confirmado",
+      "failed": "falló",
+      "cancelled": "cancelado",
+      "expired": "caducado"
+    },
+    "explain": {
+      "reserve_sku": "Confirmar reserva el siguiente SKU libre y el número de material SAP. Los números nunca se reutilizan.",
+      "generate_design": "Confirmar vuelve a comprobar las reglas y escribe STEP, STL, GLB y el plano PDF. Nunca se sobrescribe una revisión.",
+      "render": "Confirmar pone en cola un render de Blender de esta revisión."
+    },
+    "done": {
+      "reserve_sku": "Reservado {{sku}}",
+      "generate_design": "Archivos escritos para {{sku}} rev {{rev}}",
+      "render": "Render #{{job_id}} en cola"
+    },
+    "name": "Nombre",
+    "family": "Familia",
+    "collection": "Colección",
+    "sapMaterial": "Material SAP",
+    "sapStatus": "Estado SAP",
+    "finish": "Color / acabado",
+    "confirm": "Confirmar",
+    "cancel": "Cancelar",
+    "expiredHelp": "Las tarjetas caducan a los 30 minutos; pídelo de nuevo al asistente."
+  },
+  "catalog": {
+    "title": "Catálogo",
+    "note": "Materiales del SAP (simulado): los productos existentes y los SKU reservados en Bead Studio, con las revisiones que tienen archivos.",
+    "search": "Buscar SKU, nombre, colección",
+    "filter": "Filtro",
+    "filters": { "all": "Todo", "GLASS_BEAD": "Cuentas", "CHARM": "Charms", "new": "Diseños nuevos" },
+    "name": "Nombre",
+    "family": "Familia",
+    "collection": "Colección",
+    "size": "Tamaño",
+    "status": "Estado",
+    "files": "Planos",
+    "new": "nuevo",
+    "none": "Ningún producto coincide.",
+    "sapDown": "SAP no está disponible ahora; inténtalo más tarde.",
+    "statuses": { "IN_DESIGN": "En diseño", "ACTIVE": "Activo", "DISCONTINUED": "Descatalogado" }
   }
 }

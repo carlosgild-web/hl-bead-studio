@@ -2,7 +2,9 @@
   "app": {
     "title": "Bead Studio",
     "subtitle": "Hilda & Luna Beadworks · Product Design",
-    "switchLanguage": "Español"
+    "switchLanguage": "Español",
+    "nav": "Views",
+    "views": { "studio": "Studio", "catalog": "Catalog" }
   },
   "health": {
     "label": "Backend",
@@ -10,7 +12,113 @@
     "ok": "ok (v{{version}}, LLM: {{provider}})",
     "down": "not reachable"
   },
+  "chat": {
+    "title": "Design assistant",
+    "intro": "Describe a glass bead or a charm. The assistant proposes parameters and cites the manual; the rules are checked by code, and nothing is reserved or generated until you confirm.",
+    "example1": "A 10 mm faceted amber bead for the Amber Hollow collection",
+    "example2": "A gold-plated crescent moon charm with a star, 16 mm tall",
+    "example3": "Una cuenta redonda de 8 mm en cobalto con agujero de 1,5 mm",
+    "placeholder": "Describe the bead or charm…",
+    "send": "Send",
+    "thinking": "The assistant is working…",
+    "steps_one": "{{count}} tool used",
+    "steps_other": "{{count}} tools used",
+    "stepFailed": "failed"
+  },
+  "panel": {
+    "title": "Parameters",
+    "family": "Family",
+    "chooseFamily": "Choose a family",
+    "beads": "Glass beads",
+    "charms": "Charms",
+    "empty": "Choose a family, or describe the product in the chat and the assistant fills these in.",
+    "material": "Material: {{material}} ({{density}} g/cm³). All lengths in mm.",
+    "proposed": "assistant",
+    "valid": "Meets the Product Design Manual (rules {{edition}})",
+    "violations": "Rule violations",
+    "nearest": "Nearest valid:",
+    "checkFailed": "The check could not run; is the backend up?"
+  },
   "viewer": {
-    "label": "3D preview (placeholder bead)"
+    "title": "3D model",
+    "label": "3D model of the {{family}}",
+    "empty": "The model appears here when the parameters are valid.",
+    "invalid": "Fix the rule violations to see the model.",
+    "building": "Building the model",
+    "color": "Glass color",
+    "finish": "Plating finish",
+    "measurements": "Measurements",
+    "size": "Size",
+    "volume": "Volume",
+    "mass": "Mass"
+  },
+  "outputs": {
+    "drawing": "Drawing",
+    "renders": "Renders",
+    "noDesign": "The drawing appears here after you confirm a Generate design card.",
+    "drawingTitle": "Technical drawing {{sku}} rev {{rev}}",
+    "scale": "Scale {{scale}}",
+    "noRender": "No render queued in this session. Renders run locally with Blender; below is the pre-generated gallery.",
+    "renderJob": "Render job #{{id}}",
+    "renderAlt": "Render of {{sku}} in {{finish}}",
+    "gallery": "Catalog render gallery",
+    "galleryNote": "Rendered locally with Blender (Cycles) and committed for the online demo."
+  },
+  "renderStatus": {
+    "queued": "queued",
+    "running": "rendering",
+    "done": "done",
+    "failed": "failed"
+  },
+  "card": {
+    "title": {
+      "reserve_sku": "Reserve SKU in SAP",
+      "generate_design": "Generate design files",
+      "render": "Queue catalog render"
+    },
+    "status": {
+      "pending": "awaiting your confirmation",
+      "executing": "running…",
+      "confirmed": "confirmed",
+      "failed": "failed",
+      "cancelled": "cancelled",
+      "expired": "expired"
+    },
+    "explain": {
+      "reserve_sku": "Confirm reserves the next free SKU and SAP material number. Numbers are never reused.",
+      "generate_design": "Confirm checks the rules again and writes STEP, STL, GLB and the drawing PDF. Existing revisions are never overwritten.",
+      "render": "Confirm queues a Blender render of this revision."
+    },
+    "done": {
+      "reserve_sku": "Reserved {{sku}}",
+      "generate_design": "Files written for {{sku}} rev {{rev}}",
+      "render": "Render job #{{job_id}} queued"
+    },
+    "name": "Name",
+    "family": "Family",
+    "collection": "Collection",
+    "sapMaterial": "SAP material",
+    "sapStatus": "SAP status",
+    "finish": "Color / finish",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "expiredHelp": "Cards expire after 30 minutes; ask the assistant again."
+  },
+  "catalog": {
+    "title": "Catalog",
+    "note": "Materials from the (mock) SAP: the existing products and the SKUs reserved in Bead Studio, with the revisions that have files.",
+    "search": "Search SKU, name, collection",
+    "filter": "Filter",
+    "filters": { "all": "All", "GLASS_BEAD": "Glass beads", "CHARM": "Charms", "new": "New designs" },
+    "name": "Name",
+    "family": "Family",
+    "collection": "Collection",
+    "size": "Size",
+    "status": "Status",
+    "files": "Drawings",
+    "new": "new",
+    "none": "No product matches.",
+    "sapDown": "SAP is not available right now; try again later.",
+    "statuses": { "IN_DESIGN": "In design", "ACTIVE": "Active", "DISCONTINUED": "Discontinued" }
   }
 }

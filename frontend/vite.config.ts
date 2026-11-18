@@ -14,9 +14,9 @@ export default defineConfig({
     },
   },
   build: {
-    // three.js (~930 kB minified) lives in the lazily loaded viewer chunk, not in the
-    // first load; warn only if a chunk grows past that.
-    chunkSizeWarningLimit: 1000,
+    // three.js and drei (~1.07 MB minified) live in the lazily loaded viewer chunk, not in
+    // the first load; warn only if a chunk grows past that.
+    chunkSizeWarningLimit: 1100,
   },
   server: {
     // The FastAPI backend (uvicorn app.main:app --port 8000).

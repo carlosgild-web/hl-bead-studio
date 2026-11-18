@@ -20,4 +20,9 @@ void i18n.use(initReactI18next).init({
   interpolation: { escapeValue: false },
 })
 
+// Screen readers and the browser's hyphenation follow the interface language.
+i18n.on('languageChanged', (lng) => {
+  if (typeof document !== 'undefined') document.documentElement.lang = lng
+})
+
 export default i18n
