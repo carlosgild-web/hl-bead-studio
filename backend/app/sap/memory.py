@@ -1,8 +1,10 @@
 """An in-memory stand-in for the mock SAP service, as an httpx transport.
 
 It answers like `sap-mock/` (OData v2 payloads, Basic auth, the CSRF handshake, SAP error
-bodies), starts from the same seed file, and records every request, so backend tests run
-without starting the second service. `down = True` answers 503 like a maintenance window.
+bodies), starts from the same seed file, and records every request, so the backend tests,
+the Playwright server and the agent eval (`app.eval`) run without starting the second
+service. `down = True` answers 503 like a maintenance window. Nothing in the app's
+request path uses it: the app talks to `SAP_BASE_URL`.
 """
 
 from __future__ import annotations
@@ -28,7 +30,7 @@ def _error(status: int, code: str, message: str, headers=None) -> httpx.Response
     return httpx.Response(status, json=body, headers=headers)
 
 
-class FakeSap:
+class InMemorySap:
     def __init__(self, today: date = date(2026, 11, 18)) -> None:
         seed = json.loads(SEED.read_text(encoding="utf-8"))["materials"]
         self.materials: dict[str, dict[str, Any]] = {m["Sku"]: dict(m) for m in seed}

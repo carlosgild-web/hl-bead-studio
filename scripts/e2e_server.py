@@ -4,7 +4,7 @@ Everything is the real app (API, tools, validators, CadQuery, drawing, confirmat
 render queue, audit) except three stand-ins, so the test needs no SAP service, no model and
 no Blender:
 
-- SAP: the in-memory OData stand-in from `backend/tests/fake_sap.py`;
+- SAP: the in-memory OData stand-in from `backend/app/sap/memory.py`;
 - the model: a FakeClient whose script is picked by keywords in the designer's message;
 - Blender: `backend/tests/fake_blender.py`, which writes a small PNG.
 
@@ -100,9 +100,9 @@ def main() -> None:
     import app.main as main_module
     from app.api import deps
     from app.render import RenderWorker
-    from tests.fake_sap import FakeSap
+    from app.sap.memory import InMemorySap
 
-    sap = FakeSap()
+    sap = InMemorySap()
     client_class = scripted_client(sap)
     fake_blender = [sys.executable, str(BACKEND / "tests" / "fake_blender.py"), "--"]
     main_module.RenderWorker = partial(RenderWorker, poll_s=0.5, command=fake_blender)

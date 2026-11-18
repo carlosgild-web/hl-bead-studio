@@ -1,4 +1,4 @@
-"""SapClient against the in-memory SAP stand-in (tests/fake_sap.py)."""
+"""SapClient against the in-memory SAP stand-in (app/sap/memory.py)."""
 
 from datetime import date
 
@@ -6,12 +6,12 @@ import httpx
 import pytest
 
 from app.sap import SapClient, SapError
-from tests.fake_sap import FakeSap
+from app.sap.memory import InMemorySap
 
 
 @pytest.fixture
-def sap() -> FakeSap:
-    return FakeSap()
+def sap() -> InMemorySap:
+    return InMemorySap()
 
 
 def test_get_material_parses_odata(sap):

@@ -18,7 +18,7 @@ from app.core.config import Settings, get_settings
 from app.db.store import Store
 from app.llm.fake import FakeClient, Step
 from app.main import app
-from tests.fake_sap import FakeSap
+from app.sap.memory import InMemorySap
 
 
 def parse_sse(body: str) -> list[tuple[str, dict[str, Any]]]:
@@ -34,13 +34,13 @@ def parse_sse(body: str) -> list[tuple[str, dict[str, Any]]]:
 class AgentEnv:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
-        self.sap = FakeSap()
+        self.sap = InMemorySap()
         self.store = Store(settings.data_dir)
         self.previews = PreviewCache()
         self.clients: list[FakeClient] = []
         self._next_script: Sequence[Step] | None = None
         self.notified = 0
-        app.dependency_overrides[get_settings] = lambda: settings
+        app.dependency_overrides[get_settings] = lambda: self.settings
         app.dependency_overrides[deps.get_store] = lambda: self.store
         app.dependency_overrides[deps.get_previews] = lambda: self.previews
         app.dependency_overrides[deps.get_sap_factory] = lambda: self.sap.client
