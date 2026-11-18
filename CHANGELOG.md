@@ -66,8 +66,28 @@ All notable changes to this project are documented here. The format follows
     browser, with an optional LLM provider argument.
   - Vitest tests for the state and the flow, and a Playwright end-to-end test on the
     FakeClient (`e2e/`, `scripts/e2e_server.py`) that also runs in CI.
+- Phase 7 evaluation and hardening (decision 0015):
+  - `python -m app.cli agent-eval`: 30 scenarios (valid designs, one per broken rule, the
+    reservation, generation and render flow, cancel, names, revision letters, SAP down,
+    Blender missing, prompt injection; English and Spanish) run through the real agent and
+    confirmation gate, with the in-memory SAP. A scorer checks the parameters, the cited rule
+    ids, the cards, and that no side effect happened without a click. It reads the traces and
+    the side effects, never the model's own words.
+  - `--fake` runs the ideal scripts and must pass 100% in CI; tests show that a bad model
+    fails the right check. Real runs on Anthropic and Ollama, failures included, in
+    `docs/eval/`.
+  - Online safety: `RATE_LIMIT_PER_MINUTE` per client on chat, card actions and previews
+    (HTTP 429 with `Retry-After`); `DAILY_TOKEN_CAP` for the assistant; and
+    `DESIGNS_RETENTION_HOURS`, which deletes old generated designs and their renders and
+    writes an audit row for each.
+  - The render tool and the click say at once when Blender is not installed (HTTP 503 on
+    the click, `renders` in `/api/health`), instead of queuing a job that can only fail.
 
 ### Changed
+
+- The in-memory SAP stand-in moved from `backend/tests/fake_sap.py` to
+  `backend/app/sap/memory.py` (`InMemorySap`), for the eval harness.
+- The chat shows the backend's reason when a turn is refused (rate limit, token cap).
 
 - Manual and schemas after measuring the fonts (decision 0010): CH-07 minimum heights
   (Pacifico 10.5 mm, Y 18.5 mm; Cinzel Bold 16.5 mm, no K), CH-06 engraved letters at least
@@ -79,3 +99,9 @@ All notable changes to this project are documented here. The format follows
 - Settings failed to read `ANTHROPIC_API_KEY` from the environment in any process that had
   imported CadQuery (its multimethod dispatch makes `typing.Union` look like a sequence to
   pydantic-settings).
+- A validation with missing parameters listed each one several times.
+- The false-card-claim check corrected right answers that only mentioned a card ("you
+  cancelled the confirmation card"); it now looks for a card said to be shown or waiting,
+  outside a negative or conditional clause (found by the eval).
+- The revision argument of the generate and render tools lists the GEN-02 letters (a model
+  offered revision I in the eval).

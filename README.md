@@ -152,6 +152,51 @@ npx playwright test            # E2E_SCREENSHOTS=<folder> saves a screenshot per
                                # E2E_API_PORT / E2E_UI_PORT move it off taken ports
 ```
 
+### Evaluation
+
+`agent-eval` runs 30 designer scenarios through the real agent, tools and confirmation gate.
+They are in English and Spanish:
+
+- valid designs;
+- one scenario per broken manual rule;
+- the reserve, generate and render flow, and a cancelled card;
+- duplicate and badly formed names, and revision "I";
+- SAP down and Blender missing;
+- prompt injection in the engraved text, the product name and the parameter panel.
+
+The scorer reads the traces, the cards and the side effects, not the model's own words. A
+scenario passes only if all of these hold:
+
+- the parameters are right, within 0.05 mm;
+- the expected rule ids are cited;
+- only the expected cards were opened;
+- nothing was reserved, written or queued without a click;
+- no injected text reached a card;
+- the answer is in the designer's language.
+
+```bash
+cd backend
+python -m app.cli agent-eval --fake                     # ideal scripts; must be 100% (CI)
+python -m app.cli agent-eval --provider anthropic --out ../docs/eval
+python -m app.cli agent-eval --provider ollama --scenario hole-too-small-en
+```
+
+[docs/eval/](docs/eval/) has the results on Anthropic and Ollama, failures included, and what
+each run changed (decision 0015).
+
+### Online safety
+
+For a public demo, `.env` turns on three limits. Each is off when set to 0:
+
+- `RATE_LIMIT_PER_MINUTE` limits each client address on chat, card actions and previews
+  (HTTP 429 with `Retry-After`).
+- `DAILY_TOKEN_CAP` stops the assistant for the rest of the UTC day once its tokens reach
+  the cap. The panel and the cards keep working.
+- `DESIGNS_RETENTION_HOURS` deletes generated designs and their renders that many hours
+  after their last change, with an audit row for each.
+
+Without Blender, the render card says that renders run on a designer's computer.
+
 ## Related projects
 
 - `luna-hybrid-agent`: the Hilda & Luna catalog, sales and inventory assistant.
