@@ -4,7 +4,10 @@
     "subtitle": "Hilda & Luna Beadworks · Diseño de Producto",
     "switchLanguage": "English",
     "nav": "Vistas",
-    "views": { "studio": "Estudio", "catalog": "Catálogo" }
+    "views": {
+      "studio": "Estudio",
+      "catalog": "Catálogo"
+    }
   },
   "health": {
     "label": "Backend",
@@ -23,7 +26,12 @@
     "thinking": "El asistente está trabajando…",
     "steps_one": "{{count}} herramienta usada",
     "steps_other": "{{count}} herramientas usadas",
-    "stepFailed": "falló"
+    "stepFailed": "falló",
+    "next": {
+      "label": "Siguiente paso:",
+      "generate": "Genera los archivos del diseño de {{sku}}",
+      "render": "Renderiza {{sku}} rev {{rev}} para el catálogo"
+    }
   },
   "panel": {
     "title": "Parámetros",
@@ -56,7 +64,7 @@
   "outputs": {
     "drawing": "Plano",
     "renders": "Renders",
-    "noDesign": "El plano aparece aquí cuando confirmas una tarjeta de Generar diseño.",
+    "noDesign": "Todavía no hay archivos. Reserva primero un SKU y luego pide al asistente que genere los archivos: abrirá una tarjeta Generar diseño y el plano aparece aquí cuando la confirmes.",
     "drawingTitle": "Plano técnico {{sku}} rev {{rev}}",
     "scale": "Escala {{scale}}",
     "noRender": "No hay renders en cola en esta sesión. Los renders se hacen en local con Blender; abajo está la galería pregenerada.",
@@ -110,7 +118,12 @@
     "note": "Materiales del SAP (simulado): los productos existentes y los SKU reservados en Bead Studio, con las revisiones que tienen archivos.",
     "search": "Buscar SKU, nombre, colección",
     "filter": "Filtro",
-    "filters": { "all": "Todo", "GLASS_BEAD": "Cuentas", "CHARM": "Charms", "new": "Diseños nuevos" },
+    "filters": {
+      "all": "Todo",
+      "GLASS_BEAD": "Cuentas",
+      "CHARM": "Charms",
+      "new": "Diseños nuevos"
+    },
     "name": "Nombre",
     "family": "Familia",
     "collection": "Colección",
@@ -120,6 +133,10 @@
     "new": "nuevo",
     "none": "Ningún producto coincide.",
     "sapDown": "SAP no está disponible ahora; inténtalo más tarde.",
-    "statuses": { "IN_DESIGN": "En diseño", "ACTIVE": "Activo", "DISCONTINUED": "Descatalogado" }
+    "statuses": {
+      "IN_DESIGN": "En diseño",
+      "ACTIVE": "Activo",
+      "DISCONTINUED": "Descatalogado"
+    }
   }
 }

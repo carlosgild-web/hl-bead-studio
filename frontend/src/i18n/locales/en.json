@@ -4,7 +4,10 @@
     "subtitle": "Hilda & Luna Beadworks · Product Design",
     "switchLanguage": "Español",
     "nav": "Views",
-    "views": { "studio": "Studio", "catalog": "Catalog" }
+    "views": {
+      "studio": "Studio",
+      "catalog": "Catalog"
+    }
   },
   "health": {
     "label": "Backend",
@@ -23,7 +26,12 @@
     "thinking": "The assistant is working…",
     "steps_one": "{{count}} tool used",
     "steps_other": "{{count}} tools used",
-    "stepFailed": "failed"
+    "stepFailed": "failed",
+    "next": {
+      "label": "Next step:",
+      "generate": "Generate the design files for {{sku}}",
+      "render": "Render {{sku}} rev {{rev}} for the catalog"
+    }
   },
   "panel": {
     "title": "Parameters",
@@ -56,7 +64,7 @@
   "outputs": {
     "drawing": "Drawing",
     "renders": "Renders",
-    "noDesign": "The drawing appears here after you confirm a Generate design card.",
+    "noDesign": "No files yet. Reserve a SKU first, then ask the assistant to generate the files: it opens a Generate design card, and the drawing appears here after you confirm it.",
     "drawingTitle": "Technical drawing {{sku}} rev {{rev}}",
     "scale": "Scale {{scale}}",
     "noRender": "No render queued in this session. Renders run locally with Blender; below is the pre-generated gallery.",
@@ -110,7 +118,12 @@
     "note": "Materials from the (mock) SAP: the existing products and the SKUs reserved in Bead Studio, with the revisions that have files.",
     "search": "Search SKU, name, collection",
     "filter": "Filter",
-    "filters": { "all": "All", "GLASS_BEAD": "Glass beads", "CHARM": "Charms", "new": "New designs" },
+    "filters": {
+      "all": "All",
+      "GLASS_BEAD": "Glass beads",
+      "CHARM": "Charms",
+      "new": "New designs"
+    },
     "name": "Name",
     "family": "Family",
     "collection": "Collection",
@@ -120,6 +133,10 @@
     "new": "new",
     "none": "No product matches.",
     "sapDown": "SAP is not available right now; try again later.",
-    "statuses": { "IN_DESIGN": "In design", "ACTIVE": "Active", "DISCONTINUED": "Discontinued" }
+    "statuses": {
+      "IN_DESIGN": "In design",
+      "ACTIVE": "Active",
+      "DISCONTINUED": "Discontinued"
+    }
   }
 }

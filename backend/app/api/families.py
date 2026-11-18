@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 
 from app.agent.tools import build_preview, family_info, normalize_params, validation_summary
 from app.api.deps import PreviewsDep
-from app.core.content import colors, finishes
+from app.core.content import colors, finishes, materials
 from app.standards.families import Family, UnknownFamilyError, all_families, get_family
 from app.standards.validators import validate_parameters
 
@@ -66,6 +66,7 @@ def get_family_info(code: str, lang: Language = "en") -> dict[str, Any]:
     for name, prop in family.parameters.items():
         if "x-step" in prop:
             info["parameters"][name]["step"] = prop["x-step"]
+    info["material"] = materials()[family.material]["name"][lang]
     info["option_parameter"] = "color" if family.kind == "glass_bead" else "finish"
     info["swatches"] = _swatches(family, lang)
     info.pop(info["option_parameter"] + "s", None)

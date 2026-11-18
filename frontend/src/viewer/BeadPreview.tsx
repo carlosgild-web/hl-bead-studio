@@ -11,10 +11,14 @@ const GLASS_IOR = 1.47
 function material(kind: Kind, swatch: Swatch | undefined): THREE.Material {
   const color = new THREE.Color(swatch?.hex ?? '#c9d2e0')
   if (kind === 'charm') {
-    return new THREE.MeshStandardMaterial({
+    // A fully metallic surface shows only reflections, and the local light formers alone
+    // leave it nearly black; a little diffuse keeps the plating color readable.
+    return new THREE.MeshPhysicalMaterial({
       color,
-      metalness: swatch?.metallic ?? 1,
-      roughness: swatch?.roughness ?? 0.2,
+      metalness: Math.min(swatch?.metallic ?? 1, 0.65),
+      roughness: Math.max(swatch?.roughness ?? 0.2, 0.3),
+      clearcoat: 0.6,
+      clearcoatRoughness: 0.15,
     })
   }
   const transmission = swatch?.transmission ?? 0.8

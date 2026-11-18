@@ -228,6 +228,17 @@ describe('App', () => {
 
     expect(await within(card).findByText('Reserved GB-1034')).toBeInTheDocument()
     expect(calls.filter((c) => c.url === '/api/actions/act1/confirm')).toHaveLength(1)
+
+    // The next step is offered as a message to the assistant, not as an action.
+    const next = await screen.findByRole('button', { name: 'Generate the design files for GB-1034' })
+    expect(calls.some((c) => c.url.includes('/designs/'))).toBe(false)
+    fireEvent.click(next)
+    await waitFor(() =>
+      expect(calls.filter((c) => c.url === '/api/chat').at(-1)?.body).toMatchObject({
+        message: 'Generate the design files for GB-1034',
+        conversation_id: 'conv1',
+      }),
+    )
   })
 
   it('an edit clears the highlight, revalidates, and shows the rule id with the nearest value', async () => {

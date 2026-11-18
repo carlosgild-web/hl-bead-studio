@@ -1,4 +1,5 @@
-import { AlertCircle, Bot, ChevronRight, Loader2, Send, Wrench } from 'lucide-react'
+import type { TFunction } from 'i18next'
+import { AlertCircle, ArrowRight, Bot, ChevronRight, Loader2, Send, Wrench } from 'lucide-react'
 import { type FormEvent, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -7,7 +8,7 @@ import { cn } from '@/lib/utils'
 
 import { ActionCard } from './ActionCard'
 import { useStudio } from './context'
-import type { ToolStep } from './state'
+import type { StudioState, ToolStep } from './state'
 
 const EXAMPLES = ['chat.example1', 'chat.example2', 'chat.example3'] as const
 
@@ -52,11 +53,28 @@ function AssistantText({ text }: { text: string }) {
   )
 }
 
+/**
+ * After a confirmed card, the message that asks the assistant for the next one. The assistant
+ * still opens the card and the designer still confirms it (invariant 2).
+ */
+function nextStep(state: StudioState, t: TFunction): string | null {
+  const open = (kind: string) =>
+    Object.values(state.actions).some((a) => a.kind === kind && a.status === 'pending')
+  if (state.design && state.renderJobs.length === 0 && !open('render')) {
+    return t('chat.next.render', { sku: state.design.sku, rev: state.design.rev })
+  }
+  if (state.reserved && !state.design && !open('generate_design')) {
+    return t('chat.next.generate', { sku: state.reserved.sku })
+  }
+  return null
+}
+
 export function ChatPanel() {
   const { t } = useTranslation()
   const { state, send } = useStudio()
   const [text, setText] = useState('')
   const end = useRef<HTMLDivElement>(null)
+  const next = state.busy ? null : nextStep(state, t)
 
   useEffect(() => {
     end.current?.scrollIntoView?.({ block: 'end', behavior: 'smooth' })
@@ -133,7 +151,19 @@ export function ChatPanel() {
         <div ref={end} />
       </div>
 
-      <form onSubmit={submit} className="flex items-end gap-2 border-t p-3">
+      {next && (
+        <div className="flex flex-wrap items-center gap-2 border-t px-3 pt-3 text-sm">
+          <span className="text-muted-foreground">{t('chat.next.label')}</span>
+          <button
+            type="button"
+            onClick={() => void send(next)}
+            className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/5 px-3 py-1 font-medium text-primary hover:bg-primary/10"
+          >
+            {next} <ArrowRight className="size-3.5" />
+          </button>
+        </div>
+      )}
+      <form onSubmit={submit} className={cn('flex items-end gap-2 p-3', !next && 'border-t')}>
         <label htmlFor="chat-input" className="sr-only">
           {t('chat.placeholder')}
         </label>

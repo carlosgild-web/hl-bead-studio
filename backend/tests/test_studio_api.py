@@ -47,6 +47,7 @@ def test_charm_family_offers_finishes(env) -> None:
 
     assert info["option_parameter"] == "finish"
     assert "Baño de oro" in [s["name"] for s in info["swatches"]]
+    assert info["material"] == "Aleación de zinc (Zamak 3)"
 
 
 def test_unknown_family_is_404(env) -> None:

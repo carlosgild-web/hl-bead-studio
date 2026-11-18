@@ -64,8 +64,8 @@ test('a designer takes a faceted bead from a description to a render', async ({ 
   const sku = (await reserve.getByText(/Reserved GB-\d{4}/).textContent())!.match(/GB-\d{4}/)![0]
 
   // 5. Model + drawing.
-  await input.fill('Generate the design files')
-  await page.getByRole('button', { name: 'Send' }).click()
+  // The chat offers the next step once the SKU is reserved.
+  await page.getByRole('button', { name: `Generate the design files for ${sku}` }).click()
   const generate = page.getByRole('article', { name: 'Generate design files' })
   await expect(generate).toContainText(sku)
   await generate.getByRole('button', { name: 'Confirm' }).click()
@@ -78,8 +78,7 @@ test('a designer takes a faceted bead from a description to a render', async ({ 
   expect(pdf.headers()['content-type']).toBe('application/pdf')
 
   // 6. Render: queued by the click, followed live until done.
-  await input.fill('Render it for the catalog')
-  await page.getByRole('button', { name: 'Send' }).click()
+  await page.getByRole('button', { name: `Render ${sku} rev A for the catalog` }).click()
   const render = page.getByRole('article', { name: 'Queue catalog render' })
   await render.getByRole('button', { name: 'Confirm' }).click()
   await expect(render).toContainText(/Render job #\d+ queued/)
