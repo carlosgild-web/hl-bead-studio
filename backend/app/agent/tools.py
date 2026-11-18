@@ -362,12 +362,13 @@ def list_families(args: NoArgs, ctx: ToolContext) -> ToolResult:
     )
 
 
-def describe_family(args: FamilyArgs, ctx: ToolContext) -> ToolResult:
-    family = _family(args.code)
+def family_info(family: Family, language: str) -> dict[str, Any]:
+    """A family's parameters (ranges, units, rule ids), defaults and colors or finishes, in
+    one language. `describe_family` and `GET /api/families/{code}` return it."""
     params = {}
     for name, prop in family.parameters.items():
         entry = {k: prop[k] for k in ("type", "minimum", "maximum", "enum", "default") if k in prop}
-        entry["label"] = prop.get("x-label", {}).get(ctx.language, name)
+        entry["label"] = prop.get("x-label", {}).get(language, name)
         entry["unit"] = prop.get("x-unit")
         entry["rules"] = prop.get("x-rule", [])
         entry["description"] = prop.get("description", "")
@@ -376,22 +377,24 @@ def describe_family(args: FamilyArgs, ctx: ToolContext) -> ToolResult:
         params[name] = {k: v for k, v in entry.items() if v is not None}
     options = colors() if family.kind == "glass_bead" else finishes()
     material = materials()[family.material]
-    return ToolResult(
-        {
-            "code": family.code,
-            "kind": family.kind,
-            "name": family.label[ctx.language],
-            "name_suffix": family.name_suffix,
-            "material": material["name"]["en"],
-            "density_g_cm3": material["density_g_cm3"],
-            "parameters": params,
-            "defaults": family.defaults(),
-            ("colors" if family.kind == "glass_bead" else "finishes"): {
-                key: value["name"][ctx.language] for key, value in options.items()
-            },
-            "units": "All lengths are millimetres.",
-        }
-    )
+    return {
+        "code": family.code,
+        "kind": family.kind,
+        "name": family.label[language],
+        "name_suffix": family.name_suffix,
+        "material": material["name"]["en"],
+        "density_g_cm3": material["density_g_cm3"],
+        "parameters": params,
+        "defaults": family.defaults(),
+        ("colors" if family.kind == "glass_bead" else "finishes"): {
+            key: value["name"][language] for key, value in options.items()
+        },
+        "units": "All lengths are millimetres.",
+    }
+
+
+def describe_family(args: FamilyArgs, ctx: ToolContext) -> ToolResult:
+    return ToolResult(family_info(_family(args.code), ctx.language))
 
 
 def tool_validate_parameters(args: ParamsArgs, ctx: ToolContext) -> ToolResult:
@@ -400,37 +403,47 @@ def tool_validate_parameters(args: ParamsArgs, ctx: ToolContext) -> ToolResult:
     return ToolResult(validation_summary(result))
 
 
-def preview_geometry(args: ParamsArgs, ctx: ToolContext) -> ToolResult:
+def build_preview(
+    family: Family, params: dict[str, Any], previews: PreviewCache
+) -> tuple[ValidationResult, dict[str, Any] | None]:
+    """Validate, then build the model in memory and keep its GLB in `previews`. Returns the
+    validation and, when the parameters are valid, the preview (id, url, measurements).
+    Nothing is written to disk. `preview_geometry` and `POST /api/preview` use it."""
     from app.geometry import build_model
     from app.geometry.export import glb_bytes, measure
 
-    family = _family(args.family)
-    result = validate_parameters(family.code, normalize_params(family, args.params))
+    result = validate_parameters(family.code, normalize_params(family, params))
     if not result.ok:
+        return result, None
+    model = build_model(family.code, result.params)
+    measured = measure(model.shape, family.material).to_dict()
+    preview_id = previews.put(glb_bytes(model.shape))
+    preview = {
+        "preview_id": preview_id,
+        "url": f"/api/previews/{preview_id}.glb",
+        "family": family.code,
+        "params": result.params,
+        "measurements": measured,
+    }
+    return result, preview
+
+
+def preview_geometry(args: ParamsArgs, ctx: ToolContext) -> ToolResult:
+    family = _family(args.family)
+    result, preview = build_preview(family, args.params, ctx.previews)
+    if preview is None:
         content = validation_summary(result)
         content["preview"] = "not built: the parameters break the manual"
         return ToolResult(content, ok=False)
-    model = build_model(family.code, result.params)
-    measured = measure(model.shape, family.material).to_dict()
-    preview_id = ctx.previews.put(glb_bytes(model.shape))
-    url = f"/api/previews/{preview_id}.glb"
     content = {
         "valid": True,
         "family": family.code,
         "params": result.params,
-        "measurements": measured,
-        "preview_id": preview_id,
+        "measurements": preview["measurements"],
+        "preview_id": preview["preview_id"],
         "note": "Mass is before plating." if family.is_charm else "Mass of the glass.",
     }
-    event = {
-        "type": "preview",
-        "preview_id": preview_id,
-        "url": url,
-        "family": family.code,
-        "params": result.params,
-        "measurements": measured,
-    }
-    return ToolResult(content, event=event)
+    return ToolResult(content, event={"type": "preview", **preview})
 
 
 def check_catalog(args: CatalogArgs, ctx: ToolContext) -> ToolResult:
