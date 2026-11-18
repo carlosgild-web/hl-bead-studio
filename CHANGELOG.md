@@ -48,6 +48,18 @@ All notable changes to this project are documented here. The format follows
   - Scripted conversations and prompt-injection tests on Fake.
   - A backend check that corrects answers claiming a confirmation card that was never
     opened.
+- Phase 6 React UI (decision 0013):
+  - The studio: a streaming chat with collapsed tool steps and confirmation cards; the
+    parameter panel with values the assistant proposed highlighted, live validation with
+    rule ids and nearest-value buttons; a three.js viewer of the model with the glass color
+    or plating finish and its measurements; drawing (PDF and STEP/STL/GLB downloads) and
+    render tabs with live job progress and the gallery.
+  - The catalog view: SAP materials, the new SKUs and their drawings.
+  - H&L brand colors, ES/EN, and the "How this demo works" guide.
+  - Read-only backend routes: families, validate, preview, catalog, design files and
+    gallery.
+  - Vitest tests for the state and the flow, and a Playwright end-to-end test on the
+    FakeClient (`e2e/`, `scripts/e2e_server.py`) that also runs in CI.
 
 ### Changed
 

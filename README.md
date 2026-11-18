@@ -9,9 +9,10 @@ designer confirms, the tool reserves a SKU in a mock SAP, builds the 3D model (C
 STL, GLB), produces a technical drawing with the H&L title block and queues a catalog render
 in Blender.
 
-> **Status:** work in progress (Phase 5 of 9). Geometry, drawings, validation, Blender renders
-> and the assistant with its confirmation gate work from the API and the command line. There
-> is no UI yet. The roadmap is in [`PLAN.md`](PLAN.md) and the design decisions in
+> **Status:** work in progress (Phase 6 of 9). The studio UI works end to end: describe a
+> product, review the proposed parameters with live validation, see the 3D model, and confirm
+> the cards that reserve the SKU, generate the files and drawing, and queue the render. The
+> roadmap is in [`PLAN.md`](PLAN.md) and the design decisions in
 > [`docs/decisions/`](docs/decisions/).
 
 ## Principle: the AI guides, the code decides
@@ -103,8 +104,37 @@ The [render gallery](docs/gallery/) for the online demo comes from the same pipe
 Linux and macOS) renders every design in `scripts/gallery.json` and writes small WebP images
 and `manifest.json` (decision 0011).
 
+### The studio UI
+
+`npm run dev` in `frontend/` opens the studio on http://localhost:5173 (decision 0013):
+
+- **Chat** (left): the assistant's answers, the tools it used (collapsed), and the
+  confirmation cards. Only **Confirm** on a card reserves a SKU, writes files or queues a
+  render.
+- **Parameters** (center): the family's fields with units and ranges. Values the assistant
+  proposed stay amber until you edit them. Every edit is checked by the backend's
+  validators; a violation shows its rule id and buttons with the nearest valid values.
+- **3D model** (right): the GLB built from the valid parameters, orbit controls, the glass
+  color or plating finish, and the size, volume and mass.
+- **Drawing** and **Renders** tabs: the PDF with the title block and the STEP, STL and GLB
+  downloads; the render job followed live, and the pre-generated gallery.
+- **Catalog**: the SAP materials, the SKUs reserved in Bead Studio and their drawings.
+- ES/EN switch and a "How this demo works" guide.
+
+The UI reads these routes, none of which has a side effect: `GET /api/families[/{code}]`,
+`POST /api/validate`, `POST /api/preview`, `GET /api/catalog`,
+`GET /api/designs/{sku}/{rev}[/files/{kind}]` and `GET /api/gallery`.
+
 Checks: `pytest -q && ruff check . && ruff format --check .` in each Python package, and
-`npm run lint && npm test && npm run build` in `frontend/`.
+`npm run lint && npm test && npm run build` in `frontend/`. The end-to-end test runs the
+whole flow in Chromium on the FakeClient, with an in-memory SAP and a stand-in for Blender
+(`scripts/e2e_server.py`):
+
+```bash
+cd e2e
+npm ci && npx playwright install chromium
+npx playwright test            # E2E_SCREENSHOTS=<folder> saves a screenshot per step
+```
 
 ## Related projects
 
