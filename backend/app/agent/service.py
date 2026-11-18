@@ -5,12 +5,13 @@ Used by `POST /api/chat` (as server-sent events) and by `python -m app.cli chat`
 
 from __future__ import annotations
 
+import json
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from typing import Any
 
 from app.agent.loop import AgentEvent, RunOutcome, run_agent
-from app.agent.prompts import system_prompt, user_message
+from app.agent.prompts import state_message, system_prompt, user_message
 from app.agent.tools import PreviewCache, ToolContext, ToolRegistry
 from app.agent.trace import AgentTrace
 from app.core.config import Settings
@@ -31,16 +32,50 @@ class AgentDeps:
     registry: ToolRegistry = field(default_factory=ToolRegistry)
 
 
+PARAMETER_TOOLS = ("validate_parameters", "propose_parameters", "preview_geometry")
+
+
+def run_facts(messages: list[Message]) -> dict[str, Any]:
+    """What the tools of one run established, kept for the next turns: the latest checked
+    parameters, the latest name check and the cards opened. Only tool results, never the
+    model's own words."""
+    facts: dict[str, Any] = {}
+    for m in messages:
+        if m.role != "tool" or not m.name:
+            continue
+        try:
+            result = json.loads(m.content)
+        except ValueError:
+            continue
+        if m.name in PARAMETER_TOOLS and "params" in result:
+            facts["parameters"] = {
+                "family": result.get("family"),
+                "params": result["params"],
+                "valid": result.get("valid"),
+                "violated_rules": sorted({v["rule"] for v in result.get("violations", [])}),
+            }
+        elif m.name == "check_catalog" and "name" in result:
+            facts["name_check"] = {
+                k: result[k] for k in ("name", "exists", "follows_GEN_03") if k in result
+            }
+        elif "pending_action_id" in result:
+            facts.setdefault("cards_opened", []).append(
+                {"id": result["pending_action_id"], "kind": result["kind"]}
+            )
+    return facts
+
+
 def model_history(stored: list[dict[str, Any]]) -> list[Message]:
-    """What the model sees of earlier turns: the designer's messages, the final answers and
-    the Bead Studio events. Tool calls of earlier runs stay in their traces, which keeps the
-    context of a small local model short (and no stale thinking blocks are replayed)."""
+    """What the model sees of earlier turns: the designer's messages, the final answers, the
+    facts the tools established in each run and the Bead Studio events. Tool calls of earlier
+    runs stay in their traces, which keeps the context of a small local model short (and no
+    stale thinking blocks are replayed)."""
     history: list[Message] = []
     for data in stored:
         role = data.get("role")
         if role == "user" or (role == "assistant" and not data.get("tool_calls")):
             history.append(Message(role, data.get("content") or ""))
-        elif role == "event":
+        elif role in ("event", "facts"):
             history.append(Message("user", data.get("content") or ""))
     return history
 
@@ -103,6 +138,9 @@ def chat_turn(
             outcome.status = trace.status = "error"
             trace.error = trace.error or "interrupted"
         kept = [user] + [m.to_dict() for m in outcome.new_messages]
+        facts = run_facts(outcome.new_messages)
+        if facts:
+            kept.append({"role": "facts", "content": state_message(facts), "facts": facts})
         deps.store.append_messages(conversation_id, kept, run_id=run_id)
         deps.store.finish_run(
             run_id,

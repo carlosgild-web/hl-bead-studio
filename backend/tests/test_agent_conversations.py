@@ -216,3 +216,26 @@ def test_demo_mode_without_a_script(env):
     events = env.chat(None, "hello")
     assert "Demo mode" in answer(events)
     assert of_type(events, "done")[0]["status"] == "answered"
+
+
+def test_the_next_turn_sees_the_parameters_the_tools_checked(env):
+    """Earlier tool calls are not replayed, but what they established is (as data)."""
+    events = env.chat(
+        [call("validate_parameters", family="FAC", params=FAC_10), say("Valid.")],
+        "Check a 10 mm faceted bead",
+    )
+    conversation = of_type(events, "conversation")[0]["id"]
+
+    def reads_state(messages, tools):
+        [state] = [
+            m.content
+            for m in messages
+            if m.role == "user" and m.content.startswith("<bead_studio_state>")
+        ]
+        assert '"diameter_mm": 10.0' in state and '"valid": true' in state
+        assert not any(m.role == "tool" for m in messages)  # old tool calls stay in the trace
+        return say("Still 10.0 mm.")
+
+    env.chat([reads_state], "And now?", conversation)
+    history = env.http.get(f"/api/conversations/{conversation}").json()
+    assert [m["role"] for m in history["messages"]] == ["user", "assistant"] * 2
