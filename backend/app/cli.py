@@ -3,6 +3,7 @@
 validate      check parameters against the manual and print the result as JSON
 generate      write STEP, STL, GLB, drawing PDF and params.json for one revision
 measure-fonts measure the approved fonts against CH-03 (the numbers behind CH-07)
+render        render a catalog image of a generated revision with Blender
 """
 
 import argparse
@@ -83,6 +84,29 @@ def _cmd_measure_fonts(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_render(args: argparse.Namespace) -> int:
+    from app.render import RenderError, queue_render, run_job
+
+    settings = get_settings()
+    try:
+        job = queue_render(
+            settings, args.sku, args.rev, args.finish, actor="cli", samples=args.samples
+        )
+    except (RenderError, ValueError) as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 2
+    print(f"job {job['id']}: {job['sku']} rev {job['rev']} in {job['finish']}, rendering...")
+    done = run_job(settings, job["id"])
+    if done is None:  # the server's worker took it first
+        print(f"job {job['id']} is being rendered by the server's worker")
+        return 0
+    if done["status"] != "done":
+        print(f"failed: {done['error']}", file=sys.stderr)
+        return 1
+    print(f"  {settings.designs_root / done['image']} ({done['duration_s']} s)")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m app.cli", description=__doc__.split("\n")[0])
     commands = parser.add_subparsers(dest="command", required=True)
@@ -106,6 +130,15 @@ def main(argv: list[str] | None = None) -> int:
     fonts.add_argument("--top", type=int, default=5, help="letters to list per font")
     fonts.add_argument("--engraving", action="store_true", help="also measure engraved text")
     fonts.set_defaults(func=_cmd_measure_fonts)
+
+    render = commands.add_parser("render", help="render a catalog image with Blender")
+    render.add_argument("--sku", required=True, help="a generated SKU (GB-1NNN or CH-2NNN)")
+    render.add_argument("--rev", required=True, help="revision letter (GEN-02)")
+    render.add_argument(
+        "--finish", help="glass color (beads) or plating finish (charms); default: the design's"
+    )
+    render.add_argument("--samples", type=int, help="Cycles samples (default RENDER_SAMPLES)")
+    render.set_defaults(func=_cmd_render)
 
     args = parser.parse_args(argv)
     return args.func(args)

@@ -40,6 +40,10 @@ class Settings(BaseSettings):
     freecad_cmd: str = "freecadcmd"
     blender_bin: str = "blender"
 
+    # Renders (decision 0003): one Blender process per job, killed after the timeout
+    render_timeout_s: int = Field(default=600, ge=1, le=3600)
+    render_samples: int = Field(default=64, ge=1, le=4096)
+
     # Storage
     data_dir: Path = Path("./data")
     designs_root: Path = Path("./data/designs")

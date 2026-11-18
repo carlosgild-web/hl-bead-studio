@@ -10,3 +10,5 @@ trimesh>=5.2
 shapely>=2.2
 svglib>=2.4
 reportlab>=5.1
+# gallery images (scripts/build_gallery.py) and the render tests; reportlab needs it too
+pillow>=13.0
