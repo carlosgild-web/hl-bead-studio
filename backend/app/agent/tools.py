@@ -222,16 +222,23 @@ class ReserveArgs(_Args):
     collection: str = Field(default="", max_length=30, description=", ".join(COLLECTIONS))
 
 
+# The Phase 7 eval saw a model offer revision I: the letters are in the tool definition.
+REVISION_HELP = (
+    "Design revision (GEN-02): A for the first, then B, C, D, E, F, G, H, J, K...; the "
+    "letters I, O, Q, S, X and Z are never used"
+)
+
+
 class GenerateArgs(_Args, _ParamsMixin):
     sku: str = Field(max_length=16, description="SKU reserved in SAP, e.g. GB-1034")
-    rev: str = Field(default="A", max_length=4, description="Design revision, e.g. A")
+    rev: str = Field(default="A", max_length=4, description=REVISION_HELP)
     family: str = Field(default="", max_length=8, description="Family code (default: SAP's)")
     params: dict[str, Any] = Field(description="The validated parameter values")
 
 
 class RenderArgs(_Args):
     sku: str = Field(max_length=16, description="SKU of a generated design")
-    rev: str = Field(default="A", max_length=4, description="Design revision")
+    rev: str = Field(default="A", max_length=4, description=REVISION_HELP)
     finish: str = Field(
         default="", max_length=30, description="Glass color or charm finish (default: the design's)"
     )
