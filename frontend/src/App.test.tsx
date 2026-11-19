@@ -142,9 +142,30 @@ function backend(overrides: Record<string, (init?: RequestInit) => Response> = {
         result: { ok: true, sku: 'GB-1034', sap_material: '50000134', name: 'Amber Glow Faceted', status: 'IN_DESIGN' },
       })
     if (key === 'GET /api/gallery') return json({ generated_at: null, renders: [] })
+    if (key === 'POST /api/names/check') {
+      const { name } = JSON.parse(String(init?.body)) as { name: string }
+      const fine = /^([A-Z][a-z]+ )+Faceted$/.test(name)
+      return json({
+        name,
+        follows: fine,
+        violations: fine
+          ? []
+          : [
+              {
+                rule: 'GEN-03',
+                parameters: ['name'],
+                message: `'${name}' does not follow the naming pattern.`,
+                message_es: `'${name}' no sigue el patrón de nombres.`,
+              },
+            ],
+        suggestion: fine ? null : 'Amber Glow Faceted',
+        similar: [{ sku: 'GB-1006', name: 'Amber Drop Faceted', status: 'ACTIVE' }],
+        sap_available: true,
+      })
+    }
     if (key === 'POST /api/actions') {
       const body = JSON.parse(String(init?.body)) as { name?: string }
-      if (body.name === 'amber bead')
+      if (body.name === 'amber bead Faceted')
         return json(
           {
             detail: 'The name breaks GEN-03.',
@@ -301,6 +322,25 @@ describe('App', () => {
     const alert = await screen.findByRole('alert', { name: 'Reglas incumplidas' })
     expect(within(alert).getByText(/El agujero debe ajustarse/)).toBeInTheDocument()
     expect(within(alert).queryByText(/The hole must fit/)).toBeNull()
+  })
+
+  it('the name field adds the family word and checks the name while typing', async () => {
+    const calls = backend()
+    renderApp()
+    fireEvent.click(await screen.findByRole('combobox', { name: 'Family' }))
+    fireEvent.click(await screen.findByRole('option', { name: /Faceted bead/ }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Reserve SKU…' }))
+    const form = screen.getByRole('form', { name: 'Reserve SKU…' })
+
+    fireEvent.change(within(form).getByLabelText('Product name'), { target: { value: 'amber glow' } })
+
+    expect(within(form).getByText('amber glow Faceted')).toBeInTheDocument()
+    expect(await within(form).findByText(/does not follow the naming pattern/)).toBeInTheDocument()
+    expect(within(form).getByText(/Amber Drop Faceted/)).toBeInTheDocument()
+    fireEvent.click(within(form).getByRole('button', { name: 'Amber Glow Faceted' }))
+    expect(within(form).getByLabelText('Product name')).toHaveValue('Amber Glow')
+    expect(await within(form).findByText('Free in the catalog and follows GEN-03.')).toBeInTheDocument()
+    expect(calls.some((c) => c.url === '/api/actions')).toBe(false) // checking opens nothing
   })
 
   it('the panel opens a reserve card without the assistant; only Confirm reserves', async () => {

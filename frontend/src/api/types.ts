@@ -49,6 +49,15 @@ export interface FamilyInfo {
   swatches: Swatch[]
 }
 
+export interface NameCheck {
+  name: string
+  follows: boolean
+  violations: Violation[]
+  suggestion: string | null
+  similar: { sku: string; name: string; status: string }[]
+  sap_available: boolean
+}
+
 export interface Violation {
   rule: string
   parameters: string[]

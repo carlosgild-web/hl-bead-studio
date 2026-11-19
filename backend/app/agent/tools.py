@@ -143,7 +143,7 @@ def _sap_error(exc: SapError) -> ToolResult:
     return _error("sap_error", f"SAP answered {exc.status} {exc.code}: {exc.message}")
 
 
-def _violation(v: Violation, *, with_es: bool = False) -> dict[str, Any]:
+def violation_dict(v: Violation, *, with_es: bool = False) -> dict[str, Any]:
     data: dict[str, Any] = {"rule": v.rule, "parameters": list(v.parameters), "message": v.message}
     if with_es:
         data["message_es"] = v.message_es or v.message
@@ -161,7 +161,7 @@ def validation_summary(result: ValidationResult, *, with_es: bool = False) -> di
         "valid": result.ok,
         "family": result.family,
         "params": result.params,
-        "violations": [_violation(v, with_es=with_es) for v in result.violations],
+        "violations": [violation_dict(v, with_es=with_es) for v in result.violations],
         "notes": result.notes,
         "rule_edition": result.rule_edition,
     }
@@ -477,7 +477,7 @@ def check_catalog(args: CatalogArgs, ctx: ToolContext) -> ToolResult:
     if args.family:
         violations = validate_product_name(args.name, _family(args.family), catalog)
         content["follows_GEN_03"] = not violations
-        content["violations"] = [_violation(v) for v in violations]
+        content["violations"] = [violation_dict(v) for v in violations]
     return ToolResult(content)
 
 
@@ -578,7 +578,7 @@ def request_reserve_sku(args: ReserveArgs, ctx: ToolContext) -> ToolResult:
         return ToolResult(
             {
                 "error": {"code": "invalid_name", "message": "The name breaks GEN-03."},
-                "violations": [_violation(v) for v in violations],
+                "violations": [violation_dict(v) for v in violations],
             },
             ok=False,
         )

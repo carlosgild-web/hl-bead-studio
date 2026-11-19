@@ -52,6 +52,21 @@ def similar_names(name: str, catalog: Iterable[CatalogEntry]) -> list[CatalogEnt
     return [entry for _, entry in scored[:SIMILAR_LIMIT]]
 
 
+def suggest_name(text: str, family: Family) -> str | None:
+    """A mechanical fix of what a designer typed: words in Title Case, at most three of them
+    before the family word, which is added once at the end ("amber  glow" ->
+    "Amber Glow Faceted"). None when there is no word to work with."""
+    suffix = family.name_suffix
+    words = [
+        w[0].upper() + w[1:].lower()
+        for w in re.findall(r"[A-Za-z]+(?:['-][A-Za-z]+)*", text)
+        if w.lower() != suffix.lower()
+    ][: WORDS[1] - 1]
+    while words and len(" ".join([*words, suffix])) > MAX_LENGTH:
+        words.pop()
+    return " ".join([*words, suffix]) if words else None
+
+
 def validate_product_name(
     name: str, family: Family, catalog: Iterable[CatalogEntry]
 ) -> list[Violation]:

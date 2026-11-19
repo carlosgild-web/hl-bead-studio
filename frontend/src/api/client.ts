@@ -1,6 +1,5 @@
 import type {
   ActionKind,
-  OpenCardRequest,
   CatalogItem,
   ChatEvent,
   DesignRecord,
@@ -9,6 +8,8 @@ import type {
   GalleryRender,
   Health,
   Language,
+  NameCheck,
+  OpenCardRequest,
   Params,
   PendingAction,
   PreviewResponse,
@@ -63,6 +64,8 @@ export const api = {
   preview: (family: string, params: Params) =>
     post<PreviewResponse>('/api/preview', { family, params }),
   catalog: () => request<CatalogItem[]>('/api/catalog'),
+  /** The reserve form's live GEN-03 check (read only). */
+  checkName: (family: string, name: string) => post<NameCheck>('/api/names/check', { family, name }),
   design: (sku: string, rev: string) =>
     request<DesignRecord>(`/api/designs/${encodeURIComponent(sku)}/${encodeURIComponent(rev)}`),
   designRenders: (sku: string, rev: string) =>

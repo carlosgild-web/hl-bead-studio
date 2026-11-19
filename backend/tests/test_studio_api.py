@@ -198,3 +198,46 @@ def test_the_panel_check_carries_the_spanish_message(env) -> None:
     hole = next(v for v in result["violations"] if "hole_mm" in v["parameters"])
     assert "not allowed" in hole["message"]
     assert "no está permitido" in hole["message_es"]
+
+
+def test_suggest_name_fixes_what_was_typed() -> None:
+    from app.standards.families import get_family
+    from app.standards.naming import suggest_name
+
+    fac = get_family("FAC")
+    assert suggest_name("amber   glow", fac) == "Amber Glow Faceted"
+    assert suggest_name("amber glow faceted", fac) == "Amber Glow Faceted"
+    assert suggest_name("deep sea blue green", fac) == "Deep Sea Blue Faceted"
+    assert suggest_name("  ", fac) is None
+
+
+def test_name_check_while_typing(env) -> None:
+    existing = env.sap.materials["GB-1005"]["Description"]
+
+    def check(name: str, family: str = "FAC") -> dict:
+        return env.http.post("/api/names/check", json={"family": family, "name": name}).json()
+
+    free = check("Amber Glow Faceted")
+    assert free["follows"] and free["violations"] == [] and free["suggestion"] is None
+
+    typed = check("amber glow")
+    assert not typed["follows"]
+    assert typed["suggestion"] == "Amber Glow Faceted"
+    assert all(v["rule"] == "GEN-03" and v["message_es"] for v in typed["violations"])
+
+    taken = check(existing, "RND")
+    assert not taken["follows"]
+    assert any(
+        "GB-1005" in v["message"] and "ya existe" in v["message_es"] for v in taken["violations"]
+    )
+    assert len(taken["similar"]) <= 3 and all(s["sku"] != "GB-1005" for s in taken["similar"])
+    assert not env.sap.reservations  # read only
+
+
+def test_name_check_without_sap_still_checks_the_pattern(env) -> None:
+    env.sap.down = True
+
+    body = env.http.post("/api/names/check", json={"family": "FAC", "name": "amber"}).json()
+
+    assert body["sap_available"] is False
+    assert not body["follows"] and body["suggestion"] == "Amber Faceted"

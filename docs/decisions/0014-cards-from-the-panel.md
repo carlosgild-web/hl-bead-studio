@@ -53,3 +53,20 @@ parameter panel. The UI's look and feel will be tuned later.
   live in one place, the tool functions, so the panel and the assistant cannot drift
   apart.
 - The e2e ports can be moved with `E2E_API_PORT` and `E2E_UI_PORT`.
+
+## Addendum (2026-11-19): the product name field
+
+Carlos asked for clearer guidance on the name in "Reserve SKU…":
+
+- The family word (GEN-03) is a fixed suffix after the field, so the designer types only the
+  evocative words. If they type the family word too, it is not doubled.
+- While typing (300 ms after the last key), `POST /api/names/check` shows:
+  - the full name as SAP will store it;
+  - the GEN-03 result against the SAP catalog, in the UI language;
+  - a mechanical fix to click (Title Case, at most three words, the family word once);
+  - up to three similar names.
+- The route is read only and rate limited (group `names`). Without SAP it still checks the
+  pattern and says the catalog was not checked.
+- The check only informs. Opening the card checks the name again on the server, and only
+  Confirm reserves (invariant 2).
+- The assistant's reserve card is unchanged: the assistant checks its name with the same rule.

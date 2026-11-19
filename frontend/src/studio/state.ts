@@ -165,6 +165,13 @@ export function studioReducer(state: StudioState, action: StudioAction): StudioS
 }
 
 /** A stable text key for a parameter set (query keys must not depend on key order). */
+/** The name SAP stores: what the designer typed, then the family word once (GEN-03). */
+export function fullName(typed: string, suffix: string): string {
+  const words = typed.split(/\s+/).filter(Boolean)
+  if (words.at(-1)?.toLowerCase() === suffix.toLowerCase()) words.pop()
+  return [...words, suffix].join(' ')
+}
+
 export function paramsKey(params: Params): string {
   return JSON.stringify(Object.keys(params).sort().map((k) => [k, params[k]]))
 }

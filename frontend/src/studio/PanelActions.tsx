@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 
 import { useLanguage, useStudio } from './context'
+import { NameField } from './NameField'
+import { fullName } from './state'
 
 const NATIVE_SELECT =
   'h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50'
@@ -74,7 +76,7 @@ export function PanelActions({
     const base = { kind: open, conversation_id: state.conversationId, language }
     let body: OpenCardRequest
     if (open === 'reserve_sku') {
-      body = { ...base, family: family.code, name: name.trim(), collection }
+      body = { ...base, family: family.code, name: fullName(name, family.name_suffix), collection }
     } else if (open === 'generate_design') {
       if (!skuValue) {
         setError(t('panel.actions.needSku'))
@@ -176,16 +178,9 @@ export function PanelActions({
               {expanded && (
                 <form onSubmit={submit} className="grid gap-2 border-t px-2.5 pt-2.5 pb-2.5" aria-label={buttons.find((b) => b.kind === open)?.label}>
                   {open === 'reserve_sku' && (
-                    <div className="grid gap-2 sm:grid-cols-[2fr_1fr]">
+                    <div className="grid items-start gap-2 sm:grid-cols-[2fr_1fr]">
                       <Labeled id="card-name" label={t('panel.actions.name')}>
-                        <Input
-                          id="card-name"
-                          value={name}
-                          maxLength={40}
-                          required
-                          placeholder={t('panel.actions.namePlaceholder', { suffix: family.name_suffix })}
-                          onChange={(e) => setName(e.target.value)}
-                        />
+                        <NameField id="card-name" family={family} value={name} onChange={setName} />
                       </Labeled>
                       <Labeled id="card-collection" label={t('panel.actions.collection')}>
                         <select

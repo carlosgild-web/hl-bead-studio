@@ -11,14 +11,23 @@ from typing import Any, Literal
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
+from pydantic import BaseModel, Field
 
-from app.agent.tools import generated_revisions
-from app.api.deps import SapFactoryDep, SettingsDep
+from app.agent.tools import generated_revisions, violation_dict
+from app.api.deps import SapFactoryDep, SettingsDep, rate_limit
 from app.core.config import REPO_ROOT, Settings
 from app.core.paths import UnsafePathError, confined, design_dir, design_file_names
 from app.render.jobs import RenderError, read_design
 from app.sap import SapError
+from app.standards.families import UnknownFamilyError, get_family
 from app.standards.identifiers import InvalidIdentifierError
+from app.standards.naming import (
+    CatalogEntry,
+    find_same_name,
+    similar_names,
+    suggest_name,
+    validate_product_name,
+)
 
 router = APIRouter(prefix="/api", tags=["catalog"])
 
@@ -82,6 +91,48 @@ def _main_dimension(
         if bbox:
             return round(max(float(v) for v in bbox), 1), "design"
     return None, None
+
+
+class NameCheck(BaseModel):
+    family: str = Field(max_length=8)
+    name: str = Field(max_length=120)
+
+
+SIMILAR_SHOWN = 3
+
+
+@router.post("/names/check", dependencies=[rate_limit("names")])
+def check_name(body: NameCheck, sap_factory: SapFactoryDep) -> dict[str, Any]:
+    """The reserve form's live GEN-03 check while the designer types: the rule result (with
+    Spanish messages), a mechanical suggestion and close names in the catalog. Read only."""
+    try:
+        family = get_family(body.family.upper())
+    except UnknownFamilyError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    name = " ".join(body.name.split())
+    try:
+        with sap_factory() as sap:
+            catalog = [CatalogEntry(m.sku, m.description, m.status) for m in sap.list_materials()]
+        sap_available = True
+    except SapError:
+        catalog, sap_available = [], False
+    violations = validate_product_name(name, family, catalog)
+    suggestion = suggest_name(name, family)
+    if suggestion and (suggestion == name or validate_product_name(suggestion, family, catalog)):
+        suggestion = None
+    same = find_same_name(name, catalog)
+    return {
+        "name": name,
+        "follows": not violations,
+        "violations": [violation_dict(v, with_es=True) for v in violations],
+        "suggestion": suggestion,
+        "similar": [
+            {"sku": e.sku, "name": e.name, "status": e.status}
+            for e in similar_names(name, catalog)
+            if e is not same
+        ][:SIMILAR_SHOWN],
+        "sap_available": sap_available,
+    }
 
 
 @router.get("/designs/{sku}/{rev}")
