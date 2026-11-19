@@ -313,7 +313,10 @@ describe('App', () => {
     })
     expect(calls.some((c) => c.url.includes('/confirm'))).toBe(false)
     // Generate and render stay closed until there is something to generate or render.
-    expect(screen.getByRole('button', { name: 'Render…' })).toBeDisabled()
+    const render = screen.getByRole('button', { name: 'Render…' })
+    expect(render).toBeDisabled()
+    // The reason sits next to the action, and the button points to it.
+    expect(render).toHaveAccessibleDescription('Generate the files first.')
     fireEvent.click(within(card).getByRole('button', { name: 'Confirm' }))
     expect(await within(card).findByText('Reserved GB-1034')).toBeInTheDocument()
   })

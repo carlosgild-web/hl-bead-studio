@@ -6,6 +6,7 @@ import { ApiError, api } from '@/api/client'
 import type { ActionKind, FamilyInfo, OpenCardRequest, Validation } from '@/api/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
 
 import { useLanguage, useStudio } from './context'
 
@@ -97,117 +98,164 @@ export function PanelActions({
     }
   }
 
-  const buttons: { kind: ActionKind; icon: ReactNode; label: string }[] = [
-    { kind: 'reserve_sku', icon: <Tag />, label: t('panel.actions.reserve') },
-    { kind: 'generate_design', icon: <FileBox />, label: t('panel.actions.generate') },
-    { kind: 'render', icon: <ImageIcon />, label: t('panel.actions.render') },
+  const buttons: { kind: ActionKind; icon: ReactNode; label: string; description: string }[] = [
+    {
+      kind: 'reserve_sku',
+      icon: <Tag />,
+      label: t('panel.actions.reserve'),
+      description: t('panel.actions.reserveDesc'),
+    },
+    {
+      kind: 'generate_design',
+      icon: <FileBox />,
+      label: t('panel.actions.generate'),
+      description: t('panel.actions.generateDesc'),
+    },
+    {
+      kind: 'render',
+      icon: <ImageIcon />,
+      label: t('panel.actions.render'),
+      description: t('panel.actions.renderDesc'),
+    },
   ]
 
   return (
-    <section aria-labelledby="panel-actions-title" className="space-y-2 rounded-md border border-dashed p-3">
-      <h3 id="panel-actions-title" className="text-sm font-semibold">
-        {t('panel.actions.title')}
-      </h3>
-      <p className="text-xs text-muted-foreground">{t('panel.actions.hint')}</p>
-      <div className="flex flex-wrap gap-2">
-        {buttons.map((b) => (
-          <Button
-            key={b.kind}
-            type="button"
-            size="sm"
-            variant={open === b.kind ? 'default' : 'outline'}
-            aria-expanded={open === b.kind}
-            disabled={state.busy || blocked[b.kind] !== null}
-            title={blocked[b.kind] ?? undefined}
-            onClick={() => toggle(b.kind)}
-          >
-            {b.icon} {b.label}
-          </Button>
-        ))}
+    <section aria-labelledby="panel-actions-title" className="space-y-3 rounded-lg border bg-card p-3 shadow-xs">
+      <div>
+        <h3 id="panel-actions-title" className="text-sm font-semibold">
+          {t('panel.actions.title')}
+        </h3>
+        <p className="mt-0.5 text-xs text-muted-foreground">{t('panel.actions.hint')}</p>
       </div>
-      {!open && (blocked.generate_design || blocked.render) && (
-        <p className="text-xs text-muted-foreground">{blocked.generate_design ?? blocked.render}</p>
-      )}
-
-      {open && (
-        <form onSubmit={submit} className="grid gap-2 pt-1" aria-label={buttons.find((b) => b.kind === open)?.label}>
-          {open === 'reserve_sku' && (
-            <div className="grid gap-2 sm:grid-cols-[2fr_1fr]">
-              <Labeled id="card-name" label={t('panel.actions.name')}>
-                <Input
-                  id="card-name"
-                  value={name}
-                  maxLength={40}
-                  required
-                  placeholder={t('panel.actions.namePlaceholder', { suffix: family.name_suffix })}
-                  onChange={(e) => setName(e.target.value)}
-                />
-              </Labeled>
-              <Labeled id="card-collection" label={t('panel.actions.collection')}>
-                <select
-                  id="card-collection"
-                  className={NATIVE_SELECT}
-                  value={collection}
-                  onChange={(e) => setCollection(e.target.value)}
+      <ol className="space-y-2">
+        {buttons.map((b, index) => {
+          const reason = blocked[b.kind]
+          const expanded = open === b.kind
+          return (
+            <li
+              key={b.kind}
+              className={cn(
+                'rounded-md border transition-colors',
+                expanded ? 'border-primary/40 bg-muted/40' : 'border-border',
+                reason && 'opacity-80',
+              )}
+            >
+              <div className="flex items-start gap-3 p-2.5">
+                <span
+                  aria-hidden
+                  className={cn(
+                    'grid size-8 shrink-0 place-items-center rounded-md [&_svg]:size-4',
+                    reason ? 'bg-muted text-muted-foreground' : 'bg-primary/10 text-primary',
+                  )}
                 >
-                  <option value="">{t('panel.actions.none')}</option>
-                  {family.collections.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </Labeled>
-            </div>
-          )}
-          {open === 'generate_design' && (
-            <div className="grid grid-cols-[2fr_1fr] gap-2">
-              <Labeled id="card-sku" label={t('panel.actions.sku')}>
-                <Input
-                  id="card-sku"
-                  value={skuValue}
-                  maxLength={16}
-                  placeholder={family.kind === 'glass_bead' ? 'GB-1034' : 'CH-2034'}
-                  onChange={(e) => setSku(e.target.value)}
-                  className="font-mono"
-                />
-              </Labeled>
-              <Labeled id="card-rev" label={t('panel.actions.rev')}>
-                <Input
-                  id="card-rev"
-                  value={rev}
-                  maxLength={2}
-                  onChange={(e) => setRev(e.target.value.toUpperCase())}
-                  className="font-mono"
-                />
-              </Labeled>
-            </div>
-          )}
-          {open === 'render' && state.design && (
-            <p className="text-sm">
-              <span className="font-mono">
-                {state.design.sku} · Rev {state.design.rev}
-              </span>{' '}
-              · {t('panel.actions.finish')}:{' '}
-              {family.swatches.find((s) => s.id === option)?.name ?? String(option ?? '')}
-            </p>
-          )}
-          {error && (
-            <p role="alert" className="text-sm whitespace-pre-line text-destructive">
-              {error}
-            </p>
-          )}
-          <div className="flex gap-2">
-            <Button type="submit" size="sm" disabled={working}>
-              {working && <Loader2 className="animate-spin" />}
-              {t('panel.actions.open')}
-            </Button>
-            <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(null)}>
-              {t('panel.actions.close')}
-            </Button>
-          </div>
-        </form>
-      )}
+                  {b.icon}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-muted-foreground">
+                    <span className="font-mono">{index + 1}</span> · {b.description}
+                  </p>
+                  {reason && (
+                    <p id={`blocked-${b.kind}`} className="mt-0.5 text-xs text-amber-700">
+                      {reason}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={expanded ? 'default' : 'outline'}
+                  aria-expanded={expanded}
+                  aria-describedby={reason ? `blocked-${b.kind}` : undefined}
+                  disabled={state.busy || reason !== null}
+                  onClick={() => toggle(b.kind)}
+                  className="shrink-0"
+                >
+                  {b.label}
+                </Button>
+              </div>
+              {expanded && (
+                <form onSubmit={submit} className="grid gap-2 border-t px-2.5 pt-2.5 pb-2.5" aria-label={buttons.find((b) => b.kind === open)?.label}>
+                  {open === 'reserve_sku' && (
+                    <div className="grid gap-2 sm:grid-cols-[2fr_1fr]">
+                      <Labeled id="card-name" label={t('panel.actions.name')}>
+                        <Input
+                          id="card-name"
+                          value={name}
+                          maxLength={40}
+                          required
+                          placeholder={t('panel.actions.namePlaceholder', { suffix: family.name_suffix })}
+                          onChange={(e) => setName(e.target.value)}
+                        />
+                      </Labeled>
+                      <Labeled id="card-collection" label={t('panel.actions.collection')}>
+                        <select
+                          id="card-collection"
+                          className={NATIVE_SELECT}
+                          value={collection}
+                          onChange={(e) => setCollection(e.target.value)}
+                        >
+                          <option value="">{t('panel.actions.none')}</option>
+                          {family.collections.map((c) => (
+                            <option key={c} value={c}>
+                              {c}
+                            </option>
+                          ))}
+                        </select>
+                      </Labeled>
+                    </div>
+                  )}
+                  {open === 'generate_design' && (
+                    <div className="grid grid-cols-[2fr_1fr] gap-2">
+                      <Labeled id="card-sku" label={t('panel.actions.sku')}>
+                        <Input
+                          id="card-sku"
+                          value={skuValue}
+                          maxLength={16}
+                          placeholder={family.kind === 'glass_bead' ? 'GB-1034' : 'CH-2034'}
+                          onChange={(e) => setSku(e.target.value)}
+                          className="font-mono"
+                        />
+                      </Labeled>
+                      <Labeled id="card-rev" label={t('panel.actions.rev')}>
+                        <Input
+                          id="card-rev"
+                          value={rev}
+                          maxLength={2}
+                          onChange={(e) => setRev(e.target.value.toUpperCase())}
+                          className="font-mono"
+                        />
+                      </Labeled>
+                    </div>
+                  )}
+                  {open === 'render' && state.design && (
+                    <p className="text-sm">
+                      <span className="font-mono">
+                        {state.design.sku} · Rev {state.design.rev}
+                      </span>{' '}
+                      · {t('panel.actions.finish')}:{' '}
+                      {family.swatches.find((s) => s.id === option)?.name ?? String(option ?? '')}
+                    </p>
+                  )}
+                  {error && (
+                    <p role="alert" className="text-sm whitespace-pre-line text-destructive">
+                      {error}
+                    </p>
+                  )}
+                  <div className="flex gap-2">
+                    <Button type="submit" size="sm" disabled={working}>
+                      {working && <Loader2 className="animate-spin" />}
+                      {t('panel.actions.open')}
+                    </Button>
+                    <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(null)}>
+                      {t('panel.actions.close')}
+                    </Button>
+                  </div>
+                </form>
+              )}
+            </li>
+          )
+        })}
+      </ol>
     </section>
   )
 }
