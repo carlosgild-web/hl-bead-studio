@@ -81,20 +81,22 @@ export function DemoGuide({ config: c, step }: { config: GuideConfig; step: numb
     <>
       {mode === 'open' && (
         <div role="region" aria-label={t(c.pill)} className={cn(FRAME, 'border-b')}>
-          <div className="mx-auto flex max-w-[110rem] items-start gap-3 px-4 py-2.5 sm:px-6">
+          {/* On phones it is one line (tag and the guide button); the summary and the product
+              link are in the drawer, so the studio keeps the height. */}
+          <div className="mx-auto flex max-w-[110rem] items-center gap-3 px-4 py-1.5 sm:items-start sm:px-6 sm:py-2.5">
             <Compass className="mt-0.5 size-5 shrink-0 text-zinc-400 max-sm:hidden" />
-            <div className="min-w-0 flex-1 space-y-1.5">
-              {tag}
-              <p className="text-sm text-zinc-200">{t(c.banner)}</p>
-              <div className="flex flex-wrap items-center gap-2 text-sm">
+            <div className="flex min-w-0 flex-1 items-center gap-3 sm:block sm:space-y-1.5">
+              <span className="max-sm:truncate">{tag}</span>
+              <p className="text-sm text-zinc-200 max-sm:hidden">{t(c.banner)}</p>
+              <div className="flex flex-wrap items-center gap-2 text-sm max-sm:ml-auto">
                 <button
                   type="button"
                   onClick={() => setPanelOpen(true)}
-                  className="rounded-md border border-zinc-600 px-3 py-1.5 font-semibold text-zinc-100 transition-colors hover:bg-white/10"
+                  className="rounded-md border border-zinc-600 px-3 py-1.5 font-semibold whitespace-nowrap text-zinc-100 transition-colors hover:bg-white/10 max-sm:px-2.5 max-sm:py-1 max-sm:text-xs"
                 >
                   {t(c.how)}
                 </button>
-                {productLink}
+                <span className="max-sm:hidden">{productLink}</span>
               </div>
             </div>
             <button
