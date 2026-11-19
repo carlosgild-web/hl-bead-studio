@@ -10,6 +10,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
+import httpx
+
 Role = Literal["system", "user", "assistant", "tool"]
 
 
@@ -112,3 +114,12 @@ class LLMClient(ABC):
 
     def close(self) -> None:  # noqa: B027 - optional hook, most clients hold nothing
         """Release the client's connections."""
+
+
+def retry_wait(response: httpx.Response, attempt: int, limit: float) -> float:
+    """Seconds to wait before retrying: the `retry-after` header, else 1, 2, 4... capped."""
+    try:
+        wait = float(response.headers.get("retry-after", ""))
+    except ValueError:
+        wait = 2.0**attempt
+    return max(0.0, min(wait, limit))

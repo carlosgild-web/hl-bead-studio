@@ -1,15 +1,15 @@
 @echo off
 rem Bead Studio launcher for local development on Windows.
 rem   start.cmd                 the LLM from .env or the environment (default: fake, no model needed)
-rem   start.cmd anthropic       or: ollama, fake
+rem   start.cmd dahl            or: anthropic, ollama, fake
 rem Opens three windows (mock SAP :8100, backend :8000, UI :5173) and the browser.
 rem Close the three windows to stop. Setup: see "Quick start" in README.md.
 setlocal
 cd /d "%~dp0"
 
 if not "%~1"=="" (
-  if /i not "%~1"=="fake" if /i not "%~1"=="ollama" if /i not "%~1"=="anthropic" (
-    echo Unknown LLM provider "%~1". Use fake, ollama or anthropic.
+  if /i not "%~1"=="fake" if /i not "%~1"=="ollama" if /i not "%~1"=="anthropic" if /i not "%~1"=="dahl" (
+    echo Unknown LLM provider "%~1". Use fake, ollama, anthropic or dahl.
     exit /b 1
   )
   set "LLM_PROVIDER=%~1"
@@ -23,6 +23,10 @@ if defined MISSING exit /b 1
 
 if /i "%LLM_PROVIDER%"=="anthropic" if not defined ANTHROPIC_API_KEY if not exist ".env" (
   echo LLM_PROVIDER=anthropic needs ANTHROPIC_API_KEY in the environment or in .env.
+  exit /b 1
+)
+if /i "%LLM_PROVIDER%"=="dahl" if not defined DAHL_API_KEY if not exist ".env" (
+  echo LLM_PROVIDER=dahl needs DAHL_API_KEY in the environment or in .env.
   exit /b 1
 )
 

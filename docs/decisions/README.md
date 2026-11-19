@@ -19,3 +19,4 @@ Short records of the design decisions and of every deviation from `PLAN.md`.
 | [0013](0013-phase-6-ui-choices.md) | Phase 6 UI choices: read-only routes, live validation, viewer, e2e on Fake | accepted (deviations) |
 | [0014](0014-cards-from-the-panel.md) | Confirmation cards opened from the parameter panel | accepted |
 | [0015](0015-phase-7-eval-and-safety.md) | Phase 7 eval method, fixes it found, and the online safety limits | accepted (deviations) |
+| [0016](0016-dahl-provider.md) | Dahl as a cloud provider, through an OpenAI-compatible client | accepted (deviation) |

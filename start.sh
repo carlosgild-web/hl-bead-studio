@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Bead Studio launcher for local development on Linux and macOS.
 #   ./start.sh                the LLM from .env or the environment (default: fake, no model needed)
-#   ./start.sh anthropic      or: ollama, fake
+#   ./start.sh dahl           or: anthropic, ollama, fake
 # Runs the mock SAP (:8100), the backend (:8000) and the UI (:5173), opens the browser,
 # and stops all three on Ctrl+C. Setup: see "Quick start" in README.md.
 set -euo pipefail
@@ -9,8 +9,8 @@ cd "$(dirname "$0")"
 
 if [[ $# -gt 0 ]]; then
   case "$1" in
-    fake | ollama | anthropic) export LLM_PROVIDER="$1" ;;
-    *) echo "Unknown LLM provider '$1'. Use fake, ollama or anthropic." >&2; exit 1 ;;
+    fake | ollama | anthropic | dahl) export LLM_PROVIDER="$1" ;;
+    *) echo "Unknown LLM provider '$1'. Use fake, ollama, anthropic or dahl." >&2; exit 1 ;;
   esac
 fi
 
@@ -29,6 +29,10 @@ fi
 
 if [[ "${LLM_PROVIDER:-}" == anthropic && -z "${ANTHROPIC_API_KEY:-}" && ! -f .env ]]; then
   echo "LLM_PROVIDER=anthropic needs ANTHROPIC_API_KEY in the environment or in .env." >&2
+  exit 1
+fi
+if [[ "${LLM_PROVIDER:-}" == dahl && -z "${DAHL_API_KEY:-}" && ! -f .env ]]; then
+  echo "LLM_PROVIDER=dahl needs DAHL_API_KEY in the environment or in .env." >&2
   exit 1
 fi
 

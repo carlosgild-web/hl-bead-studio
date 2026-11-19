@@ -22,7 +22,7 @@ from typing import Any
 
 import httpx
 
-from app.llm.base import ChatTurn, LLMClient, LLMError, Message, ToolCall, ToolSpec
+from app.llm.base import ChatTurn, LLMClient, LLMError, Message, ToolCall, ToolSpec, retry_wait
 
 API_URL = "https://api.anthropic.com"
 API_VERSION = "2026-10-21"
@@ -108,7 +108,7 @@ class AnthropicClient(LLMClient):
             if response.is_success:
                 return response.json()
             if response.status_code in RETRY_STATUS and attempt < RETRIES:
-                self._sleep(_retry_wait(response, attempt))
+                self._sleep(retry_wait(response, attempt, MAX_RETRY_WAIT_S))
                 continue
             raise LLMError(self._error_text(response))
         raise AssertionError("unreachable")  # pragma: no cover
@@ -127,14 +127,6 @@ class AnthropicClient(LLMClient):
         if status in (429, 529):
             return f"The Anthropic API is busy or rate limited ({status}); try again shortly."
         return f"Anthropic API error {status} for {self.model}: {reason}"
-
-
-def _retry_wait(response: httpx.Response, attempt: int) -> float:
-    try:
-        wait = float(response.headers.get("retry-after", ""))
-    except ValueError:
-        wait = 2.0**attempt
-    return max(0.0, min(wait, MAX_RETRY_WAIT_S))
 
 
 # --- translation -------------------------------------------------------------------------

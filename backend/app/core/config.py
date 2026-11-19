@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     )
 
     # LLM
-    llm_provider: Literal["fake", "ollama", "anthropic"] = "fake"
+    llm_provider: Literal["fake", "ollama", "anthropic", "dahl"] = "fake"
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "qwen3:4b-instruct-2507"
     # NoDecode: importing CadQuery makes `typing.Union` look like a Sequence to `issubclass`
@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     # JSON-decode every `X | None` value read from the environment.
     anthropic_api_key: Annotated[SecretStr | None, NoDecode] = None
     anthropic_model: str = "claude-sonnet-5-5"
+    # Dahl: OpenAI-compatible open-models API (decision 0016); the model must accept tools
+    dahl_api_key: Annotated[SecretStr | None, NoDecode] = None
+    dahl_model: str = "MiniMaxAI/MiniMax-M2.7"
+    dahl_base_url: str = "https://inference.dahl.global/v1"
 
     # Mock SAP
     sap_base_url: str = "http://localhost:8100"

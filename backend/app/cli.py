@@ -5,7 +5,7 @@ generate      write STEP, STL, GLB, drawing PDF and params.json for one revision
 measure-fonts measure the approved fonts against CH-03 (the numbers behind CH-07)
 render        render a catalog image of a generated revision with Blender
 chat          send one message to the assistant (LLM_PROVIDER; SAP must be running)
-agent-eval    run the evaluation scenarios (--fake in CI, or --provider ollama|anthropic)
+agent-eval    run the evaluation scenarios (--fake in CI, or --provider ollama|anthropic|dahl)
 confirm       confirm a pending action, as the designer's click would (developer use)
 cancel        cancel a pending action
 """
@@ -280,13 +280,13 @@ def main(argv: list[str] | None = None) -> int:
     chat.add_argument("message")
     chat.add_argument("--conversation", help="continue a conversation (its id)")
     chat.add_argument("--language", choices=("en", "es"), default="en")
-    chat.add_argument("--provider", choices=("fake", "ollama", "anthropic"))
+    chat.add_argument("--provider", choices=("fake", "ollama", "anthropic", "dahl"))
     chat.set_defaults(func=_cmd_chat)
 
     evaluation = commands.add_parser("agent-eval", help="run the agent evaluation scenarios")
     which = evaluation.add_mutually_exclusive_group()
     which.add_argument("--fake", action="store_true", help="the ideal scripts (no model; CI)")
-    which.add_argument("--provider", choices=("fake", "ollama", "anthropic"))
+    which.add_argument("--provider", choices=("fake", "ollama", "anthropic", "dahl"))
     evaluation.add_argument("--scenario", action="append", help="run only this id (repeatable)")
     evaluation.add_argument("--out", help="folder for the Markdown and JSON report")
     evaluation.add_argument("--label", help="suffix of the report file names, e.g. run2")

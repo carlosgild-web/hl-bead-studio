@@ -31,7 +31,7 @@ and the UI (:5173) and opens the browser:
 ```bash
 start.cmd              # Windows: three windows, close them to stop
 ./start.sh             # Linux and macOS: Ctrl+C stops all three
-start.cmd anthropic    # pick the LLM: fake (default), ollama or anthropic
+start.cmd dahl         # pick the LLM: fake (default), ollama, anthropic or dahl
 ```
 
 On Windows, `start.cmd` finds Blender in `Program Files` when `BLENDER_BIN` is not set.
@@ -87,6 +87,9 @@ the CLI and by the designer's confirmation.
 - `fake` (the default) is demo mode and needs nothing.
 - `ollama` runs locally (`OLLAMA_MODEL`, default `qwen3:4b-instruct-2507`).
 - `anthropic` needs `ANTHROPIC_API_KEY`.
+- `dahl` ([Dahl Inference](https://inference.dahl.global/), open models over an
+  OpenAI-compatible API) needs `DAHL_API_KEY`; `DAHL_MODEL` defaults to
+  `MiniMaxAI/MiniMax-M2.7` (decision 0016).
 
 The assistant turns a description into parameters, checks them and the product name with the
 deterministic validators, cites rule ids from the manual, and opens confirmation cards. The
