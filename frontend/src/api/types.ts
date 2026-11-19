@@ -173,7 +173,9 @@ export interface CatalogItem {
   status: 'IN_DESIGN' | 'ACTIVE' | 'DISCONTINUED'
   color: string
   finish: string
-  main_dimension_mm: number
+  main_dimension_mm: number | null
+  /** `design`: SAP has no size yet (a new reservation); taken from the generated files. */
+  main_dimension_source: 'sap' | 'design' | null
   current_revision: string
   created_on: string | null
   created_by: string

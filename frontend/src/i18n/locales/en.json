@@ -160,6 +160,7 @@
       "IN_DESIGN": "In design",
       "ACTIVE": "Active",
       "DISCONTINUED": "Discontinued"
-    }
+    },
+    "sizeFromDesign": "From the generated files: SAP has no size for a new reservation yet"
   }
 }

@@ -14,7 +14,7 @@ from fastapi.responses import FileResponse
 
 from app.agent.tools import generated_revisions
 from app.api.deps import SapFactoryDep, SettingsDep
-from app.core.config import REPO_ROOT
+from app.core.config import REPO_ROOT, Settings
 from app.core.paths import UnsafePathError, confined, design_dir, design_file_names
 from app.render.jobs import RenderError, read_design
 from app.sap import SapError
@@ -42,6 +42,8 @@ def catalog(settings: SettingsDep, sap_factory: SapFactoryDep) -> list[dict[str,
         raise HTTPException(502, f"SAP is not available: {exc}") from exc
     items = []
     for m in materials:
+        revisions = generated_revisions(settings, m.sku)
+        size, size_source = _main_dimension(settings, m.sku, m.main_dimension_mm, revisions)
         items.append(
             {
                 "sku": m.sku,
@@ -53,15 +55,33 @@ def catalog(settings: SettingsDep, sap_factory: SapFactoryDep) -> list[dict[str,
                 "status": m.status,
                 "color": m.color,
                 "finish": m.finish,
-                "main_dimension_mm": m.main_dimension_mm,
+                "main_dimension_mm": size,
+                "main_dimension_source": size_source,
                 "current_revision": m.revision,
                 "created_on": m.created_on.isoformat() if m.created_on else None,
                 "created_by": m.created_by,
-                "generated_revisions": generated_revisions(settings, m.sku),
+                "generated_revisions": revisions,
             }
         )
     items.sort(key=lambda i: (i["created_on"] or "", i["sku"]), reverse=True)
     return items
+
+
+def _main_dimension(
+    settings: Settings, sku: str, from_sap: float, revisions: list[str]
+) -> tuple[float | None, Literal["sap", "design"] | None]:
+    """SAP's main dimension, else the largest side of the newest generated revision's bounding
+    box: a reservation is made before any parameters exist, so new SKUs have none in SAP."""
+    if from_sap:
+        return from_sap, "sap"
+    for rev in reversed(revisions):
+        try:
+            bbox = read_design(settings, sku, rev).get("measurements", {}).get("bbox_mm")
+        except (RenderError, InvalidIdentifierError, ValueError):
+            continue
+        if bbox:
+            return round(max(float(v) for v in bbox), 1), "design"
+    return None, None
 
 
 @router.get("/designs/{sku}/{rev}")

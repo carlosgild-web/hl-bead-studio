@@ -110,7 +110,23 @@ def test_catalog_lists_sap_materials_with_generated_revisions(env) -> None:
     assert by_sku["CH-2004"]["name"]
     assert by_sku["GB-1034"]["generated_revisions"] == ["A"]
     assert by_sku["CH-2004"]["generated_revisions"] == []
+    assert by_sku["CH-2004"]["main_dimension_source"] == "sap"
     assert not env.sap.reservations  # read only
+
+
+def test_a_new_sku_takes_its_size_from_the_generated_files(env) -> None:
+    # A reservation has no main dimension in SAP; GB-1034/A has generated files.
+    env.sap.materials["GB-1034"] = env.sap.materials["GB-1005"] | {
+        "Sku": "GB-1034",
+        "MainDimensionMm": None,
+    }
+
+    item = next(i for i in env.http.get("/api/catalog").json() if i["sku"] == "GB-1034")
+
+    assert item["main_dimension_source"] == "design"
+    assert 5 < item["main_dimension_mm"] < 30
+    unknown = next(i for i in env.http.get("/api/catalog").json() if i["sku"] == "GB-1005")
+    assert unknown["main_dimension_source"] == "sap"
 
 
 def test_catalog_says_when_sap_is_down(env) -> None:

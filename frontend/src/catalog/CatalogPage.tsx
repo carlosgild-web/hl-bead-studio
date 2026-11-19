@@ -103,7 +103,21 @@ export function CatalogPage() {
                     <td className="py-2 pr-3 font-mono text-xs">{item.family}</td>
                     <td className="py-2 pr-3">{item.collection}</td>
                     <td className="py-2 pr-3 font-mono tabular-nums">
-                      {item.main_dimension_mm ? `${item.main_dimension_mm} mm` : '—'}
+                      {item.main_dimension_mm ? (
+                        item.main_dimension_source === 'design' ? (
+                          <span title={t('catalog.sizeFromDesign')}>
+                            {item.main_dimension_mm} mm
+                            <span aria-hidden className="text-muted-foreground">
+                              *
+                            </span>
+                            <span className="sr-only"> ({t('catalog.sizeFromDesign')})</span>
+                          </span>
+                        ) : (
+                          `${item.main_dimension_mm} mm`
+                        )
+                      ) : (
+                        '—'
+                      )}
                     </td>
                     <td className="py-2 pr-3">
                       <span className={cn('rounded px-1.5 py-0.5 text-xs font-medium', STATUS_STYLE[item.status])}>
