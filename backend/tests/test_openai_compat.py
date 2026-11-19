@@ -207,18 +207,28 @@ def test_a_daily_limit_is_not_retried_and_says_when_to_come_back():
     assert calls == [1]
 
 
-def test_groq_sends_no_tools_on_the_last_call():
+def test_groq_last_call_has_no_tools_and_a_text_only_history():
     seen = {}
 
     def handler(request):
         seen.update(json.loads(request.content))
         return httpx.Response(200, json=_reply("ok"))
 
-    _client(handler, provider="groq", tools_when_off=False).chat([], TOOLS, allow_tools=False)
+    history = [
+        Message("user", "a 10 mm bead"),
+        Message("assistant", tool_calls=(ToolCall("c1", "validate_parameters", {"d": 10}),)),
+        Message("tool", '{"valid": true}', tool_call_id="c1", name="validate_parameters"),
+    ]
+    _client(handler, provider="groq", tools_when_off=False).chat(history, TOOLS, allow_tools=False)
     assert "tools" not in seen and "tool_choice" not in seen
+    roles = [m["role"] for m in seen["messages"]]
+    assert "tool" not in roles and not any("tool_calls" in m for m in seen["messages"])
+    assert '[called validate_parameters({"d": 10})]' in seen["messages"][1]["content"]
+    assert seen["messages"][2]["content"].startswith("[tool result: validate_parameters]")
+    assert "Do not call any tool" in seen["messages"][-1]["content"]
 
 
-def test_a_tool_call_despite_tool_choice_none_is_retried_without_tools():
+def test_a_tool_call_despite_tool_choice_none_falls_back_to_text_only():
     bodies = []
 
     def handler(request):
@@ -228,6 +238,7 @@ def test_a_tool_call_despite_tool_choice_none_is_retried_without_tools():
             return httpx.Response(400, json={"error": {"message": message}})
         return httpx.Response(200, json=_reply("Here is the summary."))
 
-    turn = _client(handler).chat([], TOOLS, allow_tools=False)
+    turn = _client(handler).chat([Message("user", "hi")], TOOLS, allow_tools=False)
     assert turn.content == "Here is the summary."
     assert bodies[0]["tool_choice"] == "none" and "tools" not in bodies[1]
+    assert "Do not call any tool" in bodies[1]["messages"][-1]["content"]

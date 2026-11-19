@@ -37,8 +37,11 @@ on 2026-11-19:
    (`allow_tools=False`). Dahl and Anthropic get the tools with "none" as the choice; Groq's
    gpt-oss models sometimes call a tool anyway, and Groq answers 400 "Tool choice is none,
    but model called a tool". The first Groq run lost 7 of 18 scenarios to this before the
-   daily limit stopped it; that run was discarded, not published. The Groq preset sends no
-   tools on that call, and any preset retries once without tools after that 400.
+   daily limit stopped it; that run was discarded, not published. Leaving the tools out of
+   the request was not enough: with tool calls in the history, gpt-oss still calls one. So
+   on that call the Groq preset sends no tools and the history as plain text (tool calls and
+   results as ordinary messages), closed by an instruction to answer now. Any preset falls
+   back to that form after that 400. Checked on `gpt-oss-20b`: the last call now answers.
 5. **`LLM_PROVIDER` is case-insensitive** (`GROQ` works): the variable name already was.
 
 ## Consequences

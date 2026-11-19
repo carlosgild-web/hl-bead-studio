@@ -6,9 +6,10 @@ OpenAI-compatible providers can reuse the class with their own base URL. Request
 
 - only standard parameters: Dahl rejects unknown ones;
 - `tools` as OpenAI functions. On the loop's last call (`allow_tools=False`) Dahl gets the
-  tools with `tool_choice: "none"`; Groq gets no tools, because its gpt-oss models may call a
-  tool anyway and Groq then answers 400 "Tool choice is none, but model called a tool". That
-  400 is also retried once without tools, whatever the preset;
+  tools with `tool_choice: "none"`. Groq's gpt-oss models call a tool anyway, even with no
+  tools in the request, and Groq answers 400 "Tool choice is none, but model called a tool".
+  So Groq gets no tools and the history as plain text (`to_text_only`), with an instruction
+  to answer now; any preset falls back to that form after that 400;
 - every tool result is its own `tool` message with the `tool_call_id` it answers;
 - reasoning models (MiniMax M2) may put `<think>...</think>` in the content: it is removed
   from the answer, but the raw assistant message is replayed unchanged to the same provider
@@ -90,12 +91,13 @@ class OpenAICompatClient(LLMClient):
     def chat(
         self, messages: list[Message], tools: list[ToolSpec], *, allow_tools: bool = True
     ) -> ChatTurn:
+        text_only = not allow_tools and not self._tools_when_off
         body: dict[str, Any] = {
             "model": self.model,
-            "messages": to_openai(messages, self.provider),
+            "messages": to_text_only(messages) if text_only else to_openai(messages, self.provider),
             "max_tokens": self._max_tokens,
         }
-        if tools and (allow_tools or self._tools_when_off):
+        if tools and not text_only:
             body["tools"] = [
                 {
                     "type": "function",
@@ -112,10 +114,11 @@ class OpenAICompatClient(LLMClient):
         try:
             return from_openai(self._post(body), self.provider)
         except LLMError as exc:
-            if allow_tools or "tools" not in body or _TOOL_CHOICE_NONE not in str(exc):
+            if allow_tools or text_only or _TOOL_CHOICE_NONE not in str(exc):
                 raise
-        body.pop("tools")
+        body.pop("tools", None)
         body.pop("tool_choice", None)
+        body["messages"] = to_text_only(messages)
         return from_openai(self._post(body), self.provider)
 
     def close(self) -> None:
@@ -201,6 +204,31 @@ def to_openai(messages: list[Message], provider: str) -> list[dict[str, Any]]:
             out.append(message)
         else:
             out.append({"role": m.role, "content": m.content or "(empty)"})
+    return out
+
+
+ANSWER_NOW = (
+    "Tools are no longer available in this turn. Using only the tool results above, write "
+    "your answer to the designer now, in plain text. Do not call any tool."
+)
+
+
+def to_text_only(messages: list[Message]) -> list[dict[str, Any]]:
+    """The history without tool-call structure, for a call that must answer in text: tool
+    calls and results become plain messages, and an instruction to answer closes it."""
+    out: list[dict[str, Any]] = []
+    for m in messages:
+        if m.role == "tool":
+            label = "error" if m.is_error else "result"
+            out.append({"role": "user", "content": f"[tool {label}: {m.name}]\n{m.content}"})
+        elif m.role == "assistant":
+            calls = "; ".join(f"{c.name}({json.dumps(c.arguments)})" for c in m.tool_calls)
+            parts = [m.content.strip(), f"[called {calls}]" if calls else ""]
+            text = "\n".join(p for p in parts if p)
+            out.append({"role": "assistant", "content": text or "-"})
+        else:
+            out.append({"role": m.role, "content": m.content or "(empty)"})
+    out.append({"role": "user", "content": ANSWER_NOW})
     return out
 
 
