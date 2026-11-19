@@ -170,3 +170,31 @@ def test_gallery_lists_the_committed_renders(env) -> None:
 def test_gallery_serves_only_manifest_files(env) -> None:
     assert env.http.get("/api/gallery/manifest.json").status_code == 404
     assert env.http.get("/api/gallery/..%2F..%2FREADME.md").status_code == 404
+
+
+def test_every_violation_has_a_spanish_message() -> None:
+    """Each `Violation(...)` in the rule code passes `message_es` (decision 0013, item 5)."""
+    import ast
+
+    from app.core.config import REPO_ROOT
+
+    for path in ("app/standards/validators.py", "app/standards/naming.py"):
+        tree = ast.parse((REPO_ROOT / "backend" / path).read_text(encoding="utf-8"))
+        calls = [
+            node
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Call) and getattr(node.func, "id", "") == "Violation"
+        ]
+        assert calls, path
+        missing = [c.lineno for c in calls if "message_es" not in {k.arg for k in c.keywords}]
+        assert not missing, f"{path}: Violation without message_es at lines {missing}"
+
+
+def test_the_panel_check_carries_the_spanish_message(env) -> None:
+    params = FAC_10 | {"hole_mm": 0.5}
+
+    result = env.http.post("/api/validate", json={"family": "FAC", "params": params}).json()
+
+    hole = next(v for v in result["violations"] if "hole_mm" in v["parameters"])
+    assert "not allowed" in hole["message"]
+    assert "no está permitido" in hole["message_es"]

@@ -46,6 +46,12 @@ and the render routes, but none of the routes a panel or a catalog needs.
    values carry the meaning in both languages. Translating the messages would mean a
    second copy of every rule text. Phase 7 can revisit this if the Spanish scenarios need
    it.
+
+   **Revised 2026-11-19 (UI polish):** each `Violation` now also carries `message_es`,
+   written next to the English text with the same computed numbers. The panel shows it in
+   the Spanish UI (`/api/validate` and `/api/preview` send it). The agent still gets only
+   the English message, because it answers in the designer's language itself. A test checks
+   that every `Violation(...)` in the rule code passes `message_es`.
 6. **No router.** Studio and Catalog are two views behind one state, so the conversation
    and the panel survive a switch between them. There is no new dependency.
 7. **The demo guide follows the `portfolio-demo-guide` skill, adapted.**

@@ -60,19 +60,32 @@ def validate_product_name(
     catalog = list(catalog)
     words = name.split()
     problems: list[str] = []
+    problems_es: list[str] = []
     suggestions: list[Suggestion] = []
 
     if len(name) > MAX_LENGTH:
         problems.append(f"it has {len(name)} characters; SAP keeps at most {MAX_LENGTH}")
+        problems_es.append(f"tiene {len(name)} caracteres; SAP guarda como máximo {MAX_LENGTH}")
     if not WORDS[0] <= len(words) <= WORDS[1]:
         problems.append(f"it has {len(words)} words; a name has {WORDS[0]}-{WORDS[1]}")
+        problems_es.append(
+            f"tiene {len(words)} palabras; un nombre tiene de {WORDS[0]} a {WORDS[1]}"
+        )
     bad = [w for w in words if not _WORD.match(w)]
     if bad:
         problems.append(
             "every word is an English word in Title Case (" + ", ".join(repr(w) for w in bad) + ")"
         )
+        problems_es.append(
+            "cada palabra es una palabra inglesa con la inicial en mayúscula ("
+            + ", ".join(repr(w) for w in bad)
+            + ")"
+        )
     if not words or words[-1] != family.name_suffix:
         problems.append(f"the last word must be the family name '{family.name_suffix}'")
+        problems_es.append(
+            f"la última palabra debe ser el nombre de la familia '{family.name_suffix}'"
+        )
         if words and len(words) < WORDS[1] and family.name_suffix not in words:
             suggestions.append(Suggestion("name", f"{' '.join(words)} {family.name_suffix}"))
 
@@ -84,6 +97,9 @@ def validate_product_name(
                 ("name",),
                 f"'{name}' does not follow the naming pattern: " + "; ".join(problems) + ".",
                 tuple(suggestions),
+                message_es=f"'{name}' no sigue el patrón de nombres: "
+                + "; ".join(problems_es)
+                + ".",
             )
         )
     same = find_same_name(name, catalog)
@@ -94,6 +110,8 @@ def validate_product_name(
                 ("name",),
                 f"'{same.name}' already exists ({same.sku}, {same.status}); names are unique "
                 "and never reused.",
+                message_es=f"'{same.name}' ya existe ({same.sku}, {same.status}); los nombres "
+                "son únicos y nunca se reutilizan.",
             )
         )
     return violations

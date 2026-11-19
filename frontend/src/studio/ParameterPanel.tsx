@@ -158,6 +158,7 @@ function Field({
 function ValidationSummary({ validation, pending }: { validation?: Validation; pending: boolean }) {
   const { t } = useTranslation()
   const { dispatch } = useStudio()
+  const language = useLanguage()
   if (!validation) return null
   if (validation.valid) {
     return (
@@ -182,7 +183,7 @@ function ValidationSummary({ validation, pending }: { validation?: Validation; p
                 <Badge variant="destructive" className="mr-2 font-mono">
                   {v.rule}
                 </Badge>
-                {v.message}
+                {language === 'es' && v.message_es ? v.message_es : v.message}
               </p>
               {v.nearest_valid && v.nearest_valid.length > 0 && (
                 <div className="flex flex-wrap items-center gap-1.5 text-xs">

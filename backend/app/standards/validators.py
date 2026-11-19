@@ -47,6 +47,9 @@ class Violation:
     parameters: tuple[str, ...]
     message: str
     suggestions: tuple[Suggestion, ...] = ()
+    # The same message in Spanish for the panel (decision 0013, item 5, revised). The agent
+    # gets only `message`, and answers in the designer's language itself.
+    message_es: str = ""
 
 
 @dataclass
@@ -140,6 +143,8 @@ def _schema_violations(family: Family, params: dict[str, Any]) -> list[Violation
                         "SCHEMA",
                         (name[:40],),
                         f"Unknown parameter {name[:40]!r} for family {family.code}.",
+                        message_es=f"Parámetro desconocido {name[:40]!r} para la familia "
+                        f"{family.code}.",
                     )
                 )
             continue
@@ -156,12 +161,20 @@ def _schema_violations(family: Family, params: dict[str, Any]) -> list[Violation
                             (name,),
                             f"Missing parameter {name!r}.",
                             (Suggestion(name, default),),
+                            message_es=f"Falta el parámetro {name!r}.",
                         )
                     )
             continue
         name = str(error.path[0]) if error.path else ""
         if name not in family.parameters:
-            found.append(Violation("SCHEMA", (), error.message[:200]))
+            found.append(
+                Violation(
+                    "SCHEMA",
+                    (),
+                    error.message[:200],
+                    message_es=f"Parámetros no válidos: {error.message[:200]}",
+                )
+            )
             continue
         prop, value = family.parameters[name], error.instance
         unit = " mm" if prop.get("x-unit") == "mm" else ""
@@ -172,17 +185,20 @@ def _schema_violations(family: Family, params: dict[str, Any]) -> list[Violation
                     (name,),
                     f"{name} must be of type {prop['type']}.",
                     (Suggestion(name, prop["default"]),),
+                    message_es=f"{name} debe ser de tipo {prop['type']}.",
                 )
             )
         elif kind in ("minimum", "maximum"):
             limit = error.validator_value
             word = "at least" if kind == "minimum" else "at most"
+            word_es = "como mínimo" if kind == "minimum" else "como máximo"
             found.append(
                 Violation(
                     _rule_of(family, name),
                     (name,),
                     f"{name} is {value}{unit}; it must be {word} {limit}{unit}.",
                     (Suggestion(name, limit),),
+                    message_es=f"{name} es {value}{unit}; debe ser {word_es} {limit}{unit}.",
                 )
             )
         elif kind == "enum":
@@ -202,6 +218,8 @@ def _schema_violations(family: Family, params: dict[str, Any]) -> list[Violation
                     f"{str(value)[:40]!r} is not allowed for {name}; "
                     f"choose one of {choices}{unit}.",
                     suggestion,
+                    message_es=f"{str(value)[:40]!r} no está permitido para {name}; "
+                    f"elige uno de {choices}{unit}.",
                 )
             )
         elif kind == "pattern":
@@ -212,10 +230,18 @@ def _schema_violations(family: Family, params: dict[str, Any]) -> list[Violation
                     (name,),
                     f"{name} does not follow the allowed format ({prop['description']})",
                     (Suggestion(name, fixed),) if fixed else (),
+                    message_es=f"{name} no sigue el formato permitido ({prop['description']})",
                 )
             )
         else:
-            found.append(Violation(_rule_of(family, name), (name,), error.message[:200]))
+            found.append(
+                Violation(
+                    _rule_of(family, name),
+                    (name,),
+                    error.message[:200],
+                    message_es=f"{name} no es válido: {error.message[:200]}",
+                )
+            )
     return found
 
 
@@ -268,6 +294,8 @@ def _check_wall(family: Family, p: dict[str, Any]) -> list[Violation]:
             f"The glass wall around the {_fmt(h)} mm hole is {wall:.2f} mm; "
             f"it must be at least {_fmt(need)} mm.",
             tuple(suggestions),
+            message_es=f"La pared de vidrio alrededor del agujero de {_fmt(h)} mm mide "
+            f"{wall:.2f} mm; debe medir al menos {_fmt(need)} mm.",
         )
     ]
 
@@ -280,6 +308,7 @@ def _check_ratio(
     whole: str,
     bounds: tuple[float, float],
     label: str,
+    label_es: str = "",
 ) -> list[Violation]:
     value, base = p[part], p[whole]
     low, high = bounds
@@ -302,6 +331,9 @@ def _check_ratio(
             f"The {label} is {ratio * 100:.0f}% of the {whole.removesuffix('_mm')}; it must be "
             f"{low * 100:.0f}–{high * 100:.0f}% ({_fmt(low * base)}–{_fmt(high * base)} mm).",
             tuple(suggestions),
+            message_es=f"{(label_es or label).capitalize()}: {ratio * 100:.0f}% de "
+            f"{whole.removesuffix('_mm')}; debe estar entre {low * 100:.0f}% y "
+            f"{high * 100:.0f}% ({_fmt(low * base)}–{_fmt(high * base)} mm).",
         )
     ]
 
@@ -318,6 +350,8 @@ def _check_facets(family: Family, p: dict[str, Any]) -> list[Violation]:
                 ("facet_count",),
                 f"{n} facets per row: the facet mold has even divisions only.",
                 tuple(Suggestion("facet_count", c) for c in options),
+                message_es=f"{n} facetas por fila: el molde de facetas solo tiene divisiones "
+                "pares.",
             )
         )
     width = math.pi * d / n
@@ -337,6 +371,8 @@ def _check_facets(family: Family, p: dict[str, Any]) -> list[Violation]:
                 f"Each facet is {width:.2f} mm wide at the equator; it must be at least "
                 f"{_fmt(R.MIN_FACET_WIDTH_MM)} mm.",
                 tuple(suggestions),
+                message_es=f"Cada faceta mide {width:.2f} mm de ancho en el ecuador; debe medir "
+                f"al menos {_fmt(R.MIN_FACET_WIDTH_MM)} mm.",
             )
         )
     return found
@@ -346,7 +382,14 @@ def _check_crescent(family: Family, p: dict[str, Any]) -> list[Violation]:
     found = []
     height = p["height_mm"]
     found += _check_ratio(
-        family, p, "CH-08", "crescent_width_mm", "height_mm", R.CRESCENT_WIDTH_RATIO, "band width"
+        family,
+        p,
+        "CH-08",
+        "crescent_width_mm",
+        "height_mm",
+        R.CRESCENT_WIDTH_RATIO,
+        "band width",
+        "el ancho de la banda",
     )
     if p["has_star"]:
         star, most = p["star_diameter_mm"], R.CRESCENT_MAX_STAR_RATIO * height
@@ -373,6 +416,9 @@ def _check_crescent(family: Family, p: dict[str, Any]) -> list[Violation]:
                     f"The {_fmt(star)} mm star does not fit inside the curve of a "
                     f"{_fmt(height)} mm crescent; it can be at most {_fmt(floor_step(most))} mm.",
                     tuple(suggestions),
+                    message_es=f"La estrella de {_fmt(star)} mm no cabe dentro de la curva de una "
+                    f"luna de {_fmt(height)} mm; puede medir como máximo "
+                    f"{_fmt(floor_step(most))} mm.",
                 )
             )
     return found
@@ -391,6 +437,8 @@ def _check_initial(family: Family, p: dict[str, Any]) -> list[Violation]:
                 f"The letter {letter} is drawn in separate pieces in {font}, so it cannot be cast "
                 f"as one charm.",
                 tuple(Suggestion("font", f) for f in others),
+                message_es=f"La letra {letter} se dibuja en piezas separadas en {font}, así que "
+                "no se puede fundir como un solo charm.",
             )
         ]
     need = max(R.FONT_MIN_HEIGHT_MM[font], R.LETTER_MIN_HEIGHT_MM.get((font, letter), 0.0))
@@ -409,6 +457,9 @@ def _check_initial(family: Family, p: dict[str, Any]) -> list[Violation]:
             f"A {letter} in {font} must be at least {_fmt(need)} mm high so that its thinnest "
             f"stroke and narrowest gap stay at {_fmt(R.MIN_FEATURE_MM)} mm (CH-03).",
             tuple(suggestions),
+            message_es=f"Una {letter} en {font} debe medir al menos {_fmt(need)} mm de alto para "
+            f"que su trazo más fino y su hueco más estrecho lleguen a {_fmt(R.MIN_FEATURE_MM)} mm "
+            "(CH-03).",
         )
     ]
 
@@ -431,6 +482,8 @@ def _check_disc(family: Family, p: dict[str, Any]) -> list[Violation]:
                 f"Only {t - depth:.1f} mm of metal is left under the {_fmt(depth)} mm engraving; "
                 f"at least {_fmt(R.MIN_FEATURE_MM)} mm is needed.",
                 tuple(suggestions),
+                message_es=f"Solo quedan {t - depth:.1f} mm de metal bajo el grabado de "
+                f"{_fmt(depth)} mm; se necesitan al menos {_fmt(R.MIN_FEATURE_MM)} mm.",
             )
         )
     if p["engraving"] == "text":
@@ -450,6 +503,10 @@ def _check_disc(family: Family, p: dict[str, Any]) -> list[Violation]:
                     f"engraved letters must be at least {_fmt(R.ENGRAVING_MIN_LETTER_MM)} mm high. "
                     "Use a shorter text or a larger disc.",
                     tuple(suggestions),
+                    message_es=f"El texto solo cabe en el disco de {_fmt(d)} mm con letras de "
+                    f"{_fmt(cap)} mm; las letras grabadas deben medir al menos "
+                    f"{_fmt(R.ENGRAVING_MIN_LETTER_MM)} mm de alto. Usa un texto más corto o un "
+                    "disco más grande.",
                 )
             )
     return found
@@ -480,12 +537,15 @@ def _feature_violation(family: Family, p: dict[str, Any]) -> list[Violation]:
     report = check_min_feature(outline)
     if report.ok:
         return []
-    problems = []
+    problems, problems_es = [], []
     if report.thin_feature:
         problems.append("a stroke, tip or neck is narrower")
+        problems_es.append("un trazo, una punta o un cuello")
     if report.narrow_gap:
         problems.append("a gap between features is narrower")
+        problems_es.append("un hueco entre partes")
     what = "engraving" if family.code == "DSC" else "outline"
+    what_es = "el grabado" if family.code == "DSC" else "el contorno"
     suggestions = _feature_suggestions(family, p)
     return [
         Violation(
@@ -494,6 +554,9 @@ def _feature_violation(family: Family, p: dict[str, Any]) -> list[Violation]:
             f"In the charm's {what}, {' and '.join(problems)} than "
             f"{_fmt(R.MIN_FEATURE_MM)} mm (the mold limit).",
             suggestions,
+            message_es=f"En {what_es} del charm, {' y '.join(problems_es)} "
+            f"{'miden' if len(problems_es) > 1 else 'mide'} menos de {_fmt(R.MIN_FEATURE_MM)} mm "
+            "(el límite del molde).",
         )
     ]
 
@@ -568,7 +631,14 @@ def validate_parameters(family_code: str, params: dict[str, Any]) -> ValidationR
     family = get_family(family_code)
     if not isinstance(params, dict):
         result = ValidationResult(family.code, {})
-        result.violations.append(Violation("SCHEMA", (), "Parameters must be an object."))
+        result.violations.append(
+            Violation(
+                "SCHEMA",
+                (),
+                "Parameters must be an object.",
+                message_es="Los parámetros deben ser un objeto.",
+            )
+        )
         return result
 
     normalized, notes = dict(params), []

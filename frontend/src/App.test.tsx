@@ -94,6 +94,7 @@ function backend(overrides: Record<string, (init?: RequestInit) => Response> = {
                 rule: 'GB-02',
                 parameters: ['hole_mm'],
                 message: 'The hole must fit the 0.8 mm mandrel.',
+                message_es: 'El agujero debe ajustarse al mandril de 0,8 mm.',
                 nearest_valid: [{ parameter: 'hole_mm', value: 0.8 }],
               },
             ],
@@ -283,6 +284,23 @@ describe('App', () => {
     expect(within(alert).getByText('GB-02')).toBeInTheDocument()
     fireEvent.click(within(alert).getByRole('button', { name: 'hole_mm = 0.8' }))
     await waitFor(() => expect(screen.getByLabelText('Hole')).toHaveValue(0.8))
+  })
+
+  it('in Spanish the panel shows the rule message in Spanish', async () => {
+    await i18n.changeLanguage('es')
+    backend()
+    renderApp()
+    fireEvent.change(screen.getByLabelText('Describe la cuenta o el charm…'), {
+      target: { value: 'Una cuenta facetada' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar' }))
+    const hole = await screen.findByLabelText('Hole')
+
+    fireEvent.change(hole, { target: { value: '0.5' } })
+
+    const alert = await screen.findByRole('alert', { name: 'Reglas incumplidas' })
+    expect(within(alert).getByText(/El agujero debe ajustarse/)).toBeInTheDocument()
+    expect(within(alert).queryByText(/The hole must fit/)).toBeNull()
   })
 
   it('the panel opens a reserve card without the assistant; only Confirm reserves', async () => {

@@ -53,6 +53,8 @@ export interface Violation {
   rule: string
   parameters: string[]
   message: string
+  /** The same message in Spanish (the panel's check only). */
+  message_es?: string
   nearest_valid?: { parameter: string; value: ParamValue }[]
 }
 

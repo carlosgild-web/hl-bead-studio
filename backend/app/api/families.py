@@ -80,7 +80,7 @@ def validate(body: ParamsBody) -> dict[str, Any]:
     """The panel's live check: violations with rule ids and the nearest valid values."""
     family = _family_or_404(body.family)
     return validation_summary(
-        validate_parameters(family.code, normalize_params(family, body.params))
+        validate_parameters(family.code, normalize_params(family, body.params)), with_es=True
     )
 
 
@@ -90,4 +90,4 @@ def preview(body: ParamsBody, previews: PreviewsDep) -> dict[str, Any]:
     and, when valid, the preview's GLB url and measurements."""
     family = _family_or_404(body.family)
     result, built = build_preview(family, body.params, previews)
-    return {"validation": validation_summary(result), "preview": built}
+    return {"validation": validation_summary(result, with_es=True), "preview": built}

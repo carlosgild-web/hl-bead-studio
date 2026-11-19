@@ -143,8 +143,10 @@ def _sap_error(exc: SapError) -> ToolResult:
     return _error("sap_error", f"SAP answered {exc.status} {exc.code}: {exc.message}")
 
 
-def _violation(v: Violation) -> dict[str, Any]:
+def _violation(v: Violation, *, with_es: bool = False) -> dict[str, Any]:
     data: dict[str, Any] = {"rule": v.rule, "parameters": list(v.parameters), "message": v.message}
+    if with_es:
+        data["message_es"] = v.message_es or v.message
     if v.suggestions:
         data["nearest_valid"] = [
             {"parameter": s.parameter, "value": s.value} for s in v.suggestions
@@ -152,12 +154,14 @@ def _violation(v: Violation) -> dict[str, Any]:
     return data
 
 
-def validation_summary(result: ValidationResult) -> dict[str, Any]:
+def validation_summary(result: ValidationResult, *, with_es: bool = False) -> dict[str, Any]:
+    """The check as the agent and the panel see it. `with_es` adds `message_es` for the
+    panel; the agent gets the English message only and answers in the designer's language."""
     return {
         "valid": result.ok,
         "family": result.family,
         "params": result.params,
-        "violations": [_violation(v) for v in result.violations],
+        "violations": [_violation(v, with_es=with_es) for v in result.violations],
         "notes": result.notes,
         "rule_edition": result.rule_edition,
     }
