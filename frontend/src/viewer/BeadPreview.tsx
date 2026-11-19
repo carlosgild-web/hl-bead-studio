@@ -82,7 +82,10 @@ export function BeadPreview({
         <directionalLight position={[-12, 5, -8]} intensity={0.6} />
         <Environment resolution={256}>
           {/* A photo studio: key softbox, warm side light, a large backdrop that the glass
-              transmits and the metal reflects, and a ring for highlights. */}
+              transmits and the metal reflects, and a ring for highlights. The warm grey
+              surround fills every other direction: a flat metal face (an initial charm seen
+              from the front) reflects one direction only, and without it that was black. */}
+          <color attach="background" args={['#9c958c']} />
           <Lightformer form="rect" intensity={3} position={[0, 6, 6]} scale={[12, 4, 1]} />
           <Lightformer form="rect" intensity={1.6} color="#ffe2b8" position={[-8, 2, -4]} scale={[6, 6, 1]} />
           <Lightformer form="rect" intensity={1.2} color="#f6f1e8" position={[0, 0, -12]} scale={[40, 24, 1]} />
