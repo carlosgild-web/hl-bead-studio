@@ -175,7 +175,7 @@ def _cmd_chat(args: argparse.Namespace) -> int:
 
 def _cmd_agent_eval(args: argparse.Namespace) -> int:
     from app.eval.harness import fake_clients
-    from app.eval.report import ScenarioResult, run_eval, write_report
+    from app.eval.report import EvalReport, ScenarioResult, run_eval, write_report
     from app.eval.scenarios import get_scenarios
     from app.llm import LLMError, make_client
 
@@ -203,7 +203,13 @@ def _cmd_agent_eval(args: argparse.Namespace) -> int:
         print(f"  {result.scenario.id:28} {status}  [{result.run.seconds:.0f} s]", flush=True)
 
     print(f"agent-eval: {len(scenarios)} scenarios on {provider}")
-    report = run_eval(scenarios, clients, settings, on_result=progress)
+
+    def save(partial: EvalReport) -> None:
+        write_report(partial, Path(args.out), args.label or "")
+
+    report = run_eval(
+        scenarios, clients, settings, on_result=progress, checkpoint=save if args.out else None
+    )
     print(f"{report.provider} / {report.model}: {report.passed}/{report.total} pass")
     for name, (passed, scored) in report.check_rates().items():
         print(f"  {name:20} {passed}/{scored}")

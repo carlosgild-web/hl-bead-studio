@@ -79,6 +79,11 @@ class EvalReport:
     model: str
     started: datetime
     results: list[ScenarioResult] = field(default_factory=list)
+    planned: int = 0  # scenarios asked for; more than `total` while running or after a crash
+
+    @property
+    def complete(self) -> bool:
+        return self.total >= self.planned
 
     @property
     def passed(self) -> int:
@@ -108,6 +113,8 @@ class EvalReport:
             "started": self.started.isoformat(timespec="seconds"),
             "passed": self.passed,
             "total": self.total,
+            "planned": self.planned,
+            "complete": self.complete,
             "checks": {k: {"passed": p, "scored": n} for k, (p, n) in self.check_rates().items()},
             "scenarios": [r.to_dict() for r in self.results],
         }
@@ -122,6 +129,15 @@ class EvalReport:
             f"**{self.passed}/{self.total} scenarios pass ({self.rate:.0%}).** "
             f"{tokens} tokens, {seconds:.0f} s in total.",
             "",
+            *(
+                []
+                if self.complete
+                else [
+                    f"**Incomplete run: {self.total} of {self.planned} scenarios finished.** "
+                    "The rates below cover only the finished ones.",
+                    "",
+                ]
+            ),
             "A scenario passes only when every check passes. The checks read the traces, the "
             "cards and the side effects; see `backend/app/eval/score.py`.",
             "",
@@ -182,9 +198,14 @@ def run_eval(
     clients: ClientFactory,
     base: Settings,
     on_result: Callable[[ScenarioResult], None] | None = None,
+    checkpoint: Callable[[EvalReport], None] | None = None,
 ) -> EvalReport:
-    """Run each scenario in its own temporary folder and score it."""
-    report = EvalReport("", "", datetime.now(UTC))
+    """Run each scenario in its own temporary folder and score it.
+
+    `checkpoint` gets the report after every scenario, so a long real-provider run that dies
+    (out of memory, a timeout) still leaves the finished scenarios on disk.
+    """
+    report = EvalReport("", "", datetime.now(UTC), planned=len(scenarios))
     for scenario in scenarios:
         # ignore_cleanup_errors: on Windows the SQLite file may still be open when the
         # folder is removed.
@@ -196,6 +217,8 @@ def run_eval(
         report.model = report.model or run.model
         if on_result:
             on_result(result)
+        if checkpoint:
+            checkpoint(report)
     return report
 
 

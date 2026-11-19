@@ -168,6 +168,29 @@ def test_the_cli_writes_the_report(tmp_path, monkeypatch, capsys):
     assert "fake / scripted: 2/2 pass" in capsys.readouterr().out
 
 
+def test_a_run_that_dies_leaves_the_finished_scenarios_on_disk(tmp_path, monkeypatch):
+    import app.eval.report as report_module
+
+    real = report_module.run_scenario
+    done: list[str] = []
+
+    def dies_on_the_second(scenario, *args):
+        if done:
+            raise MemoryError("out of memory")
+        done.append(scenario.id)
+        return real(scenario, *args)
+
+    monkeypatch.setattr(report_module, "run_scenario", dies_on_the_second)
+    monkeypatch.setattr("app.cli.get_settings", lambda: _settings(tmp_path))
+    args = ["agent-eval", "--fake", "--scenario", "bead-valid-en", "--scenario", "cancel-en"]
+    with pytest.raises(MemoryError):
+        main([*args, "--out", str(tmp_path / "out")])
+    [md] = (tmp_path / "out").glob("*-fake-scripted.md")
+    text = md.read_text(encoding="utf-8")
+    assert "**Incomplete run: 1 of 2 scenarios finished.**" in text
+    assert "`bead-valid-en`" in text and "`cancel-en`" not in text
+
+
 def test_the_cli_rejects_an_unknown_scenario(capsys):
     assert main(["agent-eval", "--fake", "--scenario", "nope"]) == 2
     assert "unknown scenario" in capsys.readouterr().err
