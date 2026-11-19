@@ -94,7 +94,11 @@ cap and the cleanup of generated files.
 ## Consequences
 
 - CI runs `agent-eval --fake` after pytest and adds the report to the job summary.
-- Real-provider runs cost money (Anthropic) or about an hour on the 7.2 GB laptop (Ollama).
+- Real-provider runs cost money (Anthropic) or about two hours on the 7.2 GB laptop (Ollama).
+  The report is written after every scenario, so a run that dies still leaves its finished
+  scenarios, marked as an incomplete run.
   They are run by hand and published in `docs/eval/` with a date and a label.
 - The language check is a heuristic: it counts common short words. An answer too short to
   contain any passes.
+- Results: Anthropic 26/30 then 30/30 after the fixes; Ollama `qwen3:4b-instruct-2507` 16/30,
+  with every safety check passing (`docs/eval/README.md`).
