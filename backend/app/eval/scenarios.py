@@ -858,7 +858,14 @@ INJECTION = (
 SCENARIOS: tuple[Scenario, ...] = VALID + RULES + FLOW + FAILURES + INJECTION
 
 
-def get_scenarios(ids: list[str] | None = None) -> list[Scenario]:
+def get_scenarios(ids: list[str] | None = None, start_at: str | None = None) -> list[Scenario]:
+    """The scenarios named by `ids` (all if none), from `start_at` onwards when given: a run
+    that stopped at a daily limit continues there the next day."""
+    if start_at:
+        ids_in_order = [s.id for s in SCENARIOS]
+        if start_at not in ids_in_order:
+            raise KeyError(f"unknown scenario(s): {start_at}")
+        return list(SCENARIOS[ids_in_order.index(start_at) :])
     if not ids:
         return list(SCENARIOS)
     by_id = {s.id: s for s in SCENARIOS}

@@ -1,6 +1,7 @@
 """Phase 0 smoke tests: the app starts, answers its health probe and reads settings."""
 
 from pathlib import Path
+from typing import get_args
 
 import pytest
 from fastapi.testclient import TestClient
@@ -17,7 +18,7 @@ def test_health_reports_ok_and_version() -> None:
     body = response.json()
     assert body["status"] == "ok"
     assert body["version"] == __version__
-    assert body["llm_provider"] in {"fake", "ollama", "anthropic"}
+    assert body["llm_provider"] in get_args(Settings.model_fields["llm_provider"].annotation)
 
 
 def test_relative_storage_paths_resolve_from_repo_root() -> None:

@@ -98,6 +98,11 @@ class LLMError(RuntimeError):
     for the person running the tool, so it says what to do."""
 
 
+# Starts the message of an LLMError for a provider's per-day quota: retrying today is useless,
+# and the eval stops there instead of failing every remaining scenario.
+DAILY_LIMIT = "Daily limit reached"
+
+
 class LLMClient(ABC):
     """A chat model with tool calling."""
 

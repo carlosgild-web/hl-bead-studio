@@ -31,7 +31,7 @@ and the UI (:5173) and opens the browser:
 ```bash
 start.cmd              # Windows: three windows, close them to stop
 ./start.sh             # Linux and macOS: Ctrl+C stops all three
-start.cmd dahl         # pick the LLM: fake (default), ollama, anthropic or dahl
+start.cmd groq         # pick the LLM: fake (default), ollama, anthropic, dahl or groq
 ```
 
 On Windows, `start.cmd` finds Blender in `Program Files` when `BLENDER_BIN` is not set.
@@ -90,6 +90,9 @@ the CLI and by the designer's confirmation.
 - `dahl` ([Dahl Inference](https://inference.dahl.global/), open models over an
   OpenAI-compatible API) needs `DAHL_API_KEY`; `DAHL_MODEL` defaults to
   `MiniMaxAI/MiniMax-M2.7` (decision 0016).
+- `groq` (free tier, no card) needs `GROQ_API_KEY`; `GROQ_MODEL` defaults to
+  `openai/gpt-oss-120b`. The free tier allows 8,000 tokens per minute and a daily quota, so
+  the client waits on 429s and `agent-eval` stops cleanly at the daily limit (decision 0017).
 
 The assistant turns a description into parameters, checks them and the product name with the
 deterministic validators, cites rule ids from the manual, and opens confirmation cards. The

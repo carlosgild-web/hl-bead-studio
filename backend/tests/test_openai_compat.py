@@ -166,3 +166,68 @@ def test_factory_dahl_without_key_explains(tmp_path, monkeypatch):
     monkeypatch.delenv("DAHL_API_KEY", raising=False)
     with pytest.raises(LLMError, match="DAHL_API_KEY"):
         make_client(make_settings(tmp_path, llm_provider="dahl", dahl_api_key=None))
+
+
+def test_factory_groq_uses_the_free_tier_limits(tmp_path):
+    settings = make_settings(tmp_path, llm_provider=" GROQ ", groq_api_key=SECRET)
+    client = make_client(settings)
+    assert (client.provider, client.model) == ("groq", "openai/gpt-oss-120b")
+    assert str(client._http.base_url).startswith("https://api.groq.com/openai/v1")
+    assert client._max_tokens <= 2048 and client._max_retry_wait >= 60
+    client.close()
+
+
+def test_request_larger_than_the_minute_limit_says_so():
+    def handler(request):
+        return httpx.Response(413, json={"error": {"message": "Requested 9100, Limit 8000"}})
+
+    with pytest.raises(LLMError, match="per-minute token limit"):
+        _client(handler, provider="groq").chat([], [])
+
+
+def test_a_daily_limit_is_not_retried_and_says_when_to_come_back():
+    calls = []
+
+    def handler(request):
+        calls.append(1)
+        return httpx.Response(
+            429,
+            json={
+                "error": {
+                    "message": "Rate limit reached for model `m` on tokens per day (TPD): "
+                    "Limit 200000, Used 199500, Requested 2500. Please try again in 7m12.5s."
+                }
+            },
+        )
+
+    with pytest.raises(LLMError) as info:
+        _client(handler, provider="groq", sleep=lambda s: None).chat([], [])
+    assert str(info.value).startswith("Daily limit reached on the Groq API")
+    assert "Try again in 7m12.5s." in str(info.value)
+    assert calls == [1]
+
+
+def test_groq_sends_no_tools_on_the_last_call():
+    seen = {}
+
+    def handler(request):
+        seen.update(json.loads(request.content))
+        return httpx.Response(200, json=_reply("ok"))
+
+    _client(handler, provider="groq", tools_when_off=False).chat([], TOOLS, allow_tools=False)
+    assert "tools" not in seen and "tool_choice" not in seen
+
+
+def test_a_tool_call_despite_tool_choice_none_is_retried_without_tools():
+    bodies = []
+
+    def handler(request):
+        bodies.append(json.loads(request.content))
+        if "tools" in bodies[-1]:
+            message = "Tool choice is none, but model called a tool"
+            return httpx.Response(400, json={"error": {"message": message}})
+        return httpx.Response(200, json=_reply("Here is the summary."))
+
+    turn = _client(handler).chat([], TOOLS, allow_tools=False)
+    assert turn.content == "Here is the summary."
+    assert bodies[0]["tool_choice"] == "none" and "tools" not in bodies[1]

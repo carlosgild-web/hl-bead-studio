@@ -1,16 +1,21 @@
 """A cloud provider that speaks the OpenAI Chat Completions API, over httpx (decision 0016).
 
-The first preset is Dahl (`LLM_PROVIDER=dahl`, https://inference.dahl.global/v1), an
-open-models API; other OpenAI-compatible providers can reuse the class with their own
-base URL. Request choices:
+Two presets (decisions 0016 and 0017): Dahl (`LLM_PROVIDER=dahl`), an open-models API, and
+Groq (`LLM_PROVIDER=groq`), whose free tier has small per-minute token limits. Other
+OpenAI-compatible providers can reuse the class with their own base URL. Request choices:
 
 - only standard parameters: Dahl rejects unknown ones;
-- `tools` as OpenAI functions; the last call keeps them and sends `tool_choice: "none"`;
+- `tools` as OpenAI functions. On the loop's last call (`allow_tools=False`) Dahl gets the
+  tools with `tool_choice: "none"`; Groq gets no tools, because its gpt-oss models may call a
+  tool anyway and Groq then answers 400 "Tool choice is none, but model called a tool". That
+  400 is also retried once without tools, whatever the preset;
 - every tool result is its own `tool` message with the `tool_call_id` it answers;
 - reasoning models (MiniMax M2) may put `<think>...</think>` in the content: it is removed
   from the answer, but the raw assistant message is replayed unchanged to the same provider
   within a run (`provider_content`), as those models expect;
-- 408, 429 and 5xx are retried twice, honouring `retry-after` up to `MAX_RETRY_WAIT_S`.
+- 408, 429 and 5xx are retried, honouring `retry-after` up to `max_retry_wait` (a preset with
+  a per-minute token limit waits longer and retries more);
+- `max_tokens` is per preset: Groq counts it against the per-minute limit before answering.
 """
 
 from __future__ import annotations
@@ -23,9 +28,19 @@ from typing import Any
 
 import httpx
 
-from app.llm.base import ChatTurn, LLMClient, LLMError, Message, ToolCall, ToolSpec, retry_wait
+from app.llm.base import (
+    DAILY_LIMIT,
+    ChatTurn,
+    LLMClient,
+    LLMError,
+    Message,
+    ToolCall,
+    ToolSpec,
+    retry_wait,
+)
 
 DAHL_URL = "https://inference.dahl.global/v1"
+GROQ_URL = "https://api.groq.com/openai/v1"
 MAX_TOKENS = 8000
 DEFAULT_TIMEOUT_S = 120.0
 RETRIES = 2
@@ -33,6 +48,9 @@ MAX_RETRY_WAIT_S = 10.0
 RETRY_STATUS = frozenset({408, 429, 500, 502, 503, 504})
 
 _THINK_RE = re.compile(r"<think>.*?</think>", re.DOTALL)
+_TOOL_CHOICE_NONE = "Tool choice is none, but model called a tool"
+# Groq: "Rate limit reached ... on tokens per day (TPD): Limit 200000, Used ..."
+_PER_DAY_RE = re.compile(r"per day|\((?:TPD|RPD)\)", re.IGNORECASE)
 
 
 class OpenAICompatClient(LLMClient):
@@ -46,6 +64,10 @@ class OpenAICompatClient(LLMClient):
         key_env: str = "DAHL_API_KEY",
         model_env: str = "DAHL_MODEL",
         timeout: float = DEFAULT_TIMEOUT_S,
+        max_tokens: int = MAX_TOKENS,
+        tools_when_off: bool = True,
+        retries: int = RETRIES,
+        max_retry_wait: float = MAX_RETRY_WAIT_S,
         transport: httpx.BaseTransport | None = None,
         sleep: Callable[[float], None] = time.sleep,
     ) -> None:
@@ -56,6 +78,8 @@ class OpenAICompatClient(LLMClient):
         self._name = provider.capitalize()
         self._key_env, self._model_env = key_env, model_env
         self._sleep = sleep
+        self._max_tokens, self._retries, self._max_retry_wait = max_tokens, retries, max_retry_wait
+        self._tools_when_off = tools_when_off
         self._http = httpx.Client(
             base_url=base_url.rstrip("/"),
             timeout=timeout,
@@ -69,9 +93,9 @@ class OpenAICompatClient(LLMClient):
         body: dict[str, Any] = {
             "model": self.model,
             "messages": to_openai(messages, self.provider),
-            "max_tokens": MAX_TOKENS,
+            "max_tokens": self._max_tokens,
         }
-        if tools:
+        if tools and (allow_tools or self._tools_when_off):
             body["tools"] = [
                 {
                     "type": "function",
@@ -85,17 +109,24 @@ class OpenAICompatClient(LLMClient):
             ]
             if not allow_tools:
                 body["tool_choice"] = "none"
+        try:
+            return from_openai(self._post(body), self.provider)
+        except LLMError as exc:
+            if allow_tools or "tools" not in body or _TOOL_CHOICE_NONE not in str(exc):
+                raise
+        body.pop("tools")
+        body.pop("tool_choice", None)
         return from_openai(self._post(body), self.provider)
 
     def close(self) -> None:
         self._http.close()
 
     def _post(self, body: dict[str, Any]) -> dict[str, Any]:
-        for attempt in range(RETRIES + 1):
+        for attempt in range(self._retries + 1):
             try:
                 response = self._http.post("/chat/completions", json=body)
             except httpx.TimeoutException as exc:
-                if attempt < RETRIES:
+                if attempt < self._retries:
                     continue
                 raise LLMError(f"The {self._name} API took too long to answer ({exc}).") from exc
             except httpx.HTTPError as exc:
@@ -110,11 +141,18 @@ class OpenAICompatClient(LLMClient):
                     raise LLMError(
                         f"The {self._name} API sent an answer that is not JSON."
                     ) from exc
-            if response.status_code in RETRY_STATUS and attempt < RETRIES:
-                self._sleep(retry_wait(response, attempt, MAX_RETRY_WAIT_S))
+            if response.status_code == 429 and _PER_DAY_RE.search(response.text):
+                raise LLMError(self._daily_limit_text(response))
+            if response.status_code in RETRY_STATUS and attempt < self._retries:
+                self._sleep(retry_wait(response, attempt, self._max_retry_wait))
                 continue
             raise LLMError(self._error_text(response))
         raise AssertionError("unreachable")  # pragma: no cover
+
+    def _daily_limit_text(self, response: httpx.Response) -> str:
+        wait = re.search(r"try again in ([\w.]+)", response.text)
+        when = f" Try again in {wait.group(1)}." if wait else " Try again tomorrow."
+        return f"{DAILY_LIMIT} on the {self._name} API for {self.model}.{when}"
 
     def _error_text(self, response: httpx.Response) -> str:
         try:
@@ -127,6 +165,11 @@ class OpenAICompatClient(LLMClient):
             return f"The {name} API rejected the key. Check {self._key_env}."
         if status == 402:
             return f"The {name} key has no tokens left. Allocate tokens to it, then try again."
+        if status == 413:
+            return (
+                f"The request is larger than the {name} per-minute token limit ({reason}). Use "
+                "a model with a higher limit or a paid tier."
+            )
         if status == 404:
             return f"The {name} API has no model '{self.model}'. Check {self._model_env}."
         if status == 429:

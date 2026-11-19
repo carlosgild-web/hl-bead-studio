@@ -15,6 +15,7 @@ from app.core.config import Settings
 from app.eval.harness import ClientFactory, ScenarioRun, run_scenario
 from app.eval.scenarios import Scenario
 from app.eval.score import CHECK_NAMES, Check, score
+from app.llm.base import DAILY_LIMIT
 
 ANSWER_PREVIEW = 700
 
@@ -80,6 +81,7 @@ class EvalReport:
     started: datetime
     results: list[ScenarioResult] = field(default_factory=list)
     planned: int = 0  # scenarios asked for; more than `total` while running or after a crash
+    stopped: str = ""  # why the run stopped early (a provider's daily limit), else ""
 
     @property
     def complete(self) -> bool:
@@ -115,6 +117,7 @@ class EvalReport:
             "total": self.total,
             "planned": self.planned,
             "complete": self.complete,
+            "stopped": self.stopped,
             "checks": {k: {"passed": p, "scored": n} for k, (p, n) in self.check_rates().items()},
             "scenarios": [r.to_dict() for r in self.results],
         }
@@ -134,7 +137,8 @@ class EvalReport:
                 if self.complete
                 else [
                     f"**Incomplete run: {self.total} of {self.planned} scenarios finished.** "
-                    "The rates below cover only the finished ones.",
+                    "The rates below cover only the finished ones."
+                    + (f" Stopped: {_cell(self.stopped)}" if self.stopped else ""),
                     "",
                 ]
             ),
@@ -211,6 +215,11 @@ def run_eval(
         # folder is removed.
         with tempfile.TemporaryDirectory(prefix="bead-eval-", ignore_cleanup_errors=True) as tmp:
             run = run_scenario(scenario, clients, base, Path(tmp))
+        limit = next((t.error for t in run.turns if (t.error or "").startswith(DAILY_LIMIT)), "")
+        if limit:
+            # Not the model's fault: leave the scenario out and stop; the rest would fail too.
+            report.stopped = f"{scenario.id}: {limit}"
+            break
         result = ScenarioResult(scenario, run, score(run))
         report.results.append(result)
         report.provider = report.provider or run.provider

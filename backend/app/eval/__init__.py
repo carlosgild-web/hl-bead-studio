@@ -2,7 +2,7 @@
 agent and gate, and a scorer that reads the traces and the side effects.
 
 `python -m app.cli agent-eval --fake` runs every scenario on the FakeClient (the ideal
-scripts, in CI); `--provider ollama|anthropic|dahl` runs the same scenarios on a real model.
+scripts, in CI); `--provider ollama|anthropic|dahl|groq` runs the same scenarios on a real model.
 """
 
 from app.eval.harness import ScenarioRun, run_scenario

@@ -191,6 +191,41 @@ def test_a_run_that_dies_leaves_the_finished_scenarios_on_disk(tmp_path, monkeyp
     assert "`bead-valid-en`" in text and "`cancel-en`" not in text
 
 
+def test_a_daily_limit_stops_the_run_without_scoring_that_scenario(tmp_path, monkeypatch, capsys):
+    import app.eval.report as report_module
+    from app.llm.base import DAILY_LIMIT
+
+    real = report_module.run_scenario
+
+    def limit_on_the_second(scenario, *args):
+        run = real(scenario, *args)
+        if scenario.id == "cancel-en":
+            run.turns[0].status, run.turns[0].error = "error", f"{DAILY_LIMIT} on the Groq API."
+        return run
+
+    monkeypatch.setattr(report_module, "run_scenario", limit_on_the_second)
+    monkeypatch.setattr("app.cli.get_settings", lambda: _settings(tmp_path))
+    ids = ["bead-valid-en", "cancel-en", "hole-too-small-en"]
+    args = ["agent-eval", "--fake", *[a for i in ids for a in ("--scenario", i)]]
+    assert main([*args, "--out", str(tmp_path / "out")]) == 0
+    out = capsys.readouterr().out
+    assert "stopped: cancel-en: Daily limit reached" in out
+    assert "--start-at cancel-en" in out
+    [md] = (tmp_path / "out").glob("*-fake-scripted.md")
+    text = md.read_text(encoding="utf-8")
+    assert "Incomplete run: 1 of 3 scenarios finished." in text
+    assert "`cancel-en`" not in text.split("Stopped:")[0]
+
+
+def test_start_at_runs_the_rest_in_order():
+    from app.eval.scenarios import get_scenarios
+
+    rest = get_scenarios(start_at=SCENARIOS[-2].id)
+    assert [s.id for s in rest] == [s.id for s in SCENARIOS[-2:]]
+    with pytest.raises(KeyError):
+        get_scenarios(start_at="nope")
+
+
 def test_the_cli_rejects_an_unknown_scenario(capsys):
     assert main(["agent-eval", "--fake", "--scenario", "nope"]) == 2
     assert "unknown scenario" in capsys.readouterr().err

@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     )
 
     # LLM
-    llm_provider: Literal["fake", "ollama", "anthropic", "dahl"] = "fake"
+    llm_provider: Literal["fake", "ollama", "anthropic", "dahl", "groq"] = "fake"
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "qwen3:4b-instruct-2507"
     # NoDecode: importing CadQuery makes `typing.Union` look like a Sequence to `issubclass`
@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     dahl_api_key: Annotated[SecretStr | None, NoDecode] = None
     dahl_model: str = "MiniMaxAI/MiniMax-M2.7"
     dahl_base_url: str = "https://inference.dahl.global/v1"
+    # Groq: OpenAI-compatible, free tier with per-minute token limits (decision 0017)
+    groq_api_key: Annotated[SecretStr | None, NoDecode] = None
+    groq_model: str = "openai/gpt-oss-120b"
 
     # Mock SAP
     sap_base_url: str = "http://localhost:8100"
@@ -61,6 +64,12 @@ class Settings(BaseSettings):
     rate_limit_per_minute: int = Field(default=30, ge=0, le=10_000)
     daily_token_cap: int = Field(default=0, ge=0)
     designs_retention_hours: float = Field(default=0, ge=0)
+
+    @field_validator("llm_provider", mode="before")
+    @classmethod
+    def _provider_lowercase(cls, value: object) -> object:
+        """`LLM_PROVIDER=Groq` means `groq`."""
+        return value.strip().lower() if isinstance(value, str) else value
 
     @field_validator("designs_root", "data_dir")
     @classmethod
