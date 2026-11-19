@@ -35,7 +35,7 @@ function material(kind: Kind, swatch: Swatch | undefined): THREE.Material {
     clearcoat: 1,
     clearcoatRoughness: 0.03,
     attenuationColor: color,
-    attenuationDistance: 14,
+    attenuationDistance: 7,
     envMapIntensity: 1.2,
   })
 }
@@ -90,6 +90,16 @@ export function BeadPreview({
           <Lightformer form="rect" intensity={1.6} color="#ffe2b8" position={[-8, 2, -4]} scale={[6, 6, 1]} />
           <Lightformer form="rect" intensity={1.2} color="#f6f1e8" position={[0, 0, -12]} scale={[40, 24, 1]} />
           <Lightformer form="ring" intensity={2} position={[8, 4, 2]} scale={3} />
+          {/* The reflector behind the camera, facing the model: a flat metal face seen from
+              the front mirrors exactly this direction, so without it the face was black. */}
+          <Lightformer
+            form="rect"
+            intensity={1.4}
+            color="#fff4e2"
+            position={[0, 2, 22]}
+            rotation={[0, Math.PI, 0]}
+            scale={[36, 22, 1]}
+          />
         </Environment>
         <Suspense fallback={null}>
           <Bounds fit clip observe margin={1.4}>
