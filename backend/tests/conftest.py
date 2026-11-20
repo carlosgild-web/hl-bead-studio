@@ -21,6 +21,7 @@ def make_settings(tmp_path: Path, **overrides) -> Settings:
         "designs_root": tmp_path / "designs",
         "blender_bin": sys.executable,
         "rate_limit_per_minute": 0,
+        "llm_fallback": "",  # no probe of a real Ollama; fallback tests set it
     }
     values.update(overrides)
     return Settings(_env_file=None, **values)

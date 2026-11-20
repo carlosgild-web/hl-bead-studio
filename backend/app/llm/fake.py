@@ -21,8 +21,8 @@ Step = ChatTurn | Callable[[list[Message], list[ToolSpec]], ChatTurn]
 
 DEMO_NOTICE = (
     "Demo mode: no language model is configured (LLM_PROVIDER=fake). The parameter panel, "
-    "the checks and the confirmation cards work; set LLM_PROVIDER=ollama or anthropic to "
-    "talk to the assistant."
+    "the checks and the confirmation cards work; set LLM_PROVIDER=groq, ollama or anthropic "
+    "to talk to the assistant."
 )
 
 _ids = itertools.count(1)

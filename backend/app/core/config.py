@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     # Groq: OpenAI-compatible, free tier with per-minute token limits (decision 0017)
     groq_api_key: Annotated[SecretStr | None, NoDecode] = None
     groq_model: str = "openai/gpt-oss-120b"
+    # For a cloud provider: what to use without its key or after its daily limit, in order
+    # (decision 0018). `ollama` only when it answers with OLLAMA_MODEL; `fake` is demo mode.
+    llm_fallback: str = "ollama,fake"
 
     # Mock SAP
     sap_base_url: str = "http://localhost:8100"
@@ -50,6 +53,9 @@ class Settings(BaseSettings):
     # Renders (decision 0003): one Blender process per job, killed after the timeout
     render_timeout_s: int = Field(default=600, ge=1, le=3600)
     render_samples: int = Field(default=64, ge=1, le=4096)
+
+    # The built frontend (`npm run build`), served at `/` when it exists (decision 0018)
+    frontend_dist: Path = Path("./frontend/dist")
 
     # Storage
     data_dir: Path = Path("./data")
@@ -71,7 +77,7 @@ class Settings(BaseSettings):
         """`LLM_PROVIDER=Groq` means `groq`."""
         return value.strip().lower() if isinstance(value, str) else value
 
-    @field_validator("designs_root", "data_dir")
+    @field_validator("designs_root", "data_dir", "frontend_dist")
     @classmethod
     def _relative_to_repo(cls, path: Path) -> Path:
         """`./data` means the repo's data folder, whatever the working directory is."""

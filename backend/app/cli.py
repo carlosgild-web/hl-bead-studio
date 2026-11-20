@@ -186,7 +186,8 @@ def _cmd_agent_eval(args: argparse.Namespace) -> int:
         return 2
     settings = get_settings()
     provider = "fake" if args.fake else args.provider or settings.llm_provider
-    settings = settings.model_copy(update={"llm_provider": provider})
+    # No fallback in an eval: a daily limit stops the run instead of scoring another model.
+    settings = settings.model_copy(update={"llm_provider": provider, "llm_fallback": ""})
     if provider == "fake":
         clients = fake_clients
     else:

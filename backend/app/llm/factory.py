@@ -1,9 +1,12 @@
-"""Pick the LLM client named by `LLM_PROVIDER` (decisions 0004, 0016 and 0017)."""
+"""Pick the LLM client named by `LLM_PROVIDER` (decisions 0004, 0016, 0017 and 0018)."""
+
+from collections.abc import Callable
 
 from app.core.config import Settings
 from app.llm.anthropic import AnthropicClient
-from app.llm.base import LLMClient
+from app.llm.base import LLMClient, LLMError
 from app.llm.fake import FakeClient
+from app.llm.fallback import FallbackClient, ollama_available
 from app.llm.ollama import OllamaClient
 from app.llm.openai_compat import GROQ_URL, OpenAICompatClient
 
@@ -14,7 +17,39 @@ GROQ_RETRIES = 4
 GROQ_MAX_RETRY_WAIT_S = 65.0
 
 
+CLOUD = ("anthropic", "dahl", "groq")
+
+
 def make_client(settings: Settings) -> LLMClient:
+    """The configured provider. A cloud provider gets the `LLM_FALLBACK` chain (decision
+    0018): without its key the first available fallback is used instead, and a turn that
+    hits its daily limit moves to it."""
+    fallbacks = _fallbacks(settings) if settings.llm_provider in CLOUD else []
+    if not fallbacks:
+        return _primary(settings)
+    try:
+        primary = _primary(settings)
+    except LLMError:
+        for _, factory in fallbacks:
+            client = factory()
+            if client is not None:
+                return client
+        raise
+    return FallbackClient(primary, fallbacks)
+
+
+def _fallbacks(settings: Settings) -> list[tuple[str, Callable[[], LLMClient | None]]]:
+    def ollama() -> LLMClient | None:
+        if not ollama_available(settings.ollama_base_url, settings.ollama_model):
+            return None
+        return OllamaClient(settings.ollama_base_url, settings.ollama_model)
+
+    known: dict[str, Callable[[], LLMClient | None]] = {"ollama": ollama, "fake": FakeClient}
+    names = [n.strip().lower() for n in settings.llm_fallback.split(",") if n.strip()]
+    return [(name, known[name]) for name in names if name in known]
+
+
+def _primary(settings: Settings) -> LLMClient:
     """`fake` (demo mode, the default), `ollama` (local), `anthropic`, `dahl` or `groq` (cloud)."""
     if settings.llm_provider == "ollama":
         return OllamaClient(settings.ollama_base_url, settings.ollama_model)
