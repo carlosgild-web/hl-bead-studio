@@ -1,14 +1,70 @@
 import { useQuery } from '@tanstack/react-query'
-import { Download, FileText, ImageIcon, Loader2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { Download, FileText, ImageIcon, Loader2, RotateCcw, TriangleAlert } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
-import { api, renderEventsUrl, renderImageUrl } from '@/api/client'
-import type { RenderJob } from '@/api/types'
+import { api, renderImageUrl } from '@/api/client'
+import type { ParamValue } from '@/api/types'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { cn } from '@/lib/utils'
 
-import { useLanguage, useStudio } from './context'
+import { CardOpenedNote } from './ActionCard'
+import { useDesignStatus, useLanguage, useOpenCard, useRenderJob, useStudio } from './context'
+
+function shown(value: ParamValue | undefined): string {
+  if (value === undefined) return '—'
+  if (typeof value === 'boolean') return value ? '✓' : '✗'
+  return String(value)
+}
+
+/**
+ * The panel no longer matches the generated revision: what changed (with the panel's
+ * labels), "Generate Rev B" (opens the card; only Confirm writes, and existing revisions are
+ * never overwritten) and "Revert" (puts the saved parameters back in the panel).
+ */
+export function StaleNotice({ compact = false }: { compact?: boolean }) {
+  const { t } = useTranslation()
+  const { state, dispatch } = useStudio()
+  const { record, diff, stale, nextRev } = useDesignStatus()
+  const { open, working, error, pendingId } = useOpenCard()
+  if (!stale || !record) return null
+  const changes = diff.map((c) => `${c.label} ${shown(c.old)} → ${shown(c.new)}${c.unit && typeof c.new === 'number' ? ` ${c.unit}` : ''}`)
+  return (
+    <div
+      role="status"
+      aria-label={t('outputs.stale.title', { rev: record.rev })}
+      className={cn('rounded-md border border-amber-300 bg-amber-50 text-amber-900', compact ? 'mt-2 space-y-1.5 p-2 text-xs' : 'space-y-2 p-3 text-sm')}
+    >
+      <p className="flex items-start gap-1.5">
+        <TriangleAlert className={cn('mt-0.5 shrink-0', compact ? 'size-3.5' : 'size-4')} />
+        <span>
+          <span className="font-semibold">{t('outputs.stale.title', { rev: record.rev })}</span>
+          {': '}
+          {changes.join('; ')}. {t('outputs.stale.body')}
+        </span>
+      </p>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          size="sm"
+          disabled={working || !nextRev || state.busy}
+          onClick={() =>
+            void open({ kind: 'generate_design', family: record.family, sku: record.sku, rev: nextRev!, params: state.params })
+          }
+        >
+          {working && <Loader2 className="animate-spin" />}
+          {t('outputs.stale.generate', { rev: nextRev })}
+        </Button>
+        <Button type="button" size="sm" variant="outline" onClick={() => dispatch({ type: 'setParams', params: record.params })}>
+          <RotateCcw /> {t('outputs.stale.revert', { rev: record.rev })}
+        </Button>
+      </div>
+      <CardOpenedNote actionId={pendingId} />
+      {error && <p className="whitespace-pre-line text-destructive">{error}</p>}
+    </div>
+  )
+}
 
 function DrawingTab() {
   const { t } = useTranslation()
@@ -27,6 +83,7 @@ function DrawingTab() {
   const d = design.data
   return (
     <div className="space-y-3">
+      <StaleNotice />
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <Badge className="font-mono">
           {d.sku} · Rev {d.rev}
@@ -56,21 +113,15 @@ function DrawingTab() {
   )
 }
 
-/** One render job, followed live over server-sent events until it is done or failed. */
+/**
+ * One render job, followed live (one shared events stream per job) until it is done or
+ * failed. A render of an older revision of the generated SKU says so.
+ */
 export function RenderProgress({ jobId }: { jobId: number }) {
   const { t } = useTranslation()
-  const [job, setJob] = useState<RenderJob | null>(null)
-
-  useEffect(() => {
-    const source = new EventSource(renderEventsUrl(jobId))
-    source.addEventListener('status', (event) => {
-      const next = JSON.parse((event as MessageEvent<string>).data) as RenderJob
-      setJob(next)
-      if (next.status === 'done' || next.status === 'failed') source.close()
-    })
-    source.onerror = () => source.close()
-    return () => source.close()
-  }, [jobId])
+  const { state } = useStudio()
+  const job = useRenderJob(jobId)
+  const older = job && state.design && job.sku === state.design.sku && job.rev !== state.design.rev
 
   const status = job?.status ?? 'queued'
   return (
@@ -81,6 +132,11 @@ export function RenderProgress({ jobId }: { jobId: number }) {
           {t('outputs.renderJob', { id: jobId })}
           {job && ` · ${job.sku} Rev ${job.rev} · ${job.finish}`}
         </span>
+        {older && (
+          <Badge variant="secondary" className="font-normal">
+            {t('outputs.olderRevision', { rev: job.rev })}
+          </Badge>
+        )}
         <Badge variant={status === 'failed' ? 'destructive' : status === 'done' ? 'default' : 'secondary'}>
           {t(`renderStatus.${status}`)}
         </Badge>
@@ -131,6 +187,7 @@ export function Gallery() {
 export function OutputTabs() {
   const { t } = useTranslation()
   const { state, dispatch } = useStudio()
+  const { stale } = useDesignStatus()
   return (
     <Tabs
       value={state.tab}
@@ -139,6 +196,12 @@ export function OutputTabs() {
       <TabsList>
         <TabsTrigger value="drawing">
           <FileText /> {t('outputs.drawing')}
+          {stale && (
+            <span className="inline-flex items-center gap-1 text-xs font-normal text-amber-700">
+              <span aria-hidden className="size-2 rounded-full bg-amber-500" />
+              {t('outputs.stale.tab')}
+            </span>
+          )}
         </TabsTrigger>
         <TabsTrigger value="renders">
           <ImageIcon /> {t('outputs.renders')}
@@ -148,6 +211,7 @@ export function OutputTabs() {
         <DrawingTab />
       </TabsContent>
       <TabsContent value="renders" className="space-y-3">
+        <StaleNotice compact />
         {state.renderJobs.map((id) => (
           <RenderProgress key={id} jobId={id} />
         ))}

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { CheckCircle2, Loader2, TriangleAlert } from 'lucide-react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { api } from '@/api/client'
@@ -9,6 +10,15 @@ import { cn } from '@/lib/utils'
 
 import { useDebounced, useLanguage } from './context'
 import { fullName } from './state'
+
+/**
+ * The worst case of the status area in pixels: the preview, two lines of GEN-03 problems,
+ * the suggestion and two lines of similar names. Reserved as soon as the designer types, so
+ * the button below does not move when the check answers.
+ */
+const STATUS_WORST_CASE_PX = 120
+
+export type NameStatus = 'empty' | 'checking' | 'ok' | 'invalid'
 
 /** What to put back in the field for a full name: everything but the family word. */
 function typedPart(name: string, suffix: string): string {
@@ -26,11 +36,14 @@ export function NameField({
   family,
   value,
   onChange,
+  onStatus,
 }: {
   id: string
   family: FamilyInfo
   value: string
   onChange: (typed: string) => void
+  /** The form disables its submit button while the name is checked or breaks GEN-03. */
+  onStatus?: (status: NameStatus) => void
 }) {
   const { t } = useTranslation()
   const language = useLanguage()
@@ -45,6 +58,17 @@ export function NameField({
     staleTime: 30_000,
   })
   const settled = check.data && check.data.name === name
+  const status: NameStatus = !typed ? 'empty' : !settled ? 'checking' : check.data!.follows ? 'ok' : 'invalid'
+  useEffect(() => onStatus?.(status), [status, onStatus])
+
+  // Grow-only while typing (a longer answer than the worst case raises the floor, a shorter
+  // one never lowers it); nothing reserved while the field is empty.
+  const box = useRef<HTMLDivElement>(null)
+  const [floor, setFloor] = useState(STATUS_WORST_CASE_PX)
+  useLayoutEffect(() => {
+    const height = box.current?.scrollHeight ?? 0
+    if (typed && height > floor) setFloor(height)
+  }, [typed, floor, name, check.data, check.isFetching])
   const hintId = `${id}-hint`
   const statusId = `${id}-status`
 
@@ -70,7 +94,13 @@ export function NameField({
         {t('panel.actions.nameHint', { suffix })}
       </p>
 
-      <div id={statusId} aria-live="polite" className="space-y-1 text-xs">
+      <div
+        id={statusId}
+        ref={box}
+        aria-live="polite"
+        className="space-y-1 text-xs"
+        style={typed ? { minHeight: floor } : undefined}
+      >
         {typed && (
           <p>
             <span className="text-muted-foreground">{t('panel.actions.namePreview')}: </span>

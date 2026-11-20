@@ -1,19 +1,26 @@
-import { FileBox, ImageIcon, Loader2, Tag } from 'lucide-react'
+import { Check, FileBox, ImageIcon, Loader2, Tag, TriangleAlert, X } from 'lucide-react'
 import { type FormEvent, type ReactNode, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { ApiError, api } from '@/api/client'
-import type { ActionKind, FamilyInfo, OpenCardRequest, Validation } from '@/api/types'
+import type { ActionKind, FamilyInfo, Validation } from '@/api/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 
-import { useLanguage, useStudio } from './context'
-import { NameField } from './NameField'
-import { fullName } from './state'
+import { CardOpenedNote } from './ActionCard'
+import { type CardRequest, useDesignStatus, useOpenCard, useRenderJob, useStudio } from './context'
+import { NameField, type NameStatus } from './NameField'
+import { StaleNotice } from './OutputTabs'
+import { fullName, type StepId, workflowSteps } from './state'
 
 const NATIVE_SELECT =
   'h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50'
+
+const KIND: Record<StepId, ActionKind> = {
+  reserve: 'reserve_sku',
+  generate: 'generate_design',
+  render: 'render',
+}
 
 function Labeled({ id, label, children }: { id: string; label: string; children: ReactNode }) {
   return (
@@ -26,100 +33,112 @@ function Labeled({ id, label, children }: { id: string; label: string; children:
   )
 }
 
-/** The reason in the server's refusal: its message plus the rule ids it cites. */
-function refusal(error: unknown): string {
-  if (!(error instanceof ApiError)) return error instanceof Error ? error.message : String(error)
-  const body = error.body as { result?: { violations?: { rule: string; message: string }[] } }
-  const violations = body?.result?.violations ?? []
-  return [error.message, ...violations.map((v) => `${v.rule}: ${v.message}`)].join('\n')
-}
-
 /**
- * "Reserve SKU…", "Generate files…" and "Render…" (decision 0014): open the same
- * confirmation cards the assistant opens, for when the designer does not need the assistant.
- * The backend checks everything again, and only Confirm on the card acts (invariant 2).
+ * The design flow as a stepper (decision 0014): reserve a SKU, generate the files, render.
+ * Each step opens the same confirmation card the assistant opens; only Confirm on the card
+ * acts (invariant 2). Step states come from what the studio has (confirmed cards, from here
+ * or from the assistant), so they stay right whichever way the work was done.
  */
-export function PanelActions({
-  family,
-  validation,
-}: {
-  family: FamilyInfo
-  validation?: Validation
-}) {
+export function PanelActions({ family, validation }: { family: FamilyInfo; validation?: Validation }) {
   const { t } = useTranslation()
-  const language = useLanguage()
-  const { state, dispatch } = useStudio()
-  const [open, setOpen] = useState<ActionKind | null>(null)
+  const { state } = useStudio()
+  const { open: openCard, working, error: openError, clearError, pendingId } = useOpenCard()
+  const design = useDesignStatus()
+  const latestJobId = state.renderJobs[0] ?? null
+  const job = useRenderJob(latestJobId)
+  // The job's revision is known from its confirmed card before the first live event.
+  const renderCard = Object.values(state.actions).find((a) => a.kind === 'render' && a.result?.job_id === latestJobId)
+  const jobRev = job?.rev ?? (renderCard ? String(renderCard.payload.rev) : (state.design?.rev ?? ''))
+  const steps = workflowSteps({
+    reserved: state.reserved,
+    design: state.design,
+    renderJob: latestJobId === null ? null : { id: latestJobId, status: job?.status ?? 'queued', rev: jobRev },
+    paramsValid: validation?.valid,
+    stale: design.stale,
+  })
+  const olderRender = steps[2].olderRender
+
+  const [form, setForm] = useState<StepId | null>(null)
   const [name, setName] = useState('')
+  const [nameStatus, setNameStatus] = useState<NameStatus>('empty')
   const [collection, setCollection] = useState('')
   const [sku, setSku] = useState('')
   const [rev, setRev] = useState('A')
-  const [working, setWorking] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
+  const [localError, setLocalError] = useState<string | null>(null)
+  const error = localError ?? openError
   const option = state.params[family.option_parameter]
-  const skuValue = sku || state.reserved?.sku || ''
-  const blocked: Record<ActionKind, string | null> = {
-    reserve_sku: null,
-    generate_design: validation?.valid ? null : t('panel.actions.needValid'),
-    render: state.design ? null : t('panel.actions.needDesign'),
-  }
 
-  function toggle(kind: ActionKind) {
-    setError(null)
-    setOpen(open === kind ? null : kind)
+  function show(step: StepId, existingSku = false) {
+    clearError()
+    setLocalError(null)
+    if (step === 'generate') {
+      setSku(existingSku ? '' : (state.design?.sku ?? state.reserved?.sku ?? ''))
+      setRev(state.design ? (design.nextRev ?? '') : 'A')
+    }
+    setForm(form === step && !existingSku ? null : step)
   }
 
   async function submit(event: FormEvent) {
     event.preventDefault()
-    if (!open) return
-    const base = { kind: open, conversation_id: state.conversationId, language }
-    let body: OpenCardRequest
-    if (open === 'reserve_sku') {
-      body = { ...base, family: family.code, name: fullName(name, family.name_suffix), collection }
-    } else if (open === 'generate_design') {
-      if (!skuValue) {
-        setError(t('panel.actions.needSku'))
+    if (!form) return
+    let request: CardRequest
+    if (form === 'reserve') {
+      request = { kind: 'reserve_sku', family: family.code, name: fullName(name, family.name_suffix), collection }
+    } else if (form === 'generate') {
+      if (!sku.trim()) {
+        setLocalError(t('panel.actions.needSku'))
         return
       }
-      body = { ...base, family: family.code, sku: skuValue.trim().toUpperCase(), rev, params: state.params }
+      request = { kind: 'generate_design', family: family.code, sku: sku.trim().toUpperCase(), rev, params: state.params }
     } else {
-      body = { ...base, sku: state.design!.sku, rev: state.design!.rev, finish: String(option ?? '') }
+      request = { kind: 'render', sku: state.design!.sku, rev: state.design!.rev, finish: String(option ?? '') }
     }
-    setWorking(true)
-    setError(null)
-    try {
-      const opened = await api.openCard(body)
-      dispatch({ type: 'event', event: { type: 'conversation', data: { id: opened.conversation_id } } })
-      dispatch({ type: 'event', event: { type: 'pending_action', data: { action: opened.action } } })
-      setOpen(null)
-    } catch (caught) {
-      setError(refusal(caught))
-    } finally {
-      setWorking(false)
-    }
+    setLocalError(null)
+    if (await openCard(request)) setForm(null)
   }
 
-  const buttons: { kind: ActionKind; icon: ReactNode; label: string; description: string }[] = [
-    {
-      kind: 'reserve_sku',
+  const meta: Record<StepId, { icon: ReactNode; title: string; action: string; description: string }> = {
+    reserve: {
       icon: <Tag />,
-      label: t('panel.actions.reserve'),
+      title: t('panel.actions.stepReserve'),
+      action: t('panel.actions.reserve'),
       description: t('panel.actions.reserveDesc'),
     },
-    {
-      kind: 'generate_design',
+    generate: {
       icon: <FileBox />,
-      label: t('panel.actions.generate'),
+      title: t('panel.actions.stepGenerate'),
+      action: t('panel.actions.generate'),
       description: t('panel.actions.generateDesc'),
     },
-    {
-      kind: 'render',
+    render: {
       icon: <ImageIcon />,
-      label: t('panel.actions.render'),
+      title: t('panel.actions.stepRender'),
+      action: t('panel.actions.render'),
       description: t('panel.actions.renderDesc'),
     },
-  ]
+  }
+
+  function summary(step: StepId): string | null {
+    if (step === 'reserve') {
+      if (state.reserved) return t('panel.actions.doneReserve', { sku: state.reserved.sku, name: state.reserved.name ?? '' })
+      return state.design ? t('panel.actions.doneExisting', { sku: state.design.sku }) : null
+    }
+    if (step === 'generate') return state.design ? t('panel.actions.doneGenerate', { rev: state.design.rev }) : null
+    if (latestJobId === null) return null
+    if (olderRender) return t('panel.actions.lastRender', { rev: jobRev, id: latestJobId, current: state.design?.rev })
+    if (job?.status === 'failed') return t('panel.actions.renderFailed', { id: latestJobId, error: job.error ?? '' })
+    return t('panel.actions.doneRender', { id: latestJobId, status: t(`renderStatus.${job?.status ?? 'queued'}`) })
+  }
+
+  const statusLabel = {
+    current: 'panel.actions.statusCurrent',
+    done: 'panel.actions.statusDone',
+    blocked: 'panel.actions.statusBlocked',
+    running: 'panel.actions.statusRunning',
+    failed: 'panel.actions.statusFailed',
+  } as const
+
+  const submitDisabled = working || (form === 'reserve' && nameStatus !== 'ok')
 
   return (
     <section aria-labelledby="panel-actions-title" className="space-y-3 rounded-lg border bg-card p-3 shadow-xs">
@@ -129,124 +148,186 @@ export function PanelActions({
         </h3>
         <p className="mt-0.5 text-xs text-muted-foreground">{t('panel.actions.hint')}</p>
       </div>
-      <ol className="space-y-2">
-        {buttons.map((b, index) => {
-          const reason = blocked[b.kind]
-          const expanded = open === b.kind
+      <ol className="space-y-0">
+        {steps.map((step, index) => {
+          const m = meta[step.id]
+          const done = step.status === 'done'
+          const blocked = step.status === 'blocked'
+          const current = step.status === 'current'
+          const running = step.status === 'running'
+          const failed = step.status === 'failed'
+          const outdated = done && step.warning === 'stale'
+          const expanded = form === step.id
+          const reasonId = `blocked-${KIND[step.id]}`
+          const line = summary(step.id)
           return (
-            <li
-              key={b.kind}
-              className={cn(
-                'rounded-md border transition-colors',
-                expanded ? 'border-primary/40 bg-muted/40' : 'border-border',
-                reason && 'opacity-80',
+            <li key={step.id} className="relative flex gap-3 pb-3 last:pb-0" data-step={step.id} data-status={step.status}>
+              {index < steps.length - 1 && (
+                <span aria-hidden className={cn('absolute top-8 bottom-0 left-[0.9375rem] w-px', done ? 'bg-success/50' : 'bg-border')} />
               )}
-            >
-              <div className="flex items-start gap-3 p-2.5">
-                <span
-                  aria-hidden
-                  className={cn(
-                    'grid size-8 shrink-0 place-items-center rounded-md [&_svg]:size-4',
-                    reason ? 'bg-muted text-muted-foreground' : 'bg-primary/10 text-primary',
-                  )}
-                >
-                  {b.icon}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs text-muted-foreground">
-                    <span className="font-mono">{index + 1}</span> · {b.description}
-                  </p>
-                  {reason && (
-                    <p id={`blocked-${b.kind}`} className="mt-0.5 text-xs text-amber-700">
-                      {reason}
+              <span
+                aria-hidden
+                className={cn(
+                  'relative z-10 grid size-8 shrink-0 place-items-center rounded-full border text-xs font-semibold',
+                  done && !outdated && 'border-success bg-success text-white',
+                  outdated && 'border-amber-500 bg-amber-100 text-amber-700',
+                  (current || running) && 'border-primary bg-primary/10 text-primary',
+                  failed && 'border-destructive bg-destructive/10 text-destructive',
+                  blocked && 'border-border bg-muted text-muted-foreground',
+                )}
+              >
+                {outdated ? (
+                  <TriangleAlert className="size-4" />
+                ) : done ? (
+                  <Check className="size-4" />
+                ) : running ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : failed ? (
+                  <X className="size-4" />
+                ) : (
+                  index + 1
+                )}
+              </span>
+              <div className={cn('min-w-0 flex-1 rounded-md', expanded && 'bg-muted/40')}>
+                <div className="flex items-start gap-2 pt-1">
+                  <div className="min-w-0 flex-1">
+                    <p className={cn('text-sm font-medium', blocked && 'text-muted-foreground')}>
+                      {m.title}
+                      <span className="sr-only">
+                        {' · '}
+                        {t(outdated ? 'panel.actions.statusStale' : statusLabel[step.status])}
+                      </span>
                     </p>
+                    {line && (
+                      <p
+                        className={cn(
+                          'text-xs',
+                          done && !outdated && 'text-success',
+                          outdated && 'text-amber-700',
+                          failed && 'text-destructive',
+                          (current || running) && 'text-muted-foreground',
+                        )}
+                      >
+                        {done && !outdated && '✓ '}
+                        {line}
+                      </p>
+                    )}
+                    {current && !line && <p className="text-xs text-muted-foreground">{m.description}</p>}
+                    {step.reason && (
+                      <p id={reasonId} className="text-xs text-amber-700">
+                        {t(`panel.actions.${step.reason}`)}
+                      </p>
+                    )}
+                    {step.warning === 'rendersSaved' && state.design && (
+                      <p className="flex items-start gap-1 text-xs text-amber-700">
+                        <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
+                        {t('panel.actions.rendersSaved', { rev: state.design.rev })}
+                      </p>
+                    )}
+                    {step.id === 'generate' && step.reason === 'needSku' && (
+                      <button
+                        type="button"
+                        className="mt-0.5 text-xs font-medium text-primary underline-offset-2 hover:underline"
+                        onClick={() => show('generate', true)}
+                      >
+                        {t('panel.actions.useExisting')}
+                      </button>
+                    )}
+                  </div>
+                  {running ? null : done || failed ? (
+                    step.id !== 'reserve' && (
+                      <button
+                        type="button"
+                        className="shrink-0 pt-0.5 text-xs font-medium text-primary underline-offset-2 hover:underline disabled:opacity-50"
+                        disabled={state.busy || (step.id === 'generate' && validation?.valid === false)}
+                        onClick={() => show(step.id)}
+                      >
+                        {t(step.id === 'generate' ? 'panel.actions.redoGenerate' : 'panel.actions.redoRender')}
+                      </button>
+                    )
+                  ) : (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={expanded ? 'default' : 'outline'}
+                      aria-expanded={expanded}
+                      aria-describedby={step.reason ? reasonId : undefined}
+                      disabled={state.busy || blocked}
+                      onClick={() => show(step.id)}
+                      className="shrink-0"
+                    >
+                      {m.action}
+                    </Button>
                   )}
                 </div>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={expanded ? 'default' : 'outline'}
-                  aria-expanded={expanded}
-                  aria-describedby={reason ? `blocked-${b.kind}` : undefined}
-                  disabled={state.busy || reason !== null}
-                  onClick={() => toggle(b.kind)}
-                  className="shrink-0"
-                >
-                  {b.label}
-                </Button>
-              </div>
-              {expanded && (
-                <form onSubmit={submit} className="grid gap-2 border-t px-2.5 pt-2.5 pb-2.5" aria-label={buttons.find((b) => b.kind === open)?.label}>
-                  {open === 'reserve_sku' && (
-                    <div className="grid items-start gap-2 sm:grid-cols-[2fr_1fr]">
-                      <Labeled id="card-name" label={t('panel.actions.name')}>
-                        <NameField id="card-name" family={family} value={name} onChange={setName} />
-                      </Labeled>
-                      <Labeled id="card-collection" label={t('panel.actions.collection')}>
-                        <select
-                          id="card-collection"
-                          className={NATIVE_SELECT}
-                          value={collection}
-                          onChange={(e) => setCollection(e.target.value)}
-                        >
-                          <option value="">{t('panel.actions.none')}</option>
-                          {family.collections.map((c) => (
-                            <option key={c} value={c}>
-                              {c}
-                            </option>
-                          ))}
-                        </select>
-                      </Labeled>
-                    </div>
-                  )}
-                  {open === 'generate_design' && (
-                    <div className="grid grid-cols-[2fr_1fr] gap-2">
-                      <Labeled id="card-sku" label={t('panel.actions.sku')}>
-                        <Input
-                          id="card-sku"
-                          value={skuValue}
-                          maxLength={16}
-                          placeholder={family.kind === 'glass_bead' ? 'GB-1034' : 'CH-2034'}
-                          onChange={(e) => setSku(e.target.value)}
-                          className="font-mono"
-                        />
-                      </Labeled>
-                      <Labeled id="card-rev" label={t('panel.actions.rev')}>
-                        <Input
-                          id="card-rev"
-                          value={rev}
-                          maxLength={2}
-                          onChange={(e) => setRev(e.target.value.toUpperCase())}
-                          className="font-mono"
-                        />
-                      </Labeled>
-                    </div>
-                  )}
-                  {open === 'render' && state.design && (
-                    <p className="text-sm">
-                      <span className="font-mono">
-                        {state.design.sku} · Rev {state.design.rev}
-                      </span>{' '}
-                      · {t('panel.actions.finish')}:{' '}
-                      {family.swatches.find((s) => s.id === option)?.name ?? String(option ?? '')}
-                    </p>
-                  )}
-                  {error && (
-                    <p role="alert" className="text-sm whitespace-pre-line text-destructive">
-                      {error}
-                    </p>
-                  )}
-                  <div className="flex gap-2">
-                    <Button type="submit" size="sm" disabled={working}>
-                      {working && <Loader2 className="animate-spin" />}
-                      {t('panel.actions.open')}
-                    </Button>
-                    <Button type="button" size="sm" variant="ghost" onClick={() => setOpen(null)}>
-                      {t('panel.actions.close')}
-                    </Button>
+                {step.id === 'generate' && step.warning === 'stale' && !expanded && <StaleNotice compact />}
+                {!expanded && pendingId && state.actions[pendingId]?.kind === KIND[step.id] && (
+                  <div className="mt-1">
+                    <CardOpenedNote actionId={pendingId} />
                   </div>
-                </form>
-              )}
+                )}
+
+                {expanded && (
+                  <form onSubmit={submit} className="mt-2 grid gap-2 border-t px-2.5 pt-2.5 pb-2.5" aria-label={m.action}>
+                    {form === 'reserve' && (
+                      <div className="grid items-start gap-2 sm:grid-cols-[2fr_1fr]">
+                        <Labeled id="card-name" label={t('panel.actions.name')}>
+                          <NameField id="card-name" family={family} value={name} onChange={setName} onStatus={setNameStatus} />
+                        </Labeled>
+                        <Labeled id="card-collection" label={t('panel.actions.collection')}>
+                          <select id="card-collection" className={NATIVE_SELECT} value={collection} onChange={(e) => setCollection(e.target.value)}>
+                            <option value="">{t('panel.actions.none')}</option>
+                            {family.collections.map((c) => (
+                              <option key={c} value={c}>
+                                {c}
+                              </option>
+                            ))}
+                          </select>
+                        </Labeled>
+                      </div>
+                    )}
+                    {form === 'generate' && (
+                      <div className="grid grid-cols-[2fr_1fr] gap-2">
+                        <Labeled id="card-sku" label={t('panel.actions.sku')}>
+                          <Input
+                            id="card-sku"
+                            value={sku}
+                            maxLength={16}
+                            placeholder={family.kind === 'glass_bead' ? 'GB-1034' : 'CH-2034'}
+                            onChange={(e) => setSku(e.target.value)}
+                            className="font-mono"
+                          />
+                        </Labeled>
+                        <Labeled id="card-rev" label={t('panel.actions.rev')}>
+                          <Input id="card-rev" value={rev} maxLength={2} onChange={(e) => setRev(e.target.value.toUpperCase())} className="font-mono" />
+                        </Labeled>
+                      </div>
+                    )}
+                    {form === 'render' && state.design && (
+                      <p className="text-sm">
+                        <span className="font-mono">
+                          {state.design.sku} · Rev {state.design.rev}
+                        </span>{' '}
+                        · {t('panel.actions.finish')}: {family.swatches.find((s) => s.id === option)?.name ?? String(option ?? '')}
+                      </p>
+                    )}
+                    {error && (
+                      <p role="alert" className="text-sm whitespace-pre-line text-destructive">
+                        {error}
+                      </p>
+                    )}
+                    <div className="flex gap-2">
+                      <Button type="submit" size="sm" disabled={submitDisabled}>
+                        {working && <Loader2 className="animate-spin" />}
+                        {t('panel.actions.open')}
+                      </Button>
+                      <Button type="button" size="sm" variant="ghost" onClick={() => setForm(null)}>
+                        {t('panel.actions.close')}
+                      </Button>
+                    </div>
+                  </form>
+                )}
+              </div>
             </li>
           )
         })}

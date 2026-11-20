@@ -1,4 +1,4 @@
-import { Ban, Check, CheckCircle2, Clock, Loader2, ShieldCheck, XCircle } from 'lucide-react'
+import { ArrowUp, Ban, Check, CheckCircle2, Clock, Loader2, ShieldCheck, XCircle } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -6,7 +6,41 @@ import type { PendingAction } from '@/api/types'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-import { useStudio } from './context'
+import { useRenderJob, useStudio } from './context'
+
+/** The id of a card's element in the chat, for links that bring the designer to it. */
+const cardAnchor = (actionId: string) => `card-${actionId}`
+
+/** Scroll the chat smoothly to a card and put the focus on its Confirm button. */
+function goToCard(actionId: string) {
+  const card = document.getElementById(cardAnchor(actionId))
+  card?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' })
+  card?.querySelector<HTMLButtonElement>('[data-confirm]')?.focus({ preventScroll: true })
+}
+
+/**
+ * Shown next to a button that opened a card without the assistant (the workflow, "Generate
+ * Rev B"): the card is in the chat and waits for Confirm there. Gone once it is decided.
+ */
+export function CardOpenedNote({ actionId }: { actionId: string | null }) {
+  const { t } = useTranslation()
+  if (!actionId) return null
+  return (
+    <p role="status" className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-primary">
+      <span>{t('panel.actions.cardOpened')}</span>
+      <button type="button" className="inline-flex items-center gap-0.5 font-medium underline underline-offset-2" onClick={() => goToCard(actionId)}>
+        {t('panel.actions.goToCard')} <ArrowUp className="size-3" />
+      </button>
+    </p>
+  )
+}
+
+/** "Render job #4: rendering", live until the job is done or failed. */
+function RenderStatus({ jobId }: { jobId: number }) {
+  const { t } = useTranslation()
+  const job = useRenderJob(jobId)
+  return <>{t('card.done.render', { job_id: jobId, status: t(`renderStatus.${job?.status ?? 'queued'}`) })}</>
+}
 
 function Row({ label, value }: { label: string; value: unknown }) {
   if (value === undefined || value === null || value === '') return null
@@ -46,6 +80,7 @@ export function ActionCard({ action }: { action: PendingAction }) {
 
   return (
     <article
+      id={cardAnchor(action.id)}
       aria-label={t(`card.title.${action.kind}`)}
       data-status={status}
       className={cn(
@@ -88,7 +123,7 @@ export function ActionCard({ action }: { action: PendingAction }) {
         <>
           <p className="mt-2 text-xs text-muted-foreground">{t(`card.explain.${action.kind}`)}</p>
           <div className="mt-3 flex gap-2">
-            <Button size="sm" onClick={() => void click('confirm')} disabled={working !== null}>
+            <Button size="sm" data-confirm onClick={() => void click('confirm')} disabled={working !== null}>
               {working === 'confirm' ? <Loader2 className="animate-spin" /> : <Check />}
               {t('card.confirm')}
             </Button>
@@ -102,7 +137,12 @@ export function ActionCard({ action }: { action: PendingAction }) {
       {status === 'confirmed' && r?.ok && (
         <div className="mt-2 rounded-md bg-success/10 p-2 text-success" role="status">
           <p className="flex items-center gap-1.5 font-medium">
-            <CheckCircle2 className="size-4" /> {t(`card.done.${action.kind}`, { ...r })}
+            <CheckCircle2 className="size-4" />{' '}
+            {action.kind === 'render' && typeof r.job_id === 'number' ? (
+              <RenderStatus jobId={r.job_id} />
+            ) : (
+              t(`card.done.${action.kind}`, { ...r })
+            )}
           </p>
           {action.kind === 'reserve_sku' && (
             <dl className="mt-1 space-y-0.5 text-foreground">

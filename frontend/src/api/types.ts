@@ -172,6 +172,8 @@ export interface DesignRecord {
   drawing_scale: string
   generated_on: string
   urls: Record<'step' | 'stl' | 'glb' | 'drawing', string>
+  /** The revision a new generation would get (after the highest one with files). */
+  next_rev: string
 }
 
 export interface CatalogItem {

@@ -30,7 +30,8 @@
     "next": {
       "label": "Next step:",
       "generate": "Generate the design files for {{sku}}",
-      "render": "Render {{sku}} rev {{rev}} for the catalog"
+      "render": "Render {{sku}} rev {{rev}} for the catalog",
+      "failed": "Could not open the card:"
     }
   },
   "panel": {
@@ -48,7 +49,7 @@
     "nearest": "Nearest valid:",
     "checkFailed": "The check could not run; is the backend up?",
     "actions": {
-      "title": "Open a card yourself",
+      "title": "Workflow",
       "hint": "Each button opens a confirmation card in the chat, with the same checks the assistant uses. Nothing happens until you click Confirm.",
       "reserve": "Reserve SKU…",
       "generate": "Generate files…",
@@ -70,12 +71,33 @@
       "sku": "SKU",
       "rev": "Revision",
       "finish": "Color / finish",
-      "open": "Open card",
+      "open": "Review & confirm",
       "close": "Close",
       "needFamily": "Choose a family first.",
       "needValid": "Fix the rule violations first.",
       "needSku": "Reserve a SKU first, or type an existing one.",
-      "needDesign": "Generate the files first."
+      "needDesign": "Generate the files first.",
+      "stepReserve": "Reserve a SKU",
+      "stepGenerate": "Generate the files",
+      "stepRender": "Render for the catalog",
+      "doneReserve": "{{sku}} · {{name}} reserved",
+      "doneExisting": "Using the existing SKU {{sku}}",
+      "doneGenerate": "Rev {{rev}} files written (STEP, STL, GLB, PDF)",
+      "doneRender": "Render job #{{id}}: {{status}}",
+      "statusDone": "Done",
+      "statusCurrent": "Current step",
+      "statusBlocked": "Blocked",
+      "useExisting": "Use an existing SKU…",
+      "redoGenerate": "New revision…",
+      "redoRender": "Render again…",
+      "rendersSaved": "Renders the saved Rev {{rev}}, not your current edits.",
+      "lastRender": "Last render: Rev {{rev}} (job #{{id}}). Render Rev {{current}} for the catalog.",
+      "renderFailed": "Render job #{{id}} failed: {{error}}",
+      "statusRunning": "In progress",
+      "statusFailed": "Failed",
+      "statusStale": "Out of date",
+      "cardOpened": "Card opened in the chat. Confirm it there.",
+      "goToCard": "Go to the card"
     }
   },
   "viewer": {
@@ -101,7 +123,15 @@
     "renderJob": "Render job #{{id}}",
     "renderAlt": "Render of {{sku}} in {{finish}}",
     "gallery": "Catalog render gallery",
-    "galleryNote": "Rendered locally with Blender (Cycles) and committed for the online demo."
+    "galleryNote": "Rendered locally with Blender (Cycles) and committed for the online demo.",
+    "stale": {
+      "title": "Parameters changed since Rev {{rev}}",
+      "body": "The drawing and files are out of date.",
+      "generate": "Generate Rev {{rev}}",
+      "revert": "Revert to Rev {{rev}} parameters",
+      "tab": "out of date"
+    },
+    "olderRevision": "Rev {{rev}}, older revision"
   },
   "renderStatus": {
     "queued": "queued",
@@ -131,7 +161,7 @@
     "done": {
       "reserve_sku": "Reserved {{sku}}",
       "generate_design": "Files written for {{sku}} rev {{rev}}",
-      "render": "Render job #{{job_id}} queued"
+      "render": "Render job #{{job_id}}: {{status}}"
     },
     "name": "Name",
     "family": "Family",

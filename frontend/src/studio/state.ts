@@ -1,4 +1,4 @@
-import type { ChatEvent, Params, ParamValue, PendingAction } from '@/api/types'
+import type { ChatEvent, ParameterInfo, Params, ParamValue, PendingAction, RenderJob } from '@/api/types'
 
 /** One tool the assistant used in a turn, shown collapsed under its answer. */
 export interface ToolStep {
@@ -49,6 +49,8 @@ export type StudioAction =
   | { type: 'chooseFamily'; family: string }
   | { type: 'fillDefaults'; family: string; params: Params }
   | { type: 'edit'; name: string; value: ParamValue }
+  /** "Revert to Rev A parameters": the whole panel at once, from a saved revision. */
+  | { type: 'setParams'; params: Params }
   | { type: 'send'; text: string }
   | { type: 'event'; event: ChatEvent }
   | { type: 'failed'; text: string }
@@ -149,6 +151,8 @@ export function studioReducer(state: StudioState, action: StudioAction): StudioS
         params: { ...state.params, [action.name]: action.value },
         proposed: state.proposed.filter((name) => name !== action.name),
       }
+    case 'setParams':
+      return { ...state, params: { ...action.params }, proposed: [] }
     case 'send':
       return { ...state, busy: true, items: [...state.items, { kind: 'user', text: action.text }] }
     case 'event':
@@ -184,3 +188,100 @@ export function currentStep(state: StudioState): number {
   if (state.family) return 1
   return 0
 }
+
+// --- the panel against the generated revision -----------------------------------------
+
+export interface ParamChange {
+  key: string
+  label: string
+  unit?: string
+  old: ParamValue | undefined
+  new: ParamValue
+}
+
+/** Numbers compared to 0.001 (the panel and params.json may differ in float noise). */
+function normalized(value: ParamValue | undefined): ParamValue | undefined {
+  return typeof value === 'number' ? Math.round(value * 1000) / 1000 : value
+}
+
+/**
+ * What changed between a generated revision's parameters and the panel, in key order, with
+ * the family's labels. A parameter the panel does not hold is not a change.
+ */
+export function paramsDiff(
+  saved: Params,
+  current: Params,
+  parameters: Record<string, ParameterInfo>,
+): ParamChange[] {
+  return Object.keys({ ...saved, ...current })
+    .sort()
+    .filter((key) => current[key] !== undefined && normalized(saved[key]) !== normalized(current[key]))
+    .map((key) => ({
+      key,
+      label: parameters[key]?.label ?? key,
+      unit: parameters[key]?.unit,
+      old: saved[key],
+      new: current[key],
+    }))
+}
+
+// --- the workflow stepper ---------------------------------------------------------------
+
+export type StepId = 'reserve' | 'generate' | 'render'
+export type StepStatus = 'current' | 'done' | 'blocked' | 'running' | 'failed'
+
+export interface WorkflowStep {
+  id: StepId
+  status: StepStatus
+  /** Why a blocked step is blocked (an i18n key under panel.actions). */
+  reason: 'needSku' | 'needValid' | 'needDesign' | null
+  /** A warning on a step that still works: the files are older than the panel. */
+  warning: 'stale' | 'rendersSaved' | null
+  /** Render only: the latest render is of an older revision than the generated one. */
+  olderRender: boolean
+}
+
+export interface WorkflowInput {
+  reserved: StudioState['reserved']
+  design: StudioState['design']
+  /** The newest render job of this session, if any: its revision and last known status. */
+  renderJob: Pick<RenderJob, 'id' | 'status' | 'rev'> | null
+  /** The panel's live check (undefined while there is none). */
+  paramsValid: boolean | undefined
+  /** The panel's parameters differ from the generated revision's. */
+  stale: boolean
+}
+
+/**
+ * The three steps of the design flow, derived from what the studio has (confirmed cards,
+ * from the panel or from the assistant), never from which buttons were clicked.
+ */
+export function workflowSteps(input: WorkflowInput): WorkflowStep[] {
+  const { reserved, design, renderJob, paramsValid, stale } = input
+  const step = (
+    id: StepId,
+    status: StepStatus,
+    reason: WorkflowStep['reason'] = null,
+    warning: WorkflowStep['warning'] = null,
+    olderRender = false,
+  ) => ({ id, status, reason, warning, olderRender }) satisfies WorkflowStep
+
+  const reserve = step('reserve', reserved || design ? 'done' : 'current')
+  let generate: WorkflowStep
+  if (design) generate = step('generate', 'done', null, stale ? 'stale' : null)
+  else if (!reserved) generate = step('generate', 'blocked', 'needSku')
+  else if (paramsValid === false) generate = step('generate', 'blocked', 'needValid')
+  else generate = step('generate', 'current')
+  // Render follows the latest generated revision: a render of an older one does not count,
+  // and only a finished job is done (queued or running is in progress).
+  let render: WorkflowStep
+  const warning = stale ? 'rendersSaved' : null
+  if (!design) render = step('render', 'blocked', 'needDesign')
+  else if (!renderJob) render = step('render', 'current', null, warning)
+  else if (renderJob.rev !== design.rev) render = step('render', 'current', null, warning, true)
+  else if (renderJob.status === 'done') render = step('render', 'done', null, warning)
+  else if (renderJob.status === 'failed') render = step('render', 'failed', null, warning)
+  else render = step('render', 'running', null, warning)
+  return [reserve, generate, render]
+}
+

@@ -3,7 +3,16 @@ import { describe, expect, it } from 'vitest'
 import { parseSse } from '@/api/client'
 import type { PendingAction, Validation } from '@/api/types'
 
-import { currentStep, initialState, paramsKey, studioReducer, type StudioState } from './state'
+import {
+  currentStep,
+  initialState,
+  paramsDiff,
+  paramsKey,
+  studioReducer,
+  type StudioState,
+  type WorkflowInput,
+  workflowSteps,
+} from './state'
 
 const validation = (params: Validation['params']): Validation => ({
   valid: true,
@@ -170,3 +179,99 @@ describe('paramsKey', () => {
     expect(paramsKey({ a: 1, b: 'x' })).toBe(paramsKey({ b: 'x', a: 1 }))
   })
 })
+
+describe('paramsDiff', () => {
+  const parameters = {
+    diameter_mm: { type: 'number' as const, label: 'Diameter', unit: 'mm', rules: [] },
+    has_star: { type: 'boolean' as const, label: 'Star', rules: [] },
+    color: { type: 'string' as const, label: 'Color', rules: [] },
+  }
+
+  it('lists the changed fields with labels, units and old → new values, in key order', () => {
+    const diff = paramsDiff(
+      { diameter_mm: 20, has_star: true, color: 'amber' },
+      { color: 'cobalt', diameter_mm: 12, has_star: true },
+      parameters,
+    )
+    expect(diff).toEqual([
+      { key: 'color', label: 'Color', unit: undefined, old: 'amber', new: 'cobalt' },
+      { key: 'diameter_mm', label: 'Diameter', unit: 'mm', old: 20, new: 12 },
+    ])
+  })
+
+  it('ignores float noise and key order, and parameters the panel does not hold', () => {
+    expect(paramsDiff({ diameter_mm: 10.0004, color: 'amber', hole_mm: 1.5 }, { color: 'amber', diameter_mm: 10 }, parameters)).toEqual([])
+  })
+
+  it('falls back to the key when the family has no label for it', () => {
+    expect(paramsDiff({ x: 1 }, { x: 2 }, {})[0].label).toBe('x')
+  })
+})
+
+describe('workflowSteps', () => {
+  const base: WorkflowInput = { reserved: null, design: null, renderJob: null, paramsValid: true, stale: false }
+  const statuses = (input: Partial<WorkflowInput>) => workflowSteps({ ...base, ...input }).map((s) => s.status)
+
+  it('a fresh session: reserve is current, generate and render are blocked with reasons', () => {
+    const steps = workflowSteps(base)
+    expect(steps.map((s) => s.status)).toEqual(['current', 'blocked', 'blocked'])
+    expect(steps[1].reason).toBe('needSku')
+    expect(steps[2].reason).toBe('needDesign')
+  })
+
+  it('moves on as cards are confirmed', () => {
+    const reserved = { sku: 'GB-1034', name: 'Amber Glow Faceted' }
+    const design = { sku: 'GB-1034', rev: 'A' }
+    expect(statuses({ reserved })).toEqual(['done', 'current', 'blocked'])
+    expect(statuses({ reserved, design })).toEqual(['done', 'done', 'current'])
+    expect(statuses({ reserved, design, renderJob: { id: 4, status: 'done', rev: 'A' } })).toEqual(['done', 'done', 'done'])
+  })
+
+  it('a queued or running render is in progress, a failed one is an error; only done is done', () => {
+    const at = (status: 'queued' | 'running' | 'done' | 'failed') =>
+      workflowSteps({ ...base, reserved: { sku: 'GB-1034' }, design: { sku: 'GB-1034', rev: 'A' }, renderJob: { id: 4, status, rev: 'A' } })[2].status
+    expect(at('queued')).toBe('running')
+    expect(at('running')).toBe('running')
+    expect(at('done')).toBe('done')
+    expect(at('failed')).toBe('failed')
+  })
+
+  it('a render of an older revision does not count for the newest one', () => {
+    const steps = workflowSteps({
+      ...base,
+      reserved: { sku: 'GB-1034' },
+      design: { sku: 'GB-1034', rev: 'B' },
+      renderJob: { id: 5, status: 'done', rev: 'A' },
+    })
+    expect(steps[2]).toMatchObject({ status: 'current', olderRender: true })
+    expect(workflowSteps({ ...base, design: { sku: 'GB-1034', rev: 'B' }, renderJob: { id: 6, status: 'done', rev: 'B' } })[2]).toMatchObject({
+      status: 'done',
+      olderRender: false,
+    })
+  })
+
+  it('an existing SKU counts as step 1 done once its files are generated', () => {
+    expect(statuses({ design: { sku: 'GB-1005', rev: 'C' } })).toEqual(['done', 'done', 'current'])
+  })
+
+  it('invalid parameters block generation', () => {
+    const steps = workflowSteps({ ...base, reserved: { sku: 'GB-1034' }, paramsValid: false })
+    expect(steps[1]).toMatchObject({ status: 'blocked', reason: 'needValid' })
+  })
+
+  it('stale files warn on generate and render but block neither', () => {
+    const steps = workflowSteps({ ...base, reserved: { sku: 'GB-1034' }, design: { sku: 'GB-1034', rev: 'A' }, stale: true })
+    expect(steps[1]).toMatchObject({ status: 'done', warning: 'stale' })
+    expect(steps[2]).toMatchObject({ status: 'current', warning: 'rendersSaved' })
+  })
+})
+
+describe('setParams', () => {
+  it('replaces the whole panel and clears the proposal highlight', () => {
+    const state: StudioState = { ...initialState, family: 'FAC', params: { diameter_mm: 12 }, proposed: ['diameter_mm'] }
+    const next = studioReducer(state, { type: 'setParams', params: { diameter_mm: 10, hole_mm: 1.5 } })
+    expect(next.params).toEqual({ diameter_mm: 10, hole_mm: 1.5 })
+    expect(next.proposed).toEqual([])
+  })
+})
+

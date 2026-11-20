@@ -1,9 +1,10 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { FamilyInfo, PendingAction, Validation } from '@/api/types'
 import i18n from '@/i18n'
+import { resetRenderJobs } from '@/studio/context'
 
 import App from './App'
 
@@ -65,9 +66,43 @@ function sse(events: [string, unknown][]): string {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 
-/** A stand-in backend: routes by method and path. */
+/** jsdom has no EventSource: a stand-in the tests can push render status events through. */
+class FakeEventSource {
+  static all: FakeEventSource[] = []
+  onerror: (() => void) | null = null
+  private listeners: Record<string, ((event: { data: string }) => void)[]> = {}
+  readonly url: string
+  constructor(url: string) {
+    this.url = url
+    FakeEventSource.all.push(this)
+  }
+  addEventListener(type: string, fn: (event: { data: string }) => void) {
+    ;(this.listeners[type] ??= []).push(fn)
+  }
+  close() {}
+  emit(type: string, data: unknown) {
+    this.listeners[type]?.forEach((fn) => fn({ data: JSON.stringify(data) }))
+  }
+}
+
+/** Send a status event for render job #4 to every open stream of it. */
+function renderEvent(status: string, rev = 'A') {
+  act(() => {
+    FakeEventSource.all
+      .filter((source) => source.url.includes('/renders/4/'))
+      .forEach((source) => source.emit('status', { id: 4, status, sku: 'GB-1034', rev, finish: 'amber' }))
+  })
+}
+
+function card(id: string, kind: PendingAction['kind'], payload: Record<string, unknown>): PendingAction {
+  return { ...reserveCard, id, kind, payload, conversation_id: 'conv1' }
+}
+
+/** A stand-in backend: routes by method and path. Generated revisions are remembered. */
 function backend(overrides: Record<string, (init?: RequestInit) => Response> = {}) {
   const calls: { method: string; url: string; body?: unknown }[] = []
+  const opened: Record<string, PendingAction> = {}
+  const designs: Record<string, Validation['params']> = {}
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input)
     const method = init?.method ?? 'GET'
@@ -163,8 +198,46 @@ function backend(overrides: Record<string, (init?: RequestInit) => Response> = {
         sap_available: true,
       })
     }
+    const confirm = /^POST \/api\/actions\/(gen-\w+|ren-\d+)\/confirm$/.exec(key)
+    if (confirm) {
+      const action = opened[confirm[1]]
+      const p = action.payload as { sku: string; rev: string; params?: Validation['params'] }
+      if (action.kind === 'generate_design') designs[p.rev] = p.params ?? {}
+      const result =
+        action.kind === 'generate_design' ? { ok: true, sku: p.sku, rev: p.rev } : { ok: true, job_id: 4, sku: p.sku, rev: p.rev }
+      return json({ ...action, status: 'confirmed', result })
+    }
+    const design = /^GET \/api\/designs\/GB-1034\/(\w+)$/.exec(key)
+    if (design && designs[design[1]]) {
+      const revs = Object.keys(designs).sort()
+      return json({
+        sku: 'GB-1034',
+        rev: design[1],
+        family: 'FAC',
+        name: 'Amber Glow Faceted',
+        sap_material: '50000134',
+        params: designs[design[1]],
+        measurements: { volume_mm3: 400, mass_g: 0.892, material: 'borosilicate', density_g_cm3: 2.23, bbox_mm: [10, 10, 7] },
+        drawing_scale: '5:1',
+        generated_on: '2026-11-19',
+        urls: { step: '/s', stl: '/t', glb: '/g', drawing: '/d' },
+        next_rev: String.fromCharCode(revs.at(-1)!.charCodeAt(0) + 1),
+      })
+    }
+    if (key === 'GET /api/renders/4')
+      return json({ id: 4, status: 'queued', sku: 'GB-1034', rev: 'A', finish: 'amber', samples: 64, resolution: 1024 })
     if (key === 'POST /api/actions') {
-      const body = JSON.parse(String(init?.body)) as { name?: string }
+      const body = JSON.parse(String(init?.body)) as { name?: string; kind: string; sku?: string; rev?: string; params?: Validation['params']; finish?: string }
+      if (body.kind === 'generate_design') {
+        const action = card(`gen-${body.rev}`, 'generate_design', { sku: body.sku, rev: body.rev, family: 'FAC', params: body.params })
+        opened[action.id] = action
+        return json({ conversation_id: 'conv1', action })
+      }
+      if (body.kind === 'render') {
+        const action = card('ren-1', 'render', { sku: body.sku, rev: body.rev, finish: body.finish })
+        opened[action.id] = action
+        return json({ conversation_id: 'conv1', action })
+      }
       if (body.name === 'amber bead Faceted')
         return json(
           {
@@ -181,6 +254,39 @@ function backend(overrides: Record<string, (init?: RequestInit) => Response> = {
   return calls
 }
 
+/** A workflow step of the panel, by id. */
+function stepOf(id: 'reserve' | 'generate' | 'render'): HTMLElement {
+  const step = document.querySelector<HTMLElement>(`[data-step="${id}"]`)
+  if (!step) throw new Error(`no step ${id}`)
+  return step
+}
+
+/** After a reservation: Next step → Generate card → Confirm → Next step → Render card → Confirm. */
+async function nextStepThroughRender(calls: { url: string; body?: unknown }[]) {
+  fireEvent.click(await screen.findByRole('button', { name: 'Generate the design files for GB-1034' }))
+  const generate = await screen.findByRole('article', { name: 'Generate design files' })
+  expect(calls.filter((c) => c.url === '/api/actions').at(-1)?.body).toMatchObject({
+    kind: 'generate_design',
+    sku: 'GB-1034',
+    rev: 'A',
+    family: 'FAC',
+  })
+  fireEvent.click(within(generate).getByRole('button', { name: 'Confirm' }))
+  expect(await within(generate).findByText('Files written for GB-1034 rev A')).toBeInTheDocument()
+
+  fireEvent.click(await screen.findByRole('button', { name: 'Render GB-1034 rev A for the catalog' }))
+  const render = await screen.findByRole('article', { name: 'Queue catalog render' })
+  expect(calls.filter((c) => c.url === '/api/actions').at(-1)?.body).toMatchObject({
+    kind: 'render',
+    sku: 'GB-1034',
+    rev: 'A',
+    finish: 'amber',
+  })
+  fireEvent.click(within(render).getByRole('button', { name: 'Confirm' }))
+  expect(await within(render).findByText('Render job #4: queued')).toBeInTheDocument()
+  return render
+}
+
 function renderApp() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
@@ -193,6 +299,9 @@ function renderApp() {
 describe('App', () => {
   beforeEach(async () => {
     await i18n.changeLanguage('en')
+    FakeEventSource.all = []
+    resetRenderJobs()
+    vi.stubGlobal('EventSource', FakeEventSource)
     try {
       localStorage.clear()
     } catch {
@@ -264,16 +373,99 @@ describe('App', () => {
     expect(await within(card).findByText('Reserved GB-1034')).toBeInTheDocument()
     expect(calls.filter((c) => c.url === '/api/actions/act1/confirm')).toHaveLength(1)
 
-    // The next step is offered as a message to the assistant, not as an action.
-    const next = await screen.findByRole('button', { name: 'Generate the design files for GB-1034' })
-    expect(calls.some((c) => c.url.includes('/designs/'))).toBe(false)
-    fireEvent.click(next)
-    await waitFor(() =>
-      expect(calls.filter((c) => c.url === '/api/chat').at(-1)?.body).toMatchObject({
-        message: 'Generate the design files for GB-1034',
-        conversation_id: 'conv1',
-      }),
-    )
+    // "Next step" opens the next card itself, without the assistant (any provider).
+    const renderCard = await nextStepThroughRender(calls)
+    expect(calls.filter((c) => c.url === '/api/chat')).toHaveLength(1)
+    expect(screen.queryByText(/Demo mode/)).toBeNull()
+    // The workflow follows the same state; the render is in progress until the job is done,
+    // and the chat card follows the job live.
+    expect(stepOf('reserve')).toHaveAttribute('data-status', 'done')
+    expect(within(stepOf('reserve')).getByText(/GB-1034 · Amber Glow Faceted reserved/)).toBeInTheDocument()
+    expect(within(stepOf('generate')).getByText(/Rev A files written/)).toBeInTheDocument()
+    expect(stepOf('render')).toHaveAttribute('data-status', 'running')
+    renderEvent('running')
+    expect(within(renderCard).getByText('Render job #4: rendering')).toBeInTheDocument()
+    expect(stepOf('render')).toHaveAttribute('data-status', 'running')
+    renderEvent('done')
+    expect(within(renderCard).getByText('Render job #4: done')).toBeInTheDocument()
+    expect(stepOf('render')).toHaveAttribute('data-status', 'done')
+  })
+
+  it('after Rev B, a render of Rev A no longer counts and is labelled as older', async () => {
+    const calls = backend()
+    renderApp()
+    fireEvent.change(screen.getByLabelText('Describe the bead or charm…'), { target: { value: 'A faceted bead' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }))
+    const reserve = await screen.findByRole('article', { name: 'Reserve SKU in SAP' })
+    fireEvent.click(within(reserve).getByRole('button', { name: 'Confirm' }))
+    await nextStepThroughRender(calls)
+    renderEvent('done')
+
+    fireEvent.change(screen.getByLabelText('Diameter'), { target: { value: '12' } })
+    const [notice] = await screen.findAllByRole('status', { name: 'Parameters changed since Rev A' })
+    fireEvent.click(within(notice).getByRole('button', { name: 'Generate Rev B' }))
+    await waitFor(() => expect(screen.getAllByRole('article', { name: 'Generate design files' })).toHaveLength(2))
+    const revB = screen.getAllByRole('article', { name: 'Generate design files' }).at(-1)!
+    fireEvent.click(within(revB).getByRole('button', { name: 'Confirm' }))
+    expect(await within(revB).findByText('Files written for GB-1034 rev B')).toBeInTheDocument()
+
+    await waitFor(() => expect(stepOf('render')).toHaveAttribute('data-status', 'current'))
+    expect(stepOf('render')).toHaveTextContent('Last render: Rev A (job #4). Render Rev B for the catalog.')
+    fireEvent.mouseDown(screen.getByRole('tab', { name: /Renders/ }), { button: 0 })
+    expect(await screen.findByText('Rev A, older revision')).toBeInTheDocument()
+  })
+
+  it('a fresh workflow starts at step 1, with steps 2 and 3 blocked', async () => {
+    backend()
+    renderApp()
+    fireEvent.click(await screen.findByRole('combobox', { name: 'Family' }))
+    fireEvent.click(await screen.findByRole('option', { name: /Faceted bead/ }))
+
+    await waitFor(() => expect(stepOf('reserve')).toHaveAttribute('data-status', 'current'))
+    expect(stepOf('generate')).toHaveAttribute('data-status', 'blocked')
+    expect(within(stepOf('generate')).getByText('Reserve a SKU first, or type an existing one.')).toBeInTheDocument()
+    expect(within(stepOf('generate')).getByRole('button', { name: 'Use an existing SKU…' })).toBeInTheDocument()
+    expect(stepOf('render')).toHaveAttribute('data-status', 'blocked')
+  })
+
+  it('warns when the panel no longer matches the generated revision; revert or generate Rev B', async () => {
+    const calls = backend()
+    renderApp()
+    fireEvent.change(screen.getByLabelText('Describe the bead or charm…'), { target: { value: 'A faceted bead' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }))
+    const reserve = await screen.findByRole('article', { name: 'Reserve SKU in SAP' })
+    fireEvent.click(within(reserve).getByRole('button', { name: 'Confirm' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Generate the design files for GB-1034' }))
+    const generate = await screen.findByRole('article', { name: 'Generate design files' })
+    fireEvent.click(within(generate).getByRole('button', { name: 'Confirm' }))
+    expect(await within(generate).findByText('Files written for GB-1034 rev A')).toBeInTheDocument()
+    expect(screen.queryByRole('status', { name: 'Parameters changed since Rev A' })).toBeNull()
+
+    fireEvent.change(screen.getByLabelText('Diameter'), { target: { value: '12' } })
+
+    const [notice] = await screen.findAllByRole('status', { name: 'Parameters changed since Rev A' })
+    expect(notice).toHaveTextContent('Diameter 10 → 12 mm')
+    expect(screen.getAllByText('out of date').length).toBeGreaterThan(0)
+    expect(stepOf('render')).toHaveTextContent('Renders the saved Rev A, not your current edits.')
+
+    fireEvent.click(within(notice).getByRole('button', { name: 'Revert to Rev A parameters' }))
+    await waitFor(() => expect(screen.queryByRole('status', { name: 'Parameters changed since Rev A' })).toBeNull())
+    expect(screen.getByLabelText('Diameter')).toHaveValue(10)
+
+    fireEvent.change(screen.getByLabelText('Diameter'), { target: { value: '12' } })
+    const [again] = await screen.findAllByRole('status', { name: 'Parameters changed since Rev A' })
+    fireEvent.click(within(again).getByRole('button', { name: 'Generate Rev B' }))
+    await waitFor(() => expect(screen.getAllByRole('article', { name: 'Generate design files' })).toHaveLength(2))
+    const revB = screen.getAllByRole('article', { name: 'Generate design files' }).at(-1)!
+    // The panel says where the card went; the link focuses its Confirm button.
+    const [opened] = screen.getAllByText('Card opened in the chat. Confirm it there.')
+    fireEvent.click(within(opened.closest('[role="status"]') as HTMLElement).getByRole('button', { name: 'Go to the card' }))
+    expect(document.activeElement).toBe(within(revB).getByRole('button', { name: 'Confirm' }))
+    expect(calls.filter((c) => c.url === '/api/actions').at(-1)?.body).toMatchObject({ kind: 'generate_design', rev: 'B' })
+    fireEvent.click(within(revB).getByRole('button', { name: 'Confirm' }))
+    expect(await within(revB).findByText('Files written for GB-1034 rev B')).toBeInTheDocument()
+    await waitFor(() => expect(screen.queryByRole('status', { name: /Parameters changed since/ })).toBeNull())
+    expect(screen.queryByText('Card opened in the chat. Confirm it there.')).toBeNull()
   })
 
   it('a refused chat turn shows the reason the backend gives', async () => {
@@ -353,13 +545,16 @@ describe('App', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Reserve SKU…' }))
     const form = screen.getByRole('form', { name: 'Reserve SKU…' })
+    // A name that breaks GEN-03 cannot be sent; the check says why while typing.
     fireEvent.change(within(form).getByLabelText('Product name'), { target: { value: 'amber bead' } })
-    fireEvent.click(within(form).getByRole('button', { name: 'Open card' }))
-    expect(await within(form).findByRole('alert')).toHaveTextContent('GEN-03')
+    expect(await within(form).findByText(/does not follow the naming pattern/)).toBeInTheDocument()
+    expect(within(form).getByRole('button', { name: 'Review & confirm' })).toBeDisabled()
 
     fireEvent.change(within(form).getByLabelText('Product name'), { target: { value: 'Amber Glow Faceted' } })
     fireEvent.change(within(form).getByLabelText('Collection'), { target: { value: 'Amber Hollow' } })
-    fireEvent.click(within(form).getByRole('button', { name: 'Open card' }))
+    const submit = within(form).getByRole('button', { name: 'Review & confirm' })
+    await waitFor(() => expect(submit).toBeEnabled())
+    fireEvent.click(submit)
 
     const card = await screen.findByRole('article', { name: 'Reserve SKU in SAP' })
     expect(calls.filter((c) => c.url === '/api/actions').at(-1)?.body).toMatchObject({

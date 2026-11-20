@@ -6,8 +6,10 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
+import type { FamilyInfo } from '@/api/types'
+
 import { ActionCard } from './ActionCard'
-import { useStudio } from './context'
+import { type CardRequest, useFamilyInfo, useOpenCard, useStudio } from './context'
 import type { StudioState, ToolStep } from './state'
 
 const EXAMPLES = ['chat.example1', 'chat.example2', 'chat.example3'] as const
@@ -54,17 +56,35 @@ function AssistantText({ text }: { text: string }) {
 }
 
 /**
- * After a confirmed card, the message that asks the assistant for the next one. The assistant
- * still opens the card and the designer still confirms it (invariant 2).
+ * After a confirmed card, the next card of the flow. The chip opens it directly, the same
+ * way as the panel's workflow (not through the assistant, so it works with any provider);
+ * the designer still confirms it (invariant 2).
  */
-function nextStep(state: StudioState, t: TFunction): string | null {
+function nextStep(
+  state: StudioState,
+  family: FamilyInfo | undefined,
+  t: TFunction,
+): { label: string; request: CardRequest } | null {
   const open = (kind: string) =>
     Object.values(state.actions).some((a) => a.kind === kind && a.status === 'pending')
   if (state.design && state.renderJobs.length === 0 && !open('render')) {
-    return t('chat.next.render', { sku: state.design.sku, rev: state.design.rev })
+    const finish = family ? state.params[family.option_parameter] : undefined
+    return {
+      label: t('chat.next.render', { sku: state.design.sku, rev: state.design.rev }),
+      request: { kind: 'render', sku: state.design.sku, rev: state.design.rev, finish: String(finish ?? '') },
+    }
   }
   if (state.reserved && !state.design && !open('generate_design')) {
-    return t('chat.next.generate', { sku: state.reserved.sku })
+    return {
+      label: t('chat.next.generate', { sku: state.reserved.sku }),
+      request: {
+        kind: 'generate_design',
+        family: state.family ?? '',
+        sku: state.reserved.sku,
+        rev: 'A',
+        params: state.params,
+      },
+    }
   }
   return null
 }
@@ -72,12 +92,17 @@ function nextStep(state: StudioState, t: TFunction): string | null {
 export function ChatPanel() {
   const { t } = useTranslation()
   const { state, send } = useStudio()
+  const family = useFamilyInfo(state.family)
+  const card = useOpenCard()
   const [text, setText] = useState('')
-  const end = useRef<HTMLDivElement>(null)
-  const next = state.busy ? null : nextStep(state, t)
+  const list = useRef<HTMLDivElement>(null)
+  const next = state.busy ? null : nextStep(state, family.data, t)
 
+  // Scroll the chat list only (scrollIntoView also scrolled the page), smoothly to its end,
+  // so a new card is just in view.
   useEffect(() => {
-    end.current?.scrollIntoView?.({ block: 'end', behavior: 'smooth' })
+    const box = list.current
+    box?.scrollTo?.({ top: box.scrollHeight, behavior: 'smooth' })
   }, [state.items.length, state.busy])
 
   function submit(event?: FormEvent) {
@@ -97,7 +122,7 @@ export function ChatPanel() {
         </h2>
       </header>
 
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4" aria-live="polite">
+      <div ref={list} className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4" aria-live="polite">
         {state.items.length === 0 && (
           <div className="space-y-3 text-sm text-muted-foreground">
             <p>{t('chat.intro')}</p>
@@ -148,7 +173,6 @@ export function ChatPanel() {
             <Loader2 className="size-4 animate-spin" /> {t('chat.thinking')}
           </p>
         )}
-        <div ref={end} />
       </div>
 
       {next && (
@@ -156,11 +180,18 @@ export function ChatPanel() {
           <span className="text-muted-foreground">{t('chat.next.label')}</span>
           <button
             type="button"
-            onClick={() => void send(next)}
-            className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/5 px-3 py-1 font-medium text-primary hover:bg-primary/10"
+            disabled={card.working}
+            onClick={() => void card.open(next.request)}
+            className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/5 px-3 py-1 font-medium text-primary hover:bg-primary/10 disabled:opacity-60"
           >
-            {next} <ArrowRight className="size-3.5" />
+            {card.working && <Loader2 className="size-3.5 animate-spin" />}
+            {next.label} <ArrowRight className="size-3.5" />
           </button>
+          {card.error && (
+            <p role="alert" className="w-full text-xs whitespace-pre-line text-destructive">
+              {t('chat.next.failed')} {card.error}
+            </p>
+          )}
         </div>
       )}
       <form onSubmit={submit} className={cn('flex items-end gap-2 p-3', !next && 'border-t')}>

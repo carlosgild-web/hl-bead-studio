@@ -70,3 +70,38 @@ Carlos asked for clearer guidance on the name in "Reserve SKU…":
 - The check only informs. Opening the card checks the name again on the server, and only
   Confirm reserves (invariant 2).
 - The assistant's reserve card is unchanged: the assistant checks its name with the same rule.
+
+## Addendum (2026-11-19): next-step chip, workflow stepper, out-of-date files
+
+- **"Next step" chip.** The chip opens the next card directly, through `POST /api/actions`,
+  the same path as the panel (`useOpenCard`). It no longer sends a chat message, so it works
+  with any LLM provider, including `fake`. The chat scrolls only its own list, not the page.
+- **Workflow stepper.** "Open a card yourself" becomes "Workflow", a vertical stepper whose
+  states (current, done ✓, blocked) come from what the studio has (`workflowSteps` in
+  `state.ts`), not from clicks.
+  - Generate is blocked until a SKU is reserved, but "Use an existing SKU…" still opens its
+    form. Render is blocked until files exist.
+  - The submit button reads "Review & confirm". It is disabled while the product name is
+    checked or breaks GEN-03, and the name check keeps a fixed height so the button does
+    not move.
+- **Out-of-date files.** The design record now has `next_rev`, the revision after the
+  highest one with files. `paramsDiff` compares the panel with the generated revision's
+  `params.json`: numbers to 0.001, key order ignored, labels from the family. Color and
+  finish count as changes, because the title block prints them.
+  - When the panel differs, a notice above the drawing, a marker on the Drawing tab, the
+    Renders tab and the stepper show the changes.
+  - The notice offers "Generate Rev B" (opens the card; existing revisions are never
+    overwritten) and "Revert to Rev A parameters".
+  - Render stays possible, with a note that it renders the saved revision.
+- **Follow-ups after testing.**
+  - Render follows the latest generated revision: a render of an older revision leaves
+    step 3 current, with "Last render: Rev A (job #5)…", and the Renders tab labels it
+    "older revision". A queued or running job is in progress, not done, and a failed one
+    shows its error.
+  - One shared events stream per job (`useRenderJob`) feeds the stepper, the Renders tab
+    and the chat card, so "Render job #N" updates live.
+  - A card opened from the panel says so next to its button, with a link that scrolls to
+    the card and focuses Confirm.
+  - The name check reserves its worst-case height only once the field has text, and never
+    shrinks while typing.
+  - Out-of-date files show step 2 in amber instead of ✓.
