@@ -1,7 +1,8 @@
 @echo off
 rem Bead Studio launcher for local development on Windows.
-rem   start.cmd                 the LLM from .env or the environment (default: fake, no model needed)
-rem   start.cmd groq            or: dahl, anthropic, ollama, fake
+rem   start.cmd                 checks Groq, then Ollama, then the demo model, and asks which one
+rem                             (LLM_PROVIDER=fake, anthropic or dahl in .env skips the check)
+rem   start.cmd groq            or: dahl, anthropic, ollama, fake: that one, without the check
 rem Opens three windows (mock SAP :8100, backend :8000, UI :5173) and the browser.
 rem Close the three windows to stop. Setup: see "Quick start" in README.md.
 setlocal
@@ -32,6 +33,20 @@ if /i "%LLM_PROVIDER%"=="dahl" if not defined DAHL_API_KEY if not exist ".env" (
 if /i "%LLM_PROVIDER%"=="groq" if not defined GROQ_API_KEY if not exist ".env" (
   echo LLM_PROVIDER=groq needs GROQ_API_KEY in the environment or in .env.
   exit /b 1
+)
+
+rem No provider named: check them and let the designer choose (decision 0019). The questions
+rem are on this console; the answer comes back in a file under data\ (gitignored).
+if "%~1"=="" (
+  pushd backend
+  ".venv\Scripts\python.exe" -m app.cli llm-check --out "%~dp0data\llm-provider.txt" >nul
+  if errorlevel 1 (
+    popd
+    echo The model check stopped; nothing was started.
+    exit /b 1
+  )
+  popd
+  set /p LLM_PROVIDER=<"data\llm-provider.txt"
 )
 
 rem Renders need Blender: use BLENDER_BIN if set, else the newest standard install.

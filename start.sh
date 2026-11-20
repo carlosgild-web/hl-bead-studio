@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Bead Studio launcher for local development on Linux and macOS.
-#   ./start.sh                the LLM from .env or the environment (default: fake, no model needed)
-#   ./start.sh groq           or: dahl, anthropic, ollama, fake
+#   ./start.sh                checks Groq, then Ollama, then the demo model, and asks which one
+#                             (LLM_PROVIDER=fake, anthropic or dahl in .env skips the check)
+#   ./start.sh groq           or: dahl, anthropic, ollama, fake: that one, without the check
 # Runs the mock SAP (:8100), the backend (:8000) and the UI (:5173), opens the browser,
 # and stops all three on Ctrl+C. Setup: see "Quick start" in README.md.
 set -euo pipefail
@@ -39,6 +40,16 @@ LLM_PROVIDER_LC="$(printf '%s' "${LLM_PROVIDER:-}" | tr '[:upper:]' '[:lower:]')
 if [[ "$LLM_PROVIDER_LC" == groq && -z "${GROQ_API_KEY:-}" && ! -f .env ]]; then
   echo "LLM_PROVIDER=groq needs GROQ_API_KEY in the environment or in .env." >&2
   exit 1
+fi
+
+# No provider named: check them and let the designer choose (decision 0019). The questions
+# go to the terminal (stderr); only the chosen name comes back on stdout.
+if [[ $# -eq 0 ]]; then
+  if ! LLM_PROVIDER="$(cd backend && .venv/bin/python -m app.cli llm-check)"; then
+    echo "The model check stopped; nothing was started." >&2
+    exit 1
+  fi
+  export LLM_PROVIDER
 fi
 
 if curl -s -o /dev/null http://localhost:8000/api/health; then

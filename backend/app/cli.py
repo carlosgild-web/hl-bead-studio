@@ -8,6 +8,7 @@ chat          send one message to the assistant (LLM_PROVIDER; SAP must be runni
 agent-eval    run the evaluation scenarios (--fake in CI, or --provider ollama|anthropic|dahl|groq)
 confirm       confirm a pending action, as the designer's click would (developer use)
 cancel        cancel a pending action
+llm-check     check Groq, Ollama and the demo model, and choose one (prints its name)
 """
 
 import argparse
@@ -248,6 +249,23 @@ def _cmd_decide(args: argparse.Namespace) -> int:
     return 0 if outcome.ok else 1
 
 
+def _cmd_llm_check(args: argparse.Namespace) -> int:
+    from app.llm.check import check
+
+    # Questions and status lines go to stderr: stdout carries only the name.
+    try:
+        name = check(get_settings(), interactive=sys.stdin.isatty())
+    except KeyboardInterrupt:
+        print(file=sys.stderr)
+        return 130
+    if args.out:
+        out = Path(args.out)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(name + "\n", encoding="utf-8")
+    print(name)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m app.cli", description=__doc__.split("\n")[0])
     commands = parser.add_subparsers(dest="command", required=True)
@@ -304,6 +322,12 @@ def main(argv: list[str] | None = None) -> int:
         decide = commands.add_parser(name, help=text)
         decide.add_argument("action_id")
         decide.set_defaults(func=_cmd_decide)
+
+    llm_check = commands.add_parser(
+        "llm-check", help="check Groq, Ollama and the demo model, and choose one"
+    )
+    llm_check.add_argument("--out", help="also write the chosen name to this file")
+    llm_check.set_defaults(func=_cmd_llm_check)
 
     args = parser.parse_args(argv)
     # Spanish answers on a Windows console or pipe (cp1252 by default).
