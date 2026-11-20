@@ -52,3 +52,37 @@ def test_api_key_from_the_environment_parses_after_importing_cadquery(
 
     assert settings.anthropic_api_key is not None
     assert settings.anthropic_api_key.get_secret_value() == "sk-test-not-a-real-key"
+
+
+def test_the_built_frontend_is_served_behind_the_api(tmp_path: Path) -> None:
+    from fastapi import FastAPI
+
+    from app.main import mount_frontend
+
+    dist = tmp_path / "dist"
+    (dist / "assets").mkdir(parents=True)
+    (dist / "index.html").write_text("<html>studio</html>", encoding="utf-8")
+    (dist / "assets" / "app.js").write_text("console.log(1)", encoding="utf-8")
+    (tmp_path / "secret.txt").write_text("no", encoding="utf-8")
+    app = FastAPI()
+
+    @app.get("/api/ping")
+    def ping() -> dict[str, bool]:
+        return {"ok": True}
+
+    assert mount_frontend(app, dist)
+    http = TestClient(app)
+    assert http.get("/").text == "<html>studio</html>"
+    assert http.get("/catalog").text == "<html>studio</html>"  # any view: the app decides
+    assert http.get("/assets/app.js").text == "console.log(1)"
+    assert http.get("/api/ping").json() == {"ok": True}
+    assert http.get("/api/nothing").status_code == 404
+    assert "no" not in http.get("/../secret.txt").text
+
+
+def test_without_a_build_nothing_is_mounted(tmp_path: Path) -> None:
+    from fastapi import FastAPI
+
+    from app.main import mount_frontend
+
+    assert mount_frontend(FastAPI(), tmp_path / "missing") is False
