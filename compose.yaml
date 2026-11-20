@@ -1,0 +1,53 @@
+# docker compose up             the studio at http://localhost:8000 (LLM from .env, or demo mode)
+# docker compose --profile ollama up    also a local Ollama (pull the model once, see README)
+#
+# The LLM: LLM_PROVIDER and its key come from .env (groq by default). Without a key, or after
+# Groq's daily limit, the studio uses Ollama when it answers, else demo mode (decision 0018).
+
+services:
+  sap-mock:
+    build: .
+    image: hl-bead-studio:latest
+    working_dir: /app/sap-mock
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8100"]
+    environment:
+      DATA_DIR: /data/sap
+    volumes:
+      - studio-data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8100/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    restart: unless-stopped
+
+  app:
+    image: hl-bead-studio:latest
+    depends_on:
+      sap-mock:
+        condition: service_healthy
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      LLM_PROVIDER: ${LLM_PROVIDER:-groq}
+      SAP_BASE_URL: http://sap-mock:8100
+      OLLAMA_BASE_URL: ${COMPOSE_OLLAMA_URL:-http://ollama:11434}
+      DATA_DIR: /data/studio
+      DESIGNS_ROOT: /data/studio/designs
+    ports:
+      - "8000:8000"
+    volumes:
+      - studio-data:/data
+    restart: unless-stopped
+
+  ollama:
+    profiles: ["ollama"]
+    image: ollama/ollama:0.40.16
+    volumes:
+      - ollama-models:/root/.ollama
+    restart: unless-stopped
+
+volumes:
+  studio-data:
+  ollama-models:

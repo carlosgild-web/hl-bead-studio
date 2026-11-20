@@ -1,0 +1,19 @@
+# Only what the image needs: backend, sap-mock, frontend sources, the manual, cad, gallery.
+.git
+.github
+.env
+.env.*
+data/
+**/.venv/
+**/__pycache__/
+**/*.pyc
+**/.pytest_cache/
+**/.ruff_cache/
+**/.hypothesis/
+frontend/node_modules/
+frontend/dist/
+e2e/
+docs/eval/
+docs/showcase/
+docs/decisions/
+**/*.blend1
