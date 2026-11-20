@@ -54,8 +54,24 @@ and the UI (:5173) and opens the browser:
 ```bash
 start.cmd              # Windows: three windows, close them to stop
 ./start.sh             # Linux and macOS: Ctrl+C stops all three
-start.cmd groq         # pick the LLM: fake (default), ollama, anthropic, dahl or groq
+start.cmd groq         # pick the LLM yourself: fake, ollama, anthropic, dahl or groq
 ```
+
+Without a provider argument, the launcher first checks the models for real (decision 0019):
+
+```text
+Groq (openai/gpt-oss-120b): daily quota used up; requests 0 of 1000 left; resets in 3h12m
+Ollama (qwen3:4b-instruct-2507): installed, not running at http://localhost:11434
+Demo model: always available (scripted answers, no LLM)
+Ollama is installed but not running. Start it now? [Y/n]
+```
+
+It sends Groq one small real first turn (skipped without `GROQ_API_KEY`), asks Ollama for
+its models, suggests the best one (the capital letter, Enter accepts it) and starts the
+studio with your choice. A per-minute limit still counts as usable. Every question waits for
+you. Without a terminal it asks nothing, takes the suggestion and never starts Ollama.
+`LLM_PROVIDER=fake`, `anthropic` or `dahl` in `.env` skips the check. The check alone:
+`cd backend && python -m app.cli llm-check`.
 
 On Windows, `start.cmd` finds Blender in `Program Files` when `BLENDER_BIN` is not set.
 
@@ -121,6 +137,9 @@ the CLI and by the designer's confirmation.
 A cloud provider (`groq`, `dahl`, `anthropic`) falls back along `LLM_FALLBACK` (default
 `ollama,fake`): without its key, or when a turn hits its daily limit, the studio uses Ollama
 if it answers with `OLLAMA_MODEL`, else demo mode, and the answer says so (decision 0018).
+After a daily limit the studio stays on that fallback until it restarts. A per-minute limit
+is waited out (up to 60 s). `LLM_PROVIDER=auto` runs the startup check's chain without
+questions when the app starts (decision 0019).
 
 The assistant turns a description into parameters, checks them and the product name with the
 deterministic validators, cites rule ids from the manual, and opens confirmation cards. The

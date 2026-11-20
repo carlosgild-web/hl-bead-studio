@@ -1,8 +1,9 @@
 # docker compose up             the studio at http://localhost:8000 (LLM from .env, or demo mode)
 # docker compose --profile ollama up    also a local Ollama (pull the model once, see README)
 #
-# The LLM: LLM_PROVIDER and its key come from .env (groq by default). Without a key, or after
-# Groq's daily limit, the studio uses Ollama when it answers, else demo mode (decision 0018).
+# The LLM: LLM_PROVIDER and its key come from .env (auto by default: Groq if it answers, else
+# Ollama if ready, else demo mode, checked once at startup, decision 0019). After Groq's daily
+# limit the studio uses Ollama when it answers, else demo mode (decision 0018).
 
 services:
   sap-mock:
@@ -30,7 +31,7 @@ services:
       - path: .env
         required: false
     environment:
-      LLM_PROVIDER: ${LLM_PROVIDER:-groq}
+      LLM_PROVIDER: ${LLM_PROVIDER:-auto}
       SAP_BASE_URL: http://sap-mock:8100
       OLLAMA_BASE_URL: ${COMPOSE_OLLAMA_URL:-http://ollama:11434}
       DATA_DIR: /data/studio
