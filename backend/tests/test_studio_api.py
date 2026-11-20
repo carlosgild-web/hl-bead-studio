@@ -241,3 +241,17 @@ def test_name_check_without_sap_still_checks_the_pattern(env) -> None:
 
     assert body["sap_available"] is False
     assert not body["follows"] and body["suggestion"] == "Amber Faceted"
+
+
+def test_design_record_offers_the_next_revision(env) -> None:
+    import shutil
+
+    record = env.http.get("/api/designs/GB-1034/A").json()
+    assert record["next_rev"] == "B"
+
+    folder = env.settings.designs_root / "GB-1034"
+    shutil.copytree(folder / "A", folder / "B")
+    for f in (folder / "B").iterdir():
+        f.rename(f.with_name(f.name.replace("_A", "_B")))
+
+    assert env.http.get("/api/designs/GB-1034/A").json()["next_rev"] == "C"

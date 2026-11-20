@@ -20,7 +20,7 @@ from app.core.paths import UnsafePathError, confined, design_dir, design_file_na
 from app.render.jobs import RenderError, read_design
 from app.sap import SapError
 from app.standards.families import UnknownFamilyError, get_family
-from app.standards.identifiers import InvalidIdentifierError
+from app.standards.identifiers import InvalidIdentifierError, next_revision
 from app.standards.naming import (
     CatalogEntry,
     find_same_name,
@@ -145,6 +145,10 @@ def design(sku: str, rev: str, settings: SettingsDep) -> dict[str, Any]:
     except RenderError as exc:
         raise HTTPException(404, str(exc)) from exc
     record["urls"] = {kind: f"/api/designs/{sku}/{rev}/files/{kind}" for kind in MEDIA_TYPES}
+    # The revision a new generation would get: after the highest one with files, so an
+    # existing revision is never offered again (they are never overwritten).
+    revisions = generated_revisions(settings, record["sku"])
+    record["next_rev"] = next_revision(revisions[-1] if revisions else None)
     return record
 
 
