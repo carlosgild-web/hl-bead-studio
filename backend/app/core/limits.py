@@ -19,6 +19,7 @@ from fastapi import HTTPException, Request
 
 from app.core.config import Settings
 from app.db.store import Store
+from app.llm import effective_provider
 
 WINDOW_S = 60.0
 RATE_LIMITED = "Too many requests from this address; wait {seconds} s and try again."
@@ -86,5 +87,7 @@ def enforce_token_cap(settings: Settings, store: Store) -> None:
     """Refuse a chat turn once today's model tokens (all conversations) reach the cap. A
     turn that starts under the cap finishes, so the cap can be passed by one turn."""
     cap = settings.daily_token_cap
-    if cap > 0 and settings.llm_provider != "fake" and store.tokens_since(start_of_day()) >= cap:
+    if cap <= 0 or effective_provider(settings) == "fake":
+        return
+    if store.tokens_since(start_of_day()) >= cap:
         raise HTTPException(429, TOKEN_CAP_REACHED)

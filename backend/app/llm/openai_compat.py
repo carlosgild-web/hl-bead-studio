@@ -15,7 +15,8 @@ OpenAI-compatible providers can reuse the class with their own base URL. Request
   from the answer, but the raw assistant message is replayed unchanged to the same provider
   within a run (`provider_content`), as those models expect;
 - 408, 429 and 5xx are retried, honouring `retry-after` up to `max_retry_wait` (a preset with
-  a per-minute token limit waits longer and retries more);
+  a per-minute token limit waits longer and retries more). A 429 for a daily quota, by its
+  text or by a wait over a minute (`ratelimit.classify_429`), is never waited for;
 - `max_tokens` is per preset: Groq counts it against the per-minute limit before answering.
 """
 
@@ -39,6 +40,7 @@ from app.llm.base import (
     ToolSpec,
     retry_wait,
 )
+from app.llm.ratelimit import RateLimit, classify_429
 
 DAHL_URL = "https://inference.dahl.global/v1"
 GROQ_URL = "https://api.groq.com/openai/v1"
@@ -50,8 +52,6 @@ RETRY_STATUS = frozenset({408, 429, 500, 502, 503, 504})
 
 _THINK_RE = re.compile(r"<think>.*?</think>", re.DOTALL)
 _TOOL_CHOICE_NONE = "Tool choice is none, but model called a tool"
-# Groq: "Rate limit reached ... on tokens per day (TPD): Limit 200000, Used ..."
-_PER_DAY_RE = re.compile(r"per day|\((?:TPD|RPD)\)", re.IGNORECASE)
 
 
 class OpenAICompatClient(LLMClient):
@@ -144,18 +144,28 @@ class OpenAICompatClient(LLMClient):
                     raise LLMError(
                         f"The {self._name} API sent an answer that is not JSON."
                     ) from exc
-            if response.status_code == 429 and _PER_DAY_RE.search(response.text):
-                raise LLMError(self._daily_limit_text(response))
+            limit = classify_429(response) if response.status_code == 429 else None
+            if limit is not None and limit.kind == "day":
+                raise LLMError(self._daily_limit_text(response, limit))
             if response.status_code in RETRY_STATUS and attempt < self._retries:
-                self._sleep(retry_wait(response, attempt, self._max_retry_wait))
+                wait = retry_wait(response, attempt, self._max_retry_wait)
+                if limit is not None and limit.wait_s is not None:
+                    wait = min(limit.wait_s, self._max_retry_wait)
+                self._sleep(wait)
                 continue
             raise LLMError(self._error_text(response))
         raise AssertionError("unreachable")  # pragma: no cover
 
-    def _daily_limit_text(self, response: httpx.Response) -> str:
-        wait = re.search(r"try again in ([\w.]+)", response.text)
-        when = f" Try again in {wait.group(1)}." if wait else " Try again tomorrow."
-        return f"{DAILY_LIMIT} on the {self._name} API for {self.model}.{when}"
+    def _daily_limit_text(self, response: httpx.Response, limit: RateLimit) -> str:
+        said = re.search(r"try again in ([\w.]+)", response.text)
+        if said:
+            when = f" Try again in {said.group(1).rstrip('.')}."
+        elif limit.reset:
+            when = f" Try again {limit.reset}."
+        else:
+            when = " Try again tomorrow."
+        usage = f" ({limit.usage})" if limit.usage else ""
+        return f"{DAILY_LIMIT} on the {self._name} API for {self.model}.{when}{usage}"
 
     def _error_text(self, response: httpx.Response) -> str:
         try:

@@ -16,6 +16,7 @@ from app.api.renders import router as renders_router
 from app.cleanup import CleanupThread
 from app.core.config import get_settings
 from app.core.paths import UnsafePathError, confined
+from app.llm import effective_provider
 from app.render import RenderWorker, blender_available
 
 
@@ -24,6 +25,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Start the single render worker and the design cleanup (when enabled) with the app,
     and stop them on shutdown."""
     settings = get_settings()
+    if settings.llm_provider == "auto":
+        from app.llm.check import resolve_auto
+
+        resolve_auto(settings)  # once, before the first chat turn (decision 0019)
     worker = RenderWorker(settings)
     worker.start()
     app.state.render_worker = worker
@@ -52,7 +57,7 @@ def health() -> dict[str, str | bool]:
     return {
         "status": "ok",
         "version": __version__,
-        "llm_provider": settings.llm_provider,
+        "llm_provider": effective_provider(settings),
         "renders": blender_available(settings),
     }
 

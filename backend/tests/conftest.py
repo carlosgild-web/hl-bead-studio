@@ -27,6 +27,19 @@ def make_settings(tmp_path: Path, **overrides) -> Settings:
     return Settings(_env_file=None, **values)
 
 
+@pytest.fixture(autouse=True)
+def _fresh_llm_choice():
+    """The daily-limit switch and the `auto` choice are per process; each test starts clean."""
+    from app.llm.check import reset_auto
+    from app.llm.fallback import reset_switch
+
+    reset_switch()
+    reset_auto()
+    yield
+    reset_switch()
+    reset_auto()
+
+
 @pytest.fixture
 def settings(tmp_path: Path) -> Settings:
     return make_settings(tmp_path)

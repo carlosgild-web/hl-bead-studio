@@ -3,10 +3,12 @@
 import httpx
 import pytest
 
-from app.llm import LLMError, Message, make_client
+from app.llm import LLMError, Message, effective_provider, make_client
 from app.llm.base import DAILY_LIMIT, ChatTurn, LLMClient, ToolCall
+from app.llm.factory import GROQ_MAX_RETRY_WAIT_S, GROQ_RETRIES
 from app.llm.fake import DEMO_NOTICE, FakeClient
-from app.llm.fallback import FallbackClient, ollama_available
+from app.llm.fallback import FallbackClient, ollama_available, record_switch, switched_to
+from app.llm.openai_compat import OpenAICompatClient
 from tests.conftest import make_settings
 
 
@@ -115,3 +117,52 @@ def test_ollama_down_is_not_available() -> None:
         raise httpx.ConnectError("refused")
 
     assert ollama_available("http://o", "qwen3", transport=httpx.MockTransport(handler)) is False
+
+
+def test_after_a_daily_limit_later_clients_stay_switched(tmp_path) -> None:
+    fake_first = FallbackClient(Scripted("groq", [LIMIT]), [("fake", FakeClient)])
+    fake_first.chat([Message("user", "hi")], [])
+    assert switched_to() == "fake"
+
+    settings = make_settings(tmp_path, llm_provider="groq", groq_api_key="k", llm_fallback="fake")
+    client = make_client(settings)  # the next turn does not ask Groq again
+    assert isinstance(client, FakeClient)
+    assert DAILY_LIMIT not in client.chat([Message("user", "hi")], []).content
+    assert effective_provider(settings) == "fake"
+
+
+def test_the_first_switch_is_kept() -> None:
+    record_switch("ollama")
+    record_switch("fake")
+    assert switched_to() == "ollama"
+
+
+def test_other_errors_do_not_switch() -> None:
+    client = FallbackClient(
+        Scripted("groq", [LLMError("Groq API error 500 for m: boom")]), [("fake", FakeClient)]
+    )
+    with pytest.raises(LLMError):
+        client.chat([], [])
+    assert switched_to() is None
+
+
+def test_a_per_minute_limit_is_waited_out_and_a_daily_one_is_not(tmp_path) -> None:
+    replies = [
+        httpx.Response(429, headers={"retry-after": "45"}, json={"error": {"message": "TPM"}}),
+        httpx.Response(200, json={"choices": [{"message": {"content": "ok"}}]}),
+        httpx.Response(429, headers={"x-ratelimit-reset-tokens": "3h"}, json={}),
+    ]
+    waits: list[float] = []
+    client = OpenAICompatClient(
+        "k",
+        "m",
+        provider="groq",
+        max_retry_wait=GROQ_MAX_RETRY_WAIT_S,
+        retries=GROQ_RETRIES,
+        transport=httpx.MockTransport(lambda request: replies.pop(0)),
+        sleep=waits.append,
+    )
+    assert client.chat([], []).content == "ok"
+    with pytest.raises(LLMError, match=DAILY_LIMIT):
+        client.chat([], [])
+    assert waits == [45.0] and GROQ_MAX_RETRY_WAIT_S == 60

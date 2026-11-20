@@ -4,10 +4,15 @@ The public demo runs on Groq's free tier, whose daily limit can run out. Then a 
 moves to the next provider in `LLM_FALLBACK` that is available: the local Ollama model when
 it answers (a designer's own PC), else the fake client (demo mode). The answer starts with a
 note that says so, so the designer knows why it reads differently.
+
+The switch is process-wide and happens once (decision 0019): the chat builds a client per
+turn, and after the first daily limit `make_client` returns the chosen fallback directly
+until the app restarts, so later turns do not ask the used-up provider again.
 """
 
 from __future__ import annotations
 
+import threading
 from collections.abc import Callable
 from dataclasses import replace
 
@@ -30,6 +35,30 @@ NOTES = {
 }
 
 
+_switch_lock = threading.Lock()
+_switched_to: str | None = None
+
+
+def switched_to() -> str | None:
+    """The fallback every client uses after a daily limit in this process, or None."""
+    return _switched_to
+
+
+def record_switch(name: str) -> None:
+    """Remember the first fallback chosen; a later or concurrent switch keeps it."""
+    global _switched_to
+    with _switch_lock:
+        if _switched_to is None:
+            _switched_to = name
+
+
+def reset_switch() -> None:
+    """Forget the switch (tests)."""
+    global _switched_to
+    with _switch_lock:
+        _switched_to = None
+
+
 def ollama_available(
     base_url: str, model: str, *, transport: httpx.BaseTransport | None = None
 ) -> bool:
@@ -41,9 +70,13 @@ def ollama_available(
             names = [m.get("name", "") for m in response.json().get("models", [])]
     except (httpx.HTTPError, ValueError):
         return False
-    # `qwen3:4b-instruct-2507` matches the pulled `qwen3:4b-instruct-2507-q4_K_M`; a name
-    # without a tag matches `name:latest`.
-    return any(name == model or name.startswith(model) for name in names)
+    return any(model_matches(name, model) for name in names)
+
+
+def model_matches(pulled: str, model: str) -> bool:
+    """`qwen3:4b-instruct-2507` matches the pulled `qwen3:4b-instruct-2507-q4_K_M`; a name
+    without a tag matches `name:latest`."""
+    return pulled == model or pulled.startswith(model)
 
 
 class FallbackClient(LLMClient):
@@ -84,6 +117,7 @@ class FallbackClient(LLMClient):
             if client is None:
                 continue
             self._active = client
+            record_switch(name)
             self._note = NOTES.get(name, "{name} is not available; using {model}.").format(
                 name=self._primary.provider.capitalize(), model=client.model
             )

@@ -22,7 +22,8 @@ class Settings(BaseSettings):
     )
 
     # LLM
-    llm_provider: Literal["fake", "ollama", "anthropic", "dahl", "groq"] = "fake"
+    # `auto`: Groq, else Ollama, else fake, checked once at startup (decision 0019)
+    llm_provider: Literal["fake", "ollama", "anthropic", "dahl", "groq", "auto"] = "fake"
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "qwen3:4b-instruct-2507"
     # NoDecode: importing CadQuery makes `typing.Union` look like a Sequence to `issubclass`
