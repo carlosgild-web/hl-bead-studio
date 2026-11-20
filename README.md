@@ -21,6 +21,29 @@ The model turns a description into parameters, cites rule ids and drafts catalog
 Whether a design can be made is decided by deterministic validators; reserving a SKU and
 generating files happen only after the designer clicks **Confirm**.
 
+## Quick start with Docker
+
+Only Docker is needed. The studio, the mock SAP and the built UI run from one image
+(decision 0018):
+
+```bash
+docker compose up --build        # then open http://localhost:8000
+```
+
+Without a key the assistant is in demo mode (the panel, the checks and the cards still
+work). For the assistant, put a free Groq key in `.env` (`GROQ_API_KEY=...`, see
+`.env.example`); `LLM_PROVIDER` defaults to `groq` in compose. When Groq's free daily quota
+is used up, the studio uses a local Ollama model if one answers, else demo mode:
+
+```bash
+docker compose --profile ollama up -d
+docker compose exec ollama ollama pull qwen3:4b-instruct-2507
+# an Ollama already running on this machine instead: COMPOSE_OLLAMA_URL=http://host.docker.internal:11434
+```
+
+Renders need Blender, so they run in the local setup below; the Docker studio shows the
+pre-generated gallery. Designs and the SQLite files live in the `studio-data` volume.
+
 ## Quick start (development)
 
 Requirements: Python 3.12+ (developed on 3.14), Node 22+.
@@ -84,15 +107,20 @@ the CLI and by the designer's confirmation.
 
 `LLM_PROVIDER` picks the model:
 
-- `fake` (the default) is demo mode and needs nothing.
+- `groq` (free tier, no card) needs `GROQ_API_KEY`; `GROQ_MODEL` defaults to
+  `openai/gpt-oss-120b`. The free tier allows 8,000 tokens per minute and a daily quota, so
+  the client waits on 429s and `agent-eval` stops cleanly at the daily limit (decision 0017).
+  This is the provider of the Docker setup.
+- `fake` (the default outside Docker) is demo mode and needs nothing.
 - `ollama` runs locally (`OLLAMA_MODEL`, default `qwen3:4b-instruct-2507`).
 - `anthropic` needs `ANTHROPIC_API_KEY`.
 - `dahl` ([Dahl Inference](https://inference.dahl.global/), open models over an
   OpenAI-compatible API) needs `DAHL_API_KEY`; `DAHL_MODEL` defaults to
   `MiniMaxAI/MiniMax-M2.7` (decision 0016).
-- `groq` (free tier, no card) needs `GROQ_API_KEY`; `GROQ_MODEL` defaults to
-  `openai/gpt-oss-120b`. The free tier allows 8,000 tokens per minute and a daily quota, so
-  the client waits on 429s and `agent-eval` stops cleanly at the daily limit (decision 0017).
+
+A cloud provider (`groq`, `dahl`, `anthropic`) falls back along `LLM_FALLBACK` (default
+`ollama,fake`): without its key, or when a turn hits its daily limit, the studio uses Ollama
+if it answers with `OLLAMA_MODEL`, else demo mode, and the answer says so (decision 0018).
 
 The assistant turns a description into parameters, checks them and the product name with the
 deterministic validators, cites rule ids from the manual, and opens confirmation cards. The
@@ -131,9 +159,15 @@ and `manifest.json` (decision 0011).
 - **Parameters** (center): the family's fields with units and ranges. Values the assistant
   proposed stay amber until you edit them. Every edit is checked by the backend's
   validators; a violation shows its rule id and buttons with the nearest valid values.
-- **Open a card yourself**: "Reserve SKU…", "Generate files…" and "Render…" at the bottom
-  of the panel open the same confirmation cards as the assistant, with the same checks, so
-  the flow also works without a language model (decision 0014).
+- **Workflow**: a stepper at the bottom of the panel (reserve a SKU, generate the files,
+  render) opens the same confirmation cards as the assistant, with the same checks, so the
+  flow also works without a language model (decision 0014). Each step shows whether it is
+  done, in progress or blocked and why, derived from what the studio has. The product name
+  is checked against GEN-03 and the catalog while you type, with a suggested fix. The chat's
+  **Next step** chip opens the next card the same way.
+- **Out-of-date files**: when the panel no longer matches the generated revision, the
+  Drawing tab and the workflow list what changed (old → new) and offer **Generate Rev B**
+  (existing revisions are never overwritten) or **Revert** to the saved parameters.
 - **3D model** (right): the GLB built from the valid parameters, orbit controls, the glass
   color or plating finish, and the size, volume and mass.
 - **Drawing** and **Renders** tabs: the PDF with the title block and the STEP, STL and GLB

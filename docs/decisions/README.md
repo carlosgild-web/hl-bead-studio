@@ -21,3 +21,4 @@ Short records of the design decisions and of every deviation from `PLAN.md`.
 | [0015](0015-phase-7-eval-and-safety.md) | Phase 7 eval method, fixes it found, and the online safety limits | accepted (deviations) |
 | [0016](0016-dahl-provider.md) | Dahl as a cloud provider, through an OpenAI-compatible client | accepted (deviation) |
 | [0017](0017-groq-free-tier.md) | Groq's free tier as the no-cost cloud provider; eval stops at a daily limit | accepted (deviation) |
+| [0018](0018-phase-8-packaging-and-fallback.md) | Phase 8: Docker image and compose, Groq online, fallback to Ollama or demo mode | accepted (deviations) |
