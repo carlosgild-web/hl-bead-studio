@@ -9,6 +9,7 @@ agent-eval    run the evaluation scenarios (--fake in CI, or --provider ollama|a
 confirm       confirm a pending action, as the designer's click would (developer use)
 cancel        cancel a pending action
 llm-check     check Groq, Ollama and the demo model, and choose one (prints its name)
+free-ports    stop what holds the launcher's ports (8000, 8100, 5173), after asking
 """
 
 import argparse
@@ -266,6 +267,16 @@ def _cmd_llm_check(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_free_ports(args: argparse.Namespace) -> int:
+    from app.ports import free_ports
+
+    try:
+        return 0 if free_ports(interactive=sys.stdin.isatty()) else 1
+    except KeyboardInterrupt:
+        print(file=sys.stderr)
+        return 130
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m app.cli", description=__doc__.split("\n")[0])
     commands = parser.add_subparsers(dest="command", required=True)
@@ -328,6 +339,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     llm_check.add_argument("--out", help="also write the chosen name to this file")
     llm_check.set_defaults(func=_cmd_llm_check)
+
+    ports = commands.add_parser(
+        "free-ports", help="stop what holds the launcher's ports, after asking"
+    )
+    ports.set_defaults(func=_cmd_free_ports)
 
     args = parser.parse_args(argv)
     # Spanish answers on a Windows console or pipe (cp1252 by default).

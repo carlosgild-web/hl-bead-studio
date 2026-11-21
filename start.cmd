@@ -3,7 +3,8 @@ rem Bead Studio launcher for local development on Windows.
 rem   start.cmd                 checks Groq, then Ollama, then the demo model, and asks which one
 rem                             (LLM_PROVIDER=fake, anthropic or dahl in .env skips the check)
 rem   start.cmd groq            or: dahl, anthropic, ollama, fake: that one, without the check
-rem Opens three windows (mock SAP :8100, backend :8000, UI :5173) and the browser.
+rem Opens three windows (mock SAP :8100, backend :8000, UI :5173) and the browser. If one of
+rem those ports is taken, it shows what holds it and offers to stop it first.
 rem Close the three windows to stop. Setup: see "Quick start" in README.md.
 setlocal
 cd /d "%~dp0"
@@ -35,10 +36,16 @@ if /i "%LLM_PROVIDER%"=="groq" if not defined GROQ_API_KEY if not exist ".env" (
   exit /b 1
 )
 
-curl -s -o nul http://localhost:8000/api/health && (
-  echo Something already answers on port 8000. Close the running backend first.
+rem Something left from an earlier start on 8000, 8100 or 5173: show it and offer to stop it
+rem (decision 0020).
+pushd backend
+".venv\Scripts\python.exe" -m app.cli free-ports
+if errorlevel 1 (
+  popd
+  echo Nothing was started.
   exit /b 1
 )
+popd
 
 rem No provider named: check them and let the designer choose (decision 0019). The questions
 rem are on this console; the answer comes back in a file under data\ (gitignored).

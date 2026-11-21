@@ -206,7 +206,7 @@ def ask_stdin(prompt: str) -> str | None:
     print(prompt, end="", file=sys.stderr, flush=True)
     line = sys.stdin.readline()
     if line == "":
-        print("(no input: taking the suggestion)", file=sys.stderr, flush=True)
+        print("(no input)", file=sys.stderr, flush=True)
         return None
     return line.rstrip("\r\n")
 
@@ -215,7 +215,7 @@ def say_stderr(text: str) -> None:
     print(text, file=sys.stderr, flush=True)
 
 
-class _Questions:
+class Questions:
     """Questions with one-letter answers. Enter alone takes the suggestion (the capital
     letter); anything else asks again. Without a terminal, or after the end of input, no
     more questions are asked and each one returns its `unattended` answer."""
@@ -250,7 +250,7 @@ def choose(
     say: Callable[[str], None] = say_stderr,
 ) -> str:
     """`groq`, `ollama` or `fake`, after the status lines and the questions."""
-    question = _Questions(ask, interactive)
+    question = Questions(ask, interactive)
     groq, ollama = probe_groq(), probe_ollama()
     model, base_url = settings.ollama_model, settings.ollama_base_url
     say(groq.line(settings.groq_model))

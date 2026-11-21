@@ -42,8 +42,10 @@ if [[ "$LLM_PROVIDER_LC" == groq && -z "${GROQ_API_KEY:-}" && ! -f .env ]]; then
   exit 1
 fi
 
-if curl -s -o /dev/null http://localhost:8000/api/health; then
-  echo "Something already answers on port 8000. Stop the running backend first." >&2
+# Something left from an earlier start on 8000, 8100 or 5173: show it and offer to stop it
+# (decision 0020).
+if ! (cd backend && .venv/bin/python -m app.cli free-ports); then
+  echo "Nothing was started." >&2
   exit 1
 fi
 
