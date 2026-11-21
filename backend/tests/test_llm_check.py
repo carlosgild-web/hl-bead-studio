@@ -9,9 +9,11 @@ import pytest
 
 from app import cli
 from app.llm import make_client
+from app.llm.base import Message
 from app.llm.check import (
     GroqStatus,
     OllamaStatus,
+    auto_demo_notice,
     choose,
     find_ollama,
     probe_groq,
@@ -297,3 +299,46 @@ def test_auto_resolves_once_without_questions(tmp_path, monkeypatch) -> None:
     assert resolve_auto(settings) == "fake"
     assert make_client(settings).provider == "fake"
     assert calls == [False]
+
+
+def test_auto_demo_mode_says_why(tmp_path, monkeypatch) -> None:
+    def fake_check(settings, *, interactive, say):
+        say("Groq (gpt): skipped, GROQ_API_KEY is empty")
+        say("Ollama (qwen): not installed, and nothing answers at http://ollama:11434")
+        say("Demo model: always available (scripted answers, no LLM)")
+        return "fake"
+
+    monkeypatch.setattr("app.llm.check.check", fake_check)
+    settings = make_settings(tmp_path, llm_provider="auto")
+
+    text = make_client(settings).chat([Message("user", "hi")], []).content
+    assert text.startswith("Demo mode: LLM_PROVIDER=auto found no usable model")
+    assert "GROQ_API_KEY is empty" in text
+    assert "nothing answers at http://ollama:11434" in text
+    assert "Demo model:" not in text
+
+
+def test_auto_choosing_a_model_has_no_demo_notice(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr("app.llm.check.check", lambda settings, **_: "ollama")
+    resolve_auto(make_settings(tmp_path, llm_provider="auto"))
+
+    assert auto_demo_notice() is None
+
+
+def test_the_api_logs_the_app_info_lines() -> None:
+    import logging
+
+    from app.main import _app_logging
+
+    logger = logging.getLogger("app")
+    saved = logger.level, list(logger.handlers)
+    try:
+        logger.setLevel(logging.NOTSET)
+        logger.handlers.clear()
+        _app_logging()
+        _app_logging()
+        assert logger.getEffectiveLevel() == logging.INFO
+        assert len(logger.handlers) == 1
+    finally:
+        logger.setLevel(saved[0])
+        logger.handlers[:] = saved[1]

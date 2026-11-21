@@ -1,5 +1,6 @@
 """FastAPI entry point: `uvicorn app.main:app --reload --port 8000`."""
 
+import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -20,10 +21,23 @@ from app.llm import effective_provider
 from app.render import RenderWorker, blender_available
 
 
+def _app_logging() -> None:
+    """Show the app's own INFO lines (the startup model check, the cleanup) next to
+    uvicorn's. Uvicorn configures only its loggers, and Python's default level is WARNING."""
+    logger = logging.getLogger("app")
+    if logger.level == logging.NOTSET:
+        logger.setLevel(logging.INFO)
+    if not logger.handlers:
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter("%(levelname)s:     %(name)s: %(message)s"))
+        logger.addHandler(handler)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Start the single render worker and the design cleanup (when enabled) with the app,
     and stop them on shutdown."""
+    _app_logging()
     settings = get_settings()
     if settings.llm_provider == "auto":
         from app.llm.check import resolve_auto

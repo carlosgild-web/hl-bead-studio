@@ -27,9 +27,11 @@ def make_client(settings: Settings) -> LLMClient:
     (decision 0018): without its key the first available fallback is used instead, and a
     turn that hits its daily limit moves to it, for the rest of the process."""
     if settings.llm_provider == "auto":
-        from app.llm.check import resolve_auto
+        from app.llm.check import auto_demo_notice, resolve_auto
 
         settings = settings.model_copy(update={"llm_provider": resolve_auto(settings)})
+        if settings.llm_provider == "fake":
+            return FakeClient(notice=auto_demo_notice())
     fallbacks = _fallbacks(settings) if settings.llm_provider in CLOUD else []
     if not fallbacks:
         return _primary(settings)

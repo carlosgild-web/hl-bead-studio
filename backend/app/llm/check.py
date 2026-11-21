@@ -297,6 +297,7 @@ def check(settings: Settings, *, interactive: bool, say: Callable[[str], None] =
 
 _auto_lock = threading.Lock()
 _auto_choice: str | None = None
+_auto_lines: list[str] = []
 
 
 def resolve_auto(settings: Settings) -> str:
@@ -304,9 +305,29 @@ def resolve_auto(settings: Settings) -> str:
     global _auto_choice
     with _auto_lock:
         if _auto_choice is None:
-            _auto_choice = check(settings, interactive=False, say=log.info)
+            lines: list[str] = []
+
+            def say(line: str) -> None:
+                lines.append(line)
+                log.info("%s", line)
+
+            _auto_choice = check(settings, interactive=False, say=say)
+            _auto_lines[:] = lines
             log.info("LLM_PROVIDER=auto chose %s", _auto_choice)
         return _auto_choice
+
+
+def auto_demo_notice() -> str | None:
+    """The demo-mode answer when `auto` found no model: why, from the startup check."""
+    with _auto_lock:
+        if _auto_choice != "fake" or len(_auto_lines) < 2:
+            return None
+        found = ". ".join(_auto_lines[:2])
+    return (
+        f"Demo mode: LLM_PROVIDER=auto found no usable model at startup. {found}. "
+        "The parameter panel, the checks and the confirmation cards work; restart the app "
+        "once Groq or Ollama is available to talk to the assistant."
+    )
 
 
 def reset_auto() -> None:
@@ -314,3 +335,4 @@ def reset_auto() -> None:
     global _auto_choice
     with _auto_lock:
         _auto_choice = None
+        _auto_lines.clear()

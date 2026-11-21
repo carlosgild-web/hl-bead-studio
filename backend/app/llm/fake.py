@@ -67,8 +67,15 @@ class RecordedCall:
 class FakeClient(LLMClient):
     provider = "fake"
 
-    def __init__(self, script: Sequence[Step] | None = None, model: str = "scripted") -> None:
+    def __init__(
+        self,
+        script: Sequence[Step] | None = None,
+        model: str = "scripted",
+        *,
+        notice: str | None = None,
+    ) -> None:
         self._script = list(script) if script is not None else None
+        self.notice = notice or DEMO_NOTICE
         self._position = 0
         self.model = model
         self.calls: list[RecordedCall] = []
@@ -83,7 +90,7 @@ class FakeClient(LLMClient):
         self.calls.append(RecordedCall(list(messages), list(tools), allow_tools))
         offered = tools if allow_tools else []
         if self._script is None:
-            return ChatTurn(content=DEMO_NOTICE)
+            return ChatTurn(content=self.notice)
         if self._position >= len(self._script):
             raise FakeScriptExhausted(
                 f"FakeClient script has {len(self._script)} turns; call {self._position + 1}"
