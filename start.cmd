@@ -35,6 +35,11 @@ if /i "%LLM_PROVIDER%"=="groq" if not defined GROQ_API_KEY if not exist ".env" (
   exit /b 1
 )
 
+curl -s -o nul http://localhost:8000/api/health && (
+  echo Something already answers on port 8000. Close the running backend first.
+  exit /b 1
+)
+
 rem No provider named: check them and let the designer choose (decision 0019). The questions
 rem are on this console; the answer comes back in a file under data\ (gitignored).
 if "%~1"=="" (
@@ -54,11 +59,6 @@ if not defined BLENDER_BIN (
   for /d %%D in ("%ProgramFiles%\Blender Foundation\Blender *") do (
     if exist "%%~D\blender.exe" set "BLENDER_BIN=%%~D\blender.exe"
   )
-)
-
-curl -s -o nul http://localhost:8000/api/health && (
-  echo Something already answers on port 8000. Close the running backend first.
-  exit /b 1
 )
 
 if defined LLM_PROVIDER (echo Starting Bead Studio, LLM: %LLM_PROVIDER%) else (echo Starting Bead Studio, LLM from .env or fake)

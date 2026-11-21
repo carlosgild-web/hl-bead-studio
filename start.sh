@@ -42,6 +42,11 @@ if [[ "$LLM_PROVIDER_LC" == groq && -z "${GROQ_API_KEY:-}" && ! -f .env ]]; then
   exit 1
 fi
 
+if curl -s -o /dev/null http://localhost:8000/api/health; then
+  echo "Something already answers on port 8000. Stop the running backend first." >&2
+  exit 1
+fi
+
 # No provider named: check them and let the designer choose (decision 0019). The questions
 # go to the terminal (stderr); only the chosen name comes back on stdout.
 if [[ $# -eq 0 ]]; then
@@ -50,11 +55,6 @@ if [[ $# -eq 0 ]]; then
     exit 1
   fi
   export LLM_PROVIDER
-fi
-
-if curl -s -o /dev/null http://localhost:8000/api/health; then
-  echo "Something already answers on port 8000. Stop the running backend first." >&2
-  exit 1
 fi
 
 pids=()
