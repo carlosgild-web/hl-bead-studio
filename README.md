@@ -73,6 +73,18 @@ you. Without a terminal it asks nothing, takes the suggestion and never starts O
 `LLM_PROVIDER=fake`, `anthropic` or `dahl` in `.env` skips the check. The check alone:
 `cd backend && python -m app.cli llm-check`.
 
+Before that, the launcher checks its three ports (decision 0020). If an earlier start is
+still running, it shows what holds each port and offers to stop it:
+
+```text
+Port 8000 (backend) is taken by python.exe (PID 16092): .venv\Scripts\python -m uvicorn app.main:app --port 8000
+Stop them and continue? [Y/n]
+```
+
+Stopping is suggested only for Bead Studio's own processes (uvicorn `app.main`, Vite);
+anything else gets `[y/N]`. Without a terminal nothing is stopped and nothing starts.
+Alone: `cd backend && python -m app.cli free-ports`.
+
 On Windows, `start.cmd` finds Blender in `Program Files` when `BLENDER_BIN` is not set.
 
 ```bash
