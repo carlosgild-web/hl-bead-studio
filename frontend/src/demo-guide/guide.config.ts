@@ -53,7 +53,7 @@ export const guide: GuideConfig = {
     },
     whatTitle: { es: 'Qué es', en: 'What this is' },
     what: {
-      es: 'Un diseñador describe una cuenta de vidrio o un charm; el asistente (Ollama en local, o Groq, Dahl o Anthropic en la nube) propone parámetros y cita las reglas del Manual de Diseño de Producto. Los validadores en Python deciden; CadQuery construye el modelo 3D, un plano PDF lleva el cajetín de H&L, un SAP simulado reserva el SKU y Blender renderiza en local. React, FastAPI y SQLite.',
+      es: 'Un diseñador describe una cuenta de vidrio o un dije; el asistente (Ollama en local, o Groq, Dahl o Anthropic en la nube) propone parámetros y cita las reglas del Manual de Diseño de Producto. Los validadores en Python deciden; CadQuery construye el modelo 3D, un plano PDF lleva el cajetín de H&L, un SAP simulado reserva el SKU y Blender renderiza en local. React, FastAPI y SQLite.',
       en: 'A designer describes a glass bead or charm; the assistant (local Ollama, or Groq, Dahl or Anthropic in the cloud) proposes parameters and cites the Product Design Manual rules. Python validators decide; CadQuery builds the 3D model, a PDF drawing carries the H&L title block, a mock SAP reserves the SKU and Blender renders locally. React, FastAPI and SQLite.',
     },
     pathTitle: { es: 'El recorrido', en: 'The path' },
