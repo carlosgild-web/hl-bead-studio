@@ -151,7 +151,7 @@ test('demo mode answers a design chip, a manual question and an off-topic messag
   await page.getByRole('button', { name: 'A 10 mm faceted amber bead for the Amber Hollow collection' }).click()
   await page.getByRole('button', { name: 'Send' }).click()
   const answers = page.locator('[data-role="assistant"]')
-  await expect(answers.last()).toContainText('I put a Faceted in the panel: Diameter 10.0 mm')
+  await expect(answers.last()).toContainText('I put a Faceted bead in the panel: Diameter 10.0 mm')
   await expect(answers.last()).toContainText('amber')
   await expect(page.getByLabel('Diameter', { exact: false }).first()).toHaveValue('10')
   await expect(page.locator('[data-proposed]').first()).toBeVisible()

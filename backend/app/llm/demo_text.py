@@ -37,9 +37,16 @@ def _label(family: str, name: str, language: str, labels: bool) -> str:
 
 
 def _family(family: str, language: str, labels: bool) -> str:
+    """With labels, the product with its article: "a Faceted bead", "an Initial charm",
+    "una cuenta Facetada", "un dije Media luna". Without, "a FAC" (the eval scripts)."""
     if not labels or family not in FAMILY_CODES:
-        return family
-    return get_family(family).label.get(language, family)
+        return f"un {family}" if language == "es" else f"a {family}"
+    info = get_family(family)
+    name = info.label.get(language, family)
+    if language == "es":
+        return f"un dije {name}" if info.is_charm else f"una cuenta {name}"
+    noun = "charm" if info.is_charm else "bead"
+    return f"{'an' if name[:1].lower() in 'aeiou' else 'a'} {name} {noun}"
 
 
 def newest_param_result(messages: list[Message], *, broken: bool = False) -> dict[str, Any]:
@@ -60,8 +67,8 @@ def summary_text(result: dict[str, Any], language: str, *, labels: bool = False)
     )
     name = _family(family, language, labels)
     if language == "es":
-        return f"Propuse un {name} en el panel: {values}. Cumple el manual."
-    return f"I put a {name} in the panel: {values}. It passes the manual."
+        return f"Propuse {name} en el panel: {values}. Cumple el manual."
+    return f"I put {name} in the panel: {values}. It passes the manual."
 
 
 def explain_text(
