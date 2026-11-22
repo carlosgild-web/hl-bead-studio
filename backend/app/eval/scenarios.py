@@ -13,13 +13,13 @@ are tested in CI without a model. The scripts read tool results the way a model 
 
 from __future__ import annotations
 
-import json
 import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
-from app.llm.base import ChatTurn, Message, ToolSpec
+from app.llm.base import ChatTurn, Message
+from app.llm.demo_text import PARAM_TOOLS, explain_text, newest_param_result, summary_text
 from app.llm.fake import Step as FakeStep
 from app.llm.fake import call, last_result, say
 from app.standards.families import get_family
@@ -111,7 +111,6 @@ PARAM_TOLERANCE = 0.05  # mm: half the GEN-01 resolution of 0.1 mm
 
 # --- the ideal model's moves -------------------------------------------------------------
 
-PARAM_TOOLS = ("validate_parameters", "propose_parameters", "preview_geometry")
 CHECKS_PARAMS = (PARAM_TOOLS,)
 
 
@@ -128,58 +127,16 @@ def validate(family: str, **params: Any) -> ChatTurn:
     return call("validate_parameters", family=family, params=full(family, **params))
 
 
-def _mm(value: Any, language: Language) -> str:
-    if isinstance(value, bool) or not isinstance(value, int | float):
-        return str(value)
-    text = f"{float(value):.1f}"
-    return (text.replace(".", ",") if language == "es" else text) + " mm"
-
-
-def _value(name: str, value: Any, language: Language) -> str:
-    return _mm(value, language) if name.endswith("_mm") else str(value)
-
-
 def summarize(language: Language) -> FakeStep:
     """Answer with the parameters of the newest parameter tool result."""
-
-    def step(messages: list[Message], tools: list[ToolSpec]) -> ChatTurn:
-        result = next(
-            json.loads(m.content)
-            for m in reversed(messages)
-            if m.role == "tool" and m.name in PARAM_TOOLS
-        )
-        values = ", ".join(f"{k} {_value(k, v, language)}" for k, v in result["params"].items())
-        if language == "es":
-            return say(f"Propuse un {result['family']} en el panel: {values}. Cumple el manual.")
-        return say(f"I put a {result['family']} in the panel: {values}. It passes the manual.")
-
-    return step
+    return lambda messages, tools: say(summary_text(newest_param_result(messages), language))
 
 
 def explain(language: Language, extra: str = "") -> FakeStep:
     """Answer with the rule ids and the nearest valid values of the newest validation."""
-
-    def step(messages: list[Message], tools: list[ToolSpec]) -> ChatTurn:
-        result = next(
-            json.loads(m.content)
-            for m in reversed(messages)
-            if m.role == "tool" and m.name in PARAM_TOOLS and "violations" in m.content
-        )
-        either, near_label, breaks = (
-            (" o ", "lo más cercano", "No cumple la regla")
-            if language == "es"
-            else (" or ", "nearest valid", "It breaks")
-        )
-        parts = []
-        for v in result["violations"]:
-            near = either.join(
-                f"{s['parameter']} {_value(s['parameter'], s['value'], language)}"
-                for s in v.get("nearest_valid", [])
-            )
-            parts.append(f"{breaks} {v['rule']}" + (f"; {near_label}: {near}" if near else ""))
-        return say(". ".join(parts) + "." + (f" {extra}" if extra else ""))
-
-    return step
+    return lambda messages, tools: say(
+        explain_text(newest_param_result(messages, broken=True), language, extra)
+    )
 
 
 def newest_sku(messages: list[Message]) -> str:
