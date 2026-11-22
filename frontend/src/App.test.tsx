@@ -529,7 +529,7 @@ describe('App', () => {
     await i18n.changeLanguage('es')
     backend()
     renderApp()
-    fireEvent.change(screen.getByLabelText('Describe la cuenta o el charm…'), {
+    fireEvent.change(screen.getByLabelText('Describe la cuenta o el dije…'), {
       target: { value: 'Una cuenta facetada' },
     })
     fireEvent.click(screen.getByRole('button', { name: 'Enviar' }))
