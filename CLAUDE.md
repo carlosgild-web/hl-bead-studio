@@ -8,8 +8,9 @@ Read this file first in every session. The roadmap is in `PLAN.md`. Work one pha
 Hilda & Luna Beadworks. A designer describes a glass bead or charm; the assistant proposes
 parameters, explains manufacturability rules from the Product Design Manual, and, after the
 designer confirms, the tool reserves a SKU in a mock SAP, builds the 3D model with CadQuery
-(STEP, STL, GLB), produces a technical drawing with the H&L title block (FreeCAD TechDraw), and
-queues a catalog render in Blender. Portfolio project #4, alongside `local-rag-ollama`,
+(STEP, STL, GLB), produces a technical drawing with the H&L title block (OpenCascade views in
+Python, decision 0009), and queues a catalog render in Blender. Without a model, demo mode
+answers from a curated Q&A bank (`docs/qa/`, decision 0022). Portfolio project #4, alongside `local-rag-ollama`,
 `luna-hybrid-agent` and `hl-create-design`; code quality, tests, README and "clone and run" matter.
 
 ## Stack (do not change without asking)
@@ -19,7 +20,7 @@ queues a catalog render in Blender. Portfolio project #4, alongside `local-rag-o
 | Geometry | CadQuery, one builder per family; GLB via trimesh |
 | Drawing | OpenCascade HLR views + H&L SVG title block → PDF (svglib, reportlab); decision 0009 |
 | Render | Blender headless (`blender -b -P blender/render.py`), Cycles CPU, SQLite job queue, one worker |
-| LLM | `LLMClient`: `OllamaClient` (native tools), `AnthropicClient`, `FakeClient`; by `LLM_PROVIDER` |
+| LLM | `LLMClient`: `OllamaClient` (native tools), `AnthropicClient`, `OpenAICompatClient` (Dahl, Groq), `DemoClient` (demo mode), `FakeClient` (scripts); by `LLM_PROVIDER`, with `auto` (startup check) and the `LLM_FALLBACK` chain |
 | Agent | Own bounded tool loop, no agent framework |
 | Manual search | SQLite FTS5 over `docs/manual/` |
 | Mock SAP | Separate FastAPI service `sap-mock/`, OData v2 payloads, basic auth + CSRF, own SQLite |
@@ -38,7 +39,15 @@ python -m app.cli validate --family FAC --params examples/fac_10mm.json
 python -m app.cli generate --family FAC --params examples/fac_10mm.json --sku GB-1034 --rev A
 python -m app.cli measure-fonts --engraving   # the measurements behind CH-07 and CH-06
 python -m app.cli render --sku GB-1034 --rev A --finish amber
-python -m app.cli agent-eval --fake
+python -m app.cli chat "A 10 mm faceted amber bead" --provider dahl
+python -m app.cli confirm <action_id>    # or: cancel <action_id>
+python -m app.cli agent-eval --fake --suite all --variants   # core + qa suites (CI)
+python -m app.cli llm-check              # probe Dahl, Groq, Ollama; suggest and ask
+python -m app.cli free-ports             # what holds 8000/8100/5173; offers to stop it
+
+# everything at once (mock SAP, backend, UI, browser), after the one-time setup
+start.cmd            # Windows; ./start.sh on Linux/macOS; `start.cmd groq` skips the check
+docker compose up    # app + mock SAP on :8000 (LLM_PROVIDER=auto)
 
 # mock SAP
 cd sap-mock && uvicorn app.main:app --reload --port 8100
@@ -68,8 +77,12 @@ npm run lint && npm test && npm run build
 ## Rules
 
 - Config from environment via `core/config.py`; keep `.env.example` updated (`LLM_PROVIDER`,
-  `OLLAMA_BASE_URL`, `OLLAMA_MODEL`, `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`, `SAP_BASE_URL`,
-  `SAP_USER`, `SAP_PASSWORD`, `FREECAD_CMD`, `BLENDER_BIN`, `DESIGNS_ROOT`, `DATA_DIR`, `AGENT_MAX_ITERATIONS`).
+  `LLM_FALLBACK`, `OLLAMA_BASE_URL`, `OLLAMA_MODEL`, `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`,
+  `DAHL_API_KEY`, `DAHL_MODEL`, `DAHL_BASE_URL`, `GROQ_API_KEY`, `GROQ_MODEL`, `SAP_BASE_URL`,
+  `SAP_USER`, `SAP_PASSWORD`, `SAP_TODAY`, `SAP_LATENCY_MS`, `SAP_FAIL_RATE`, `SAP_MAINTENANCE`,
+  `FREECAD_CMD`, `BLENDER_BIN`, `RENDER_SAMPLES`, `RENDER_TIMEOUT_S`, `DESIGNS_ROOT`, `DATA_DIR`,
+  `FRONTEND_DIST`, `AGENT_MAX_ITERATIONS`, `RATE_LIMIT_PER_MINUTE`, `DAILY_TOKEN_CAP`,
+  `DESIGNS_RETENTION_HOURS`).
 - Units are millimetres everywhere; parameters carry their unit in schemas and in the UI.
 - Persistent data under `DATA_DIR` (gitignored). `pathlib`, no hardcoded Windows paths.
 - Tests and CI use `FakeClient` and need no Ollama, API key, FreeCAD or Blender; tests that need
