@@ -57,20 +57,23 @@ start.cmd              # Windows: three windows, close them to stop
 start.cmd groq         # pick the LLM yourself: fake, ollama, anthropic, dahl or groq
 ```
 
-Without a provider argument, the launcher first checks the models for real (decision 0019):
+Without a provider argument, the launcher first checks the models for real (decisions 0019
+and 0021): Dahl, then Groq, then Ollama, then the demo model.
 
 ```text
+Dahl (zai-org/GLM-5.3-Flash): the key has no tokens left (402)
 Groq (openai/gpt-oss-120b): daily quota used up; requests 0 of 1000 left; resets in 3h12m
 Ollama (qwen3:4b-instruct-2507): installed, not running at http://localhost:11434
 Demo model: always available (scripted answers, no LLM)
 Ollama is installed but not running. Start it now? [Y/n]
 ```
 
-It sends Groq one small real first turn (skipped without `GROQ_API_KEY`), asks Ollama for
-its models, suggests the best one (the capital letter, Enter accepts it) and starts the
-studio with your choice. A per-minute limit still counts as usable. Every question waits for
+It sends Dahl and Groq one small real first turn each (skipped without `DAHL_API_KEY` or
+`GROQ_API_KEY`), asks Ollama for its models, suggests the best one (the capital letter, Enter accepts it) and starts the
+studio with your choice. A per-minute limit still counts as usable; a Dahl model
+that is full (paid accounts go first) does not. Every question waits for
 you. Without a terminal it asks nothing, takes the suggestion and never starts Ollama.
-`LLM_PROVIDER=fake`, `anthropic` or `dahl` in `.env` skips the check. The check alone:
+`LLM_PROVIDER=fake` or `anthropic` in `.env` skips the check. The check alone:
 `cd backend && python -m app.cli llm-check`.
 
 Before that, the launcher checks its three ports (decision 0020). If an earlier start is
@@ -144,7 +147,8 @@ the CLI and by the designer's confirmation.
 - `anthropic` needs `ANTHROPIC_API_KEY`.
 - `dahl` ([Dahl Inference](https://inference.dahl.global/), open models over an
   OpenAI-compatible API) needs `DAHL_API_KEY`; `DAHL_MODEL` defaults to
-  `MiniMaxAI/MiniMax-M2.7` (decision 0016).
+  `zai-org/GLM-5.3-Flash`, the model that admits accounts without a paid plan (decisions
+  0016 and 0021).
 
 A cloud provider (`groq`, `dahl`, `anthropic`) falls back along `LLM_FALLBACK` (default
 `ollama,fake`): without its key, or when a turn hits its daily limit, the studio uses Ollama

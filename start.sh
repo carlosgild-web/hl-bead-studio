@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Bead Studio launcher for local development on Linux and macOS.
-#   ./start.sh                checks Groq, then Ollama, then the demo model, and asks which one
-#                             (LLM_PROVIDER=fake, anthropic or dahl in .env skips the check)
+#   ./start.sh                checks Dahl, Groq, Ollama, then the demo model, and asks which one
+#                             (LLM_PROVIDER=fake or anthropic in .env skips the check)
 #   ./start.sh groq           or: dahl, anthropic, ollama, fake: that one, without the check
 # Runs the mock SAP (:8100), the backend (:8000) and the UI (:5173), opens the browser,
 # and stops all three on Ctrl+C. Setup: see "Quick start" in README.md.
@@ -49,7 +49,7 @@ if ! (cd backend && .venv/bin/python -m app.cli free-ports); then
   exit 1
 fi
 
-# No provider named: check them and let the designer choose (decision 0019). The questions
+# No provider named: check them and let the designer choose (decisions 0019 and 0021). The questions
 # go to the terminal (stderr); only the chosen name comes back on stdout.
 if [[ $# -eq 0 ]]; then
   if ! LLM_PROVIDER="$(cd backend && .venv/bin/python -m app.cli llm-check)"; then

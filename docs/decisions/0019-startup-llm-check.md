@@ -1,6 +1,8 @@
 # 0019: The startup model check, `LLM_PROVIDER=auto` and a switch that stays
 
 **Status:** accepted (2026-11-20). An addition outside the `PLAN.md` phases, requested by Carlos.
+Amended by [0021](0021-dahl-first-in-startup-check.md): Dahl is now checked first, and
+`LLM_PROVIDER=dahl` no longer skips the check.
 
 ## Context
 

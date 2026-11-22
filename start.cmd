@@ -1,7 +1,7 @@
 @echo off
 rem Bead Studio launcher for local development on Windows.
-rem   start.cmd                 checks Groq, then Ollama, then the demo model, and asks which one
-rem                             (LLM_PROVIDER=fake, anthropic or dahl in .env skips the check)
+rem   start.cmd                 checks Dahl, Groq, Ollama, then the demo model, and asks which one
+rem                             (LLM_PROVIDER=fake or anthropic in .env skips the check)
 rem   start.cmd groq            or: dahl, anthropic, ollama, fake: that one, without the check
 rem Opens three windows (mock SAP :8100, backend :8000, UI :5173) and the browser. If one of
 rem those ports is taken, it shows what holds it and offers to stop it first.
@@ -47,7 +47,7 @@ if errorlevel 1 (
 )
 popd
 
-rem No provider named: check them and let the designer choose (decision 0019). The questions
+rem No provider named: check them and let the designer choose (decisions 0019 and 0021). The questions
 rem are on this console; the answer comes back in a file under data\ (gitignored).
 if "%~1"=="" (
   pushd backend
