@@ -31,6 +31,7 @@ COPY cad/ cad/
 COPY blender/ blender/
 COPY docs/manual/ docs/manual/
 COPY docs/gallery/ docs/gallery/
+COPY docs/qa/ docs/qa/
 COPY --from=frontend /src/frontend/dist frontend/dist
 
 # Persistent data (designs, SQLite, traces) lives in a volume; the services run as a user.
