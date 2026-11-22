@@ -25,3 +25,4 @@ Short records of the design decisions and of every deviation from `PLAN.md`.
 | [0019](0019-startup-llm-check.md) | The startup model check (`llm-check`), `LLM_PROVIDER=auto` and a switch that stays | accepted (deviation) |
 | [0020](0020-free-ports-at-launch.md) | The launcher shows what holds its ports and offers to stop it | accepted (addition) |
 | [0021](0021-dahl-first-in-startup-check.md) | Dahl first in the startup model check; GLM-5.3-Flash as Dahl's default model | accepted (addition) |
+| [0022](0022-demo-mode-answers-from-a-qa-bank.md) | Demo-mode answers from a Q&A bank, and the `qa` eval suite | accepted (addition) |
