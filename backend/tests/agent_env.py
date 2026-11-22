@@ -1,4 +1,5 @@
-"""A test harness for the assistant: the real API, a scripted FakeClient, the in-memory SAP.
+"""A test harness for the assistant: the real API, a scripted FakeClient (or demo mode's
+DemoClient when there is no script), the in-memory SAP.
 
 `env.chat(script, text)` sends one message through `POST /api/chat` and returns the parsed
 server-sent events; `env.confirm(action_id)` is the designer's click.
@@ -16,6 +17,8 @@ from app.agent.tools import PreviewCache
 from app.api import deps
 from app.core.config import Settings, get_settings
 from app.db.store import Store
+from app.llm.base import LLMClient
+from app.llm.demo import DemoClient
 from app.llm.fake import FakeClient, Step
 from app.main import app
 from app.sap.memory import InMemorySap
@@ -37,7 +40,7 @@ class AgentEnv:
         self.sap = InMemorySap()
         self.store = Store(settings.data_dir)
         self.previews = PreviewCache()
-        self.clients: list[FakeClient] = []
+        self.clients: list[LLMClient] = []
         self._next_script: Sequence[Step] | None = None
         self.notified = 0
         app.dependency_overrides[get_settings] = lambda: self.settings
@@ -48,8 +51,9 @@ class AgentEnv:
         app.dependency_overrides[deps.get_render_notify] = lambda: self._notify
         self.http = TestClient(app)  # no `with`: the lifespan render worker stays off
 
-    def _client(self) -> FakeClient:
-        client = FakeClient(self._next_script)
+    def _client(self) -> LLMClient:
+        script = self._next_script
+        client = DemoClient() if script is None else FakeClient(script)
         self.clients.append(client)
         return client
 
@@ -89,7 +93,7 @@ class AgentEnv:
         return self.http.post(f"/api/actions/{action_id}/cancel")
 
     @property
-    def last_client(self) -> FakeClient:
+    def last_client(self) -> LLMClient:
         return self.clients[-1]
 
 
