@@ -3,10 +3,12 @@
 import httpx
 import pytest
 
+from app.core.content import qa_bank
 from app.llm import LLMError, Message, effective_provider, make_client
 from app.llm.base import DAILY_LIMIT, ChatTurn, LLMClient, ToolCall
+from app.llm.demo import DemoClient
 from app.llm.factory import GROQ_MAX_RETRY_WAIT_S, GROQ_RETRIES
-from app.llm.fake import DEMO_NOTICE, FakeClient
+from app.llm.fake import FakeClient
 from app.llm.fallback import FallbackClient, ollama_available, record_switch, switched_to
 from app.llm.openai_compat import OpenAICompatClient
 from tests.conftest import make_settings
@@ -54,7 +56,7 @@ def test_without_ollama_the_turn_falls_back_to_demo_mode() -> None:
     answer = client.chat([Message("user", "hi")], []).content
 
     assert "demo mode until it resets" in answer and "start.cmd ollama" in answer
-    assert answer.endswith(DEMO_NOTICE)
+    assert answer.endswith(qa_bank().fallback.en)
 
 
 def test_other_errors_are_not_hidden() -> None:
@@ -126,7 +128,7 @@ def test_after_a_daily_limit_later_clients_stay_switched(tmp_path) -> None:
 
     settings = make_settings(tmp_path, llm_provider="groq", groq_api_key="k", llm_fallback="fake")
     client = make_client(settings)  # the next turn does not ask Groq again
-    assert isinstance(client, FakeClient)
+    assert isinstance(client, DemoClient)  # demo mode
     assert DAILY_LIMIT not in client.chat([Message("user", "hi")], []).content
     assert effective_provider(settings) == "fake"
 

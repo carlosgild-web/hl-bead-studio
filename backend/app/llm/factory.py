@@ -1,11 +1,15 @@
-"""Pick the LLM client named by `LLM_PROVIDER` (decisions 0004, 0016, 0017, 0018 and 0019)."""
+"""Pick the LLM client named by `LLM_PROVIDER` (decisions 0004, 0016-0019 and 0022).
+
+Demo mode (`fake`, `auto` that found no model, or the `fake` fallback) is `DemoClient`: it
+answers from the Q&A bank through the real tools. `FakeClient(script)` is for tests and
+`agent-eval --fake`."""
 
 from collections.abc import Callable
 
 from app.core.config import Settings
 from app.llm.anthropic import AnthropicClient
 from app.llm.base import LLMClient, LLMError
-from app.llm.fake import FakeClient
+from app.llm.demo import DemoClient
 from app.llm.fallback import FallbackClient, ollama_available, switched_to
 from app.llm.ollama import OllamaClient
 from app.llm.openai_compat import GROQ_URL, OpenAICompatClient
@@ -27,11 +31,11 @@ def make_client(settings: Settings) -> LLMClient:
     (decision 0018): without its key the first available fallback is used instead, and a
     turn that hits its daily limit moves to it, for the rest of the process."""
     if settings.llm_provider == "auto":
-        from app.llm.check import auto_demo_notice, resolve_auto
+        from app.llm.check import resolve_auto
 
         settings = settings.model_copy(update={"llm_provider": resolve_auto(settings)})
         if settings.llm_provider == "fake":
-            return FakeClient(notice=auto_demo_notice())
+            return DemoClient()  # why: `auto_demo_notice()`, in GET /api/health
     fallbacks = _fallbacks(settings) if settings.llm_provider in CLOUD else []
     if not fallbacks:
         return _primary(settings)
@@ -71,7 +75,7 @@ def _fallbacks(settings: Settings) -> list[tuple[str, Callable[[], LLMClient | N
             return None
         return OllamaClient(settings.ollama_base_url, settings.ollama_model)
 
-    known: dict[str, Callable[[], LLMClient | None]] = {"ollama": ollama, "fake": FakeClient}
+    known: dict[str, Callable[[], LLMClient | None]] = {"ollama": ollama, "fake": DemoClient}
     names = [n.strip().lower() for n in settings.llm_fallback.split(",") if n.strip()]
     return [(name, known[name]) for name in names if name in known]
 
@@ -100,4 +104,4 @@ def _primary(settings: Settings) -> LLMClient:
             retries=GROQ_RETRIES,
             max_retry_wait=GROQ_MAX_RETRY_WAIT_S,
         )
-    return FakeClient()
+    return DemoClient()

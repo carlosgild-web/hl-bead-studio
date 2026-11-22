@@ -3,8 +3,8 @@
 A script is a list of steps. Each step is a `ChatTurn`, or a function that receives the
 messages and the offered tools and returns a `ChatTurn` (so a script can react to a tool
 result). In tests the script must cover the whole conversation: running out raises, so a
-test can't pass by accident. Without a script the client is in demo mode and always gives
-the same notice.
+test can't pass by accident. Without a script the client is in demo mode: it answers like
+`DemoClient`, from the Q&A bank (decision 0022).
 """
 
 from __future__ import annotations
@@ -18,12 +18,6 @@ from typing import Any
 from app.llm.base import ChatTurn, LLMClient, LLMError, Message, ToolCall, ToolSpec
 
 Step = ChatTurn | Callable[[list[Message], list[ToolSpec]], ChatTurn]
-
-DEMO_NOTICE = (
-    "Demo mode: no language model is configured (LLM_PROVIDER=fake). The parameter panel, "
-    "the checks and the confirmation cards work; set LLM_PROVIDER=groq, ollama or anthropic "
-    "to talk to the assistant."
-)
 
 _ids = itertools.count(1)
 
@@ -71,11 +65,8 @@ class FakeClient(LLMClient):
         self,
         script: Sequence[Step] | None = None,
         model: str = "scripted",
-        *,
-        notice: str | None = None,
     ) -> None:
         self._script = list(script) if script is not None else None
-        self.notice = notice or DEMO_NOTICE
         self._position = 0
         self.model = model
         self.calls: list[RecordedCall] = []
@@ -90,7 +81,9 @@ class FakeClient(LLMClient):
         self.calls.append(RecordedCall(list(messages), list(tools), allow_tools))
         offered = tools if allow_tools else []
         if self._script is None:
-            return ChatTurn(content=self.notice)
+            from app.llm.demo import DemoClient  # demo.py builds on this module's helpers
+
+            return DemoClient().chat(messages, tools, allow_tools=allow_tools)
         if self._position >= len(self._script):
             raise FakeScriptExhausted(
                 f"FakeClient script has {len(self._script)} turns; call {self._position + 1}"

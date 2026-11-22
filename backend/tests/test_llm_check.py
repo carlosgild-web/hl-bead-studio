@@ -6,10 +6,10 @@ from pathlib import Path
 
 import httpx
 import pytest
+from fastapi.testclient import TestClient
 
 from app import cli
 from app.llm import make_client
-from app.llm.base import Message
 from app.llm.check import (
     CloudStatus,
     OllamaStatus,
@@ -21,6 +21,7 @@ from app.llm.check import (
     probe_ollama,
     resolve_auto,
 )
+from app.main import app
 from tests.conftest import make_settings
 
 READY = OllamaStatus("ready", "ollama", 3.0)
@@ -383,12 +384,20 @@ def test_auto_demo_mode_says_why(tmp_path, monkeypatch) -> None:
 
     monkeypatch.setattr("app.llm.check.check", fake_check)
     settings = make_settings(tmp_path, llm_provider="auto")
+    monkeypatch.setattr("app.main.get_settings", lambda: settings)
 
-    text = make_client(settings).chat([Message("user", "hi")], []).content
-    assert text.startswith("Demo mode: LLM_PROVIDER=auto found no usable model")
-    assert "no tokens left (402)" in text and "GROQ_API_KEY is empty" in text
-    assert "nothing answers at http://ollama:11434" in text
-    assert "Demo model:" not in text
+    assert make_client(settings).model == "demo"  # demo mode answers from the Q&A bank
+    note = TestClient(app).get("/api/health").json()["llm_note"]
+    assert note.startswith("LLM_PROVIDER=auto found no usable model")
+    assert "no tokens left (402)" in note and "GROQ_API_KEY is empty" in note
+    assert "nothing answers at http://ollama:11434" in note
+    assert "Demo model:" not in note
+
+
+def test_health_has_no_note_without_auto(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr("app.main.get_settings", lambda: make_settings(tmp_path))
+    body = TestClient(app).get("/api/health").json()
+    assert (body["llm_provider"], body["llm_note"]) == ("fake", None)
 
 
 def test_auto_choosing_a_model_has_no_demo_notice(tmp_path, monkeypatch) -> None:

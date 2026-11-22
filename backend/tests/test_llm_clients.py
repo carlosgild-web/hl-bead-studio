@@ -5,9 +5,11 @@ import json
 import httpx
 import pytest
 
+from app.agent.prompts import user_message
+from app.core.content import qa_bank
 from app.llm import LLMError, Message, ToolCall, ToolSpec, make_client
 from app.llm.anthropic import API_VERSION, AnthropicClient, from_anthropic, to_anthropic
-from app.llm.fake import DEMO_NOTICE, FakeClient, FakeScriptExhausted, call, last_result, say
+from app.llm.fake import FakeClient, FakeScriptExhausted, call, last_result, say
 from app.llm.ollama import OllamaClient
 from tests.conftest import make_settings
 
@@ -31,7 +33,9 @@ def test_fake_follows_its_script_and_then_raises():
 
 
 def test_fake_without_script_is_demo_mode():
-    assert FakeClient().chat([Message("user", "hi")], TOOLS).content == DEMO_NOTICE
+    """No script: the answer of demo mode's DemoClient (here the Q&A bank's fallback)."""
+    message = Message("user", user_message("hi"))
+    assert FakeClient().chat([message], TOOLS).content == qa_bank().fallback.en
 
 
 def test_fake_step_can_react_to_tool_results():

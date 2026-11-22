@@ -370,16 +370,15 @@ def resolve_auto(settings: Settings) -> str:
 
 
 def auto_demo_notice() -> str | None:
-    """The demo-mode answer when `auto` found no model: why, from the startup check."""
+    """Why `auto` found no model, from the startup check (`llm_note` in GET /api/health)."""
     with _auto_lock:
         lines = [line for line in _auto_lines if line != DEMO_LINE]
         if _auto_choice != "fake" or not lines:
             return None
         found = ". ".join(lines)
     return (
-        f"Demo mode: LLM_PROVIDER=auto found no usable model at startup. {found}. "
-        "The parameter panel, the checks and the confirmation cards work; restart the app "
-        "once Dahl, Groq or Ollama is available to talk to the assistant."
+        f"LLM_PROVIDER=auto found no usable model at startup. {found}. Restart the app "
+        "once Dahl, Groq or Ollama is available to talk to a model."
     )
 
 

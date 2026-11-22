@@ -64,14 +64,18 @@ app.include_router(catalog_router)
 
 
 @app.get("/api/health")
-def health() -> dict[str, str | bool]:
-    """Liveness probe. Reports the version, the LLM provider and whether Blender is
-    installed (renders run only where it is)."""
+def health() -> dict[str, str | bool | None]:
+    """Liveness probe. Reports the version, the LLM provider, why `auto` fell to demo mode
+    (`llm_note`, else null) and whether Blender is installed (renders run only where it is)."""
+    from app.llm.check import auto_demo_notice
+
     settings = get_settings()
+    provider = effective_provider(settings)
     return {
         "status": "ok",
         "version": __version__,
-        "llm_provider": effective_provider(settings),
+        "llm_provider": provider,
+        "llm_note": auto_demo_notice() if settings.llm_provider == "auto" else None,
         "renders": blender_available(settings),
     }
 
