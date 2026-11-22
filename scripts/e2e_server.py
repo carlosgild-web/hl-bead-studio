@@ -5,7 +5,9 @@ render queue, audit) except three stand-ins, so the test needs no SAP service, n
 no Blender:
 
 - SAP: the in-memory OData stand-in from `backend/app/sap/memory.py`;
-- the model: a FakeClient whose script is picked by keywords in the designer's message;
+- the model: a FakeClient whose script is picked by keywords in the designer's message
+  ("reserve", "generate", "render"); any other message gets demo mode's real answer from
+  the Q&A bank (DemoClient, decision 0022);
 - Blender: `backend/tests/fake_blender.py`, which writes a small PNG.
 
 Data and designs go to a fresh temporary folder, removed on exit.
@@ -35,7 +37,9 @@ NAME = "Amber Glow Faceted"
 
 
 def scripted_client(sap):
-    """A FakeClient for the designer's latest message: plays the model of the demo flow."""
+    """A FakeClient for the designer's latest message: plays the model of the design flow,
+    or leaves the message to demo mode (no script)."""
+    from app.llm.demo import designer_text
     from app.llm.fake import FakeClient, call, say
 
     def latest_reserved() -> str:
@@ -45,7 +49,7 @@ def scripted_client(sap):
     class DemoClient(FakeClient):
         def chat(self, messages, tools, *, allow_tools=True):
             if self._script is None:
-                text = next((m.content for m in reversed(messages) if m.role == "user"), "").lower()
+                text = designer_text(messages).lower()
                 if "generate" in text:
                     sku = latest_reserved()
                     script = [
@@ -58,7 +62,7 @@ def scripted_client(sap):
                         call("request_render", sku=sku, rev="A"),
                         say(f"Confirm the card to queue a render of {sku}."),
                     ]
-                else:
+                elif "reserve" in text:
                     script = [
                         call("propose_parameters", family="FAC", params=FAC_10),
                         call("preview_geometry", family="FAC", params=FAC_10),
@@ -74,6 +78,8 @@ def scripted_client(sap):
                             f"the manual. Confirm the card to reserve a SKU for {NAME}."
                         ),
                     ]
+                else:
+                    script = None  # demo mode: DemoClient answers from the Q&A bank
                 self._script = script
             return super().chat(messages, tools, allow_tools=allow_tools)
 

@@ -27,7 +27,7 @@ test('a designer takes a faceted bead from a description to a render', async ({ 
 
   // 1. Description: the assistant proposes parameters, builds the preview, opens a card.
   const input = page.getByLabel('Describe the bead or charm…')
-  await input.fill('A 10 mm faceted amber bead for the Amber Hollow collection')
+  await input.fill('A 10 mm faceted amber bead for the Amber Hollow collection; reserve a SKU for it')
   await page.getByRole('button', { name: 'Send' }).click()
   await expect(page.locator('[data-role="assistant"]').last()).toContainText('Confirm the card')
 
@@ -137,4 +137,36 @@ test('a designer reserves, generates and renders from the panel alone', async ({
   await expect(render).toContainText('sea_green')
   await render.getByRole('button', { name: 'Confirm' }).click()
   await expect(page.getByRole('img', { name: new RegExp(`Render of ${sku}`) })).toBeVisible()
+})
+
+/**
+ * Demo mode (decision 0022): no script, so the real DemoClient answers from the Q&A bank,
+ * through the real tools, and never opens a card.
+ */
+test('demo mode answers a design chip, a manual question and an off-topic message', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.getByText('Demo mode · scripted answers')).toBeVisible()
+
+  // The first example chip: the panel shows the proposal, highlighted, checked by the code.
+  await page.getByRole('button', { name: 'A 10 mm faceted amber bead for the Amber Hollow collection' }).click()
+  await page.getByRole('button', { name: 'Send' }).click()
+  const answers = page.locator('[data-role="assistant"]')
+  await expect(answers.last()).toContainText('I put a Faceted in the panel: Diameter 10.0 mm')
+  await expect(answers.last()).toContainText('amber')
+  await expect(page.getByLabel('Diameter', { exact: false }).first()).toHaveValue('10')
+  await expect(page.locator('[data-proposed]').first()).toBeVisible()
+  await expect(page.getByText(/Meets the Product Design Manual/)).toBeVisible()
+
+  // A question about the manual: the rule id, and no card.
+  await page.getByLabel('Describe the bead or charm…').fill("What's the smallest hole?")
+  await page.getByRole('button', { name: 'Send' }).click()
+  await expect(answers.last()).toContainText('GB-01')
+  await expect(page.getByRole('article')).toHaveCount(0)
+
+  // In Spanish, an off-topic message gets the Spanish redirect.
+  await page.getByRole('button', { name: 'Español' }).click()
+  await page.getByLabel('Describe la cuenta o el dije…').fill('Cuéntame un chiste')
+  await page.getByRole('button', { name: 'Enviar' }).click()
+  await expect(answers.last()).toContainText('solo ayudo a diseñar cuentas de vidrio y dijes')
+  await expect(page.getByRole('article')).toHaveCount(0)
 })
