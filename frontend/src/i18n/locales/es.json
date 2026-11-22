@@ -21,6 +21,8 @@
     "example1": "Una cuenta facetada de 10 mm en ámbar para la colección Amber Hollow",
     "example2": "Un charm de luna creciente con estrella, baño de oro, 16 mm de alto",
     "example3": "An 8 mm round cobalt bead with a 1.5 mm hole",
+    "question1": "¿Cuál es el agujero más chico que puede llevar una cuenta?",
+    "question2": "¿Qué tipografías puedo usar en un dije de inicial?",
     "placeholder": "Describe la cuenta o el charm…",
     "send": "Enviar",
     "thinking": "El asistente está trabajando…",
@@ -32,6 +34,10 @@
       "generate": "Genera los archivos del diseño de {{sku}}",
       "render": "Renderiza {{sku}} rev {{rev}} para el catálogo",
       "failed": "No se pudo abrir la tarjeta:"
+    },
+    "demo": {
+      "badge": "Modo demo · respuestas guionadas",
+      "tooltip": "No hay un modelo de lenguaje conectado. El asistente responde con una lista curada de preguntas sobre el manual, con las herramientas reales; el panel, las comprobaciones y las tarjetas funcionan igual."
     }
   },
   "panel": {

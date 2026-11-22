@@ -21,6 +21,8 @@
     "example1": "A 10 mm faceted amber bead for the Amber Hollow collection",
     "example2": "A gold-plated crescent moon charm with a star, 16 mm tall",
     "example3": "Una cuenta redonda de 8 mm en cobalto con agujero de 1,5 mm",
+    "question1": "What's the smallest hole I can put in a glass bead?",
+    "question2": "Which fonts can I use for an initial charm?",
     "placeholder": "Describe the bead or charm…",
     "send": "Send",
     "thinking": "The assistant is working…",
@@ -32,6 +34,10 @@
       "generate": "Generate the design files for {{sku}}",
       "render": "Render {{sku}} rev {{rev}} for the catalog",
       "failed": "Could not open the card:"
+    },
+    "demo": {
+      "badge": "Demo mode · scripted answers",
+      "tooltip": "No language model is connected. The assistant answers from a curated list of questions about the manual, through the real tools; the panel, the checks and the cards work as usual."
     }
   },
   "panel": {

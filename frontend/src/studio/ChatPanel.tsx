@@ -1,8 +1,11 @@
+import { useQuery } from '@tanstack/react-query'
 import type { TFunction } from 'i18next'
 import { AlertCircle, ArrowRight, Bot, ChevronRight, Loader2, Send, Wrench } from 'lucide-react'
 import { type FormEvent, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { api } from '@/api/client'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -13,6 +16,8 @@ import { type CardRequest, useFamilyInfo, useOpenCard, useStudio } from './conte
 import type { StudioState, ToolStep } from './state'
 
 const EXAMPLES = ['chat.example1', 'chat.example2', 'chat.example3'] as const
+// Questions from the Q&A bank, shown in demo mode (decision 0022).
+const QUESTIONS = ['chat.question1', 'chat.question2'] as const
 
 function Steps({ steps }: { steps: ToolStep[] }) {
   const { t } = useTranslation()
@@ -96,6 +101,9 @@ export function ChatPanel() {
   const card = useOpenCard()
   const [text, setText] = useState('')
   const list = useRef<HTMLDivElement>(null)
+  const health = useQuery({ queryKey: ['health'], queryFn: api.health })
+  const demo = health.data?.llm_provider === 'fake'
+  const chips = demo ? [...EXAMPLES, ...QUESTIONS] : EXAMPLES
   const next = state.busy ? null : nextStep(state, family.data, t)
 
   // Scroll the chat list only (scrollIntoView also scrolled the page), smoothly to its end,
@@ -120,6 +128,15 @@ export function ChatPanel() {
         <h2 id="chat-title" className="font-semibold">
           {t('chat.title')}
         </h2>
+        {demo && (
+          <Badge
+            variant="outline"
+            className="ml-auto cursor-help border-brand-amber/60 bg-brand-amber/10"
+            title={[t('chat.demo.tooltip'), health.data?.llm_note].filter(Boolean).join(' ')}
+          >
+            {t('chat.demo.badge')}
+          </Badge>
+        )}
       </header>
 
       <div ref={list} className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4" aria-live="polite">
@@ -127,7 +144,7 @@ export function ChatPanel() {
           <div className="space-y-3 text-sm text-muted-foreground">
             <p>{t('chat.intro')}</p>
             <div className="flex flex-col gap-1.5">
-              {EXAMPLES.map((key) => (
+              {chips.map((key) => (
                 <button
                   key={key}
                   type="button"

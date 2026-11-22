@@ -323,6 +323,32 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'How this demo works' })).toBeInTheDocument()
   })
 
+  it('shows the demo-mode badge and the question chips only in demo mode', async () => {
+    backend({
+      'GET /api/health': () =>
+        json({ status: 'ok', version: '0.1.0', llm_provider: 'fake', llm_note: 'auto found no model.' }),
+    })
+
+    renderApp()
+
+    const badge = await screen.findByText('Demo mode · scripted answers')
+    expect(badge.getAttribute('title')).toMatch(/curated list of questions.*auto found no model\./)
+    expect(screen.getByRole('button', { name: 'Which fonts can I use for an initial charm?' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: "What's the smallest hole I can put in a glass bead?" }))
+    expect(screen.getByRole('textbox')).toHaveValue("What's the smallest hole I can put in a glass bead?")
+  })
+
+  it('shows no demo badge or question chips with a model', async () => {
+    backend({ 'GET /api/health': () => json({ status: 'ok', version: '0.1.0', llm_provider: 'groq' }) })
+
+    renderApp()
+
+    expect(await screen.findByText('ok (v0.1.0, LLM: groq)')).toBeInTheDocument()
+    expect(screen.queryByText('Demo mode · scripted answers')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Which fonts can I use for an initial charm?' })).toBeNull()
+    expect(screen.getByRole('button', { name: /A 10 mm faceted amber bead/ })).toBeInTheDocument()
+  })
+
   it('says when the backend is not reachable', async () => {
     backend({ 'GET /api/health': () => new Response('', { status: 502 }) })
 
@@ -376,7 +402,7 @@ describe('App', () => {
     // "Next step" opens the next card itself, without the assistant (any provider).
     const renderCard = await nextStepThroughRender(calls)
     expect(calls.filter((c) => c.url === '/api/chat')).toHaveLength(1)
-    expect(screen.queryByText(/Demo mode/)).toBeNull()
+    expect(screen.queryByText(/I only have scripted answers/)).toBeNull()
     // The workflow follows the same state; the render is in progress until the job is done,
     // and the chat card follows the job live.
     expect(stepOf('reserve')).toHaveAttribute('data-status', 'done')

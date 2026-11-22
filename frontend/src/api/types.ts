@@ -213,6 +213,8 @@ export interface Health {
   status: string
   version: string
   llm_provider: string
+  /** Why `LLM_PROVIDER=auto` fell to demo mode, else null (decision 0022). */
+  llm_note?: string | null
 }
 
 /** One event of `POST /api/chat` (server-sent events). */
