@@ -48,7 +48,7 @@ pre-generated gallery. Designs and the SQLite files live in the `studio-data` vo
 
 ## Quick start (development)
 
-Requirements: Python 3.12+ (developed on 3.14), Node 22+.
+Requirements: Python 3.12+ (developed on 3.14), Node 22+ (tested on 24).
 
 After the one-time setup below, one command starts the mock SAP (:8100), the backend (:8000)
 and the UI (:5173) and opens the browser:

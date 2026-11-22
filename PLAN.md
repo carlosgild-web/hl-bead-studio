@@ -47,9 +47,9 @@ reserving a SKU and generating files require the designer's confirmation in the 
 | 3D model | **CadQuery** (Python, headless): parametric families → STEP, STL, GLB |
 | Drawing | OpenCascade HLR views + H&L SVG title block → PDF in Python (decision 0009; TechDraw spike failed) |
 | Render | **Blender** headless (`blender -b -P`), Cycles CPU, background job queue |
-| Online demo | Live: parameters, validation, 3D viewer (three.js), drawing. Renders: pre-generated gallery |
+| Online demo | Live: parameters, validation, 3D viewer (three.js), drawing. Renders: pre-generated gallery. Assistant on Groq's free tier, falling back to Ollama or demo mode (decision 0018) |
 | SAP | Own copy of a mock SAP (FastAPI, OData v2 shape) with a Material/SKU entity |
-| LLM | `LLMClient`: Ollama (local) + Anthropic (cloud) + Fake (CI), by `LLM_PROVIDER` |
+| LLM | `LLMClient`: Ollama (local); Anthropic, Dahl and Groq (cloud; decisions 0016, 0017); Fake (CI) and demo mode from a Q&A bank (decision 0022); by `LLM_PROVIDER`, with `auto` and a fallback chain (decisions 0018, 0019) |
 | UI | React + Vite + TypeScript + Tailwind + shadcn/ui + react-three-fiber |
 | Roles | Creation only |
 
@@ -77,7 +77,8 @@ GB-1001…GB-1033 and CH-2004…CH-2033 is seeded and never reissued).
 
 **Design revision:** `A`, `B`, `C`… skipping `I, O, Q, S, X, Z`.
 
-**Manufacturability rules (examples; the manual holds the full list with ids)**
+**Manufacturability rules (examples from 2026-11-17; `docs/manual/` holds the full, current list:
+GEN-01–GEN-04, GB-01–GB-07, CH-01–CH-08)**
 
 | Id | Rule |
 |---|---|
@@ -89,7 +90,8 @@ GB-1001…GB-1033 and CH-2004…CH-2033 is seeded and never reissued).
 | `CH-02` | Loop inner diameter ≥ 1.5 mm, loop wall ≥ 0.8 mm (survives plating and jump rings) |
 | `CH-03` | Smallest feature (stroke, star point) ≥ 0.6 mm (mold limit) |
 | `CH-04` | Height 8–30 mm |
-| `CH-05` | Finishes: gold plate, rhodium, antique bronze; glass colors from the color list |
+| `CH-05` | Finishes: gold plate, rhodium, antique bronze |
+| `GB-07` | Glass colors from the approved color list (borosilicate, COE 33) |
 
 **Naming convention:** `<Evocative name> <Family>` in English, 2–4 words, unique in the catalog
 (for example "Desert Sand Faceted"). Collections: Permanente, Coastal Garden, Amber Hollow.
@@ -153,7 +155,7 @@ hl-bead-studio/
   CLAUDE.md  PLAN.md  README.md  LICENSE  CHANGELOG.md  .env.example
   backend/app/{api,core,agent,llm,standards,geometry,drawing,render,sap,db}/  backend/tests/
   sap-mock/app/  sap-mock/tests/  sap-mock/seed/
-  cad/templates/  (hl_title_block_A4.svg for TechDraw, materials and colors json)
+  cad/templates/  (hl_title_block_A4.svg, the drawing's title block (decision 0009), materials and colors json)
   blender/  (scene.blend or scene built by script, render.py, materials: glass, gold, rhodium, bronze)
   frontend/src/{pages,components,api,hooks,i18n,viewer}/
   docs/manual/{es,en}/  docs/decisions/  docs/showcase/  docs/gallery/  (pre-generated renders)
@@ -168,7 +170,8 @@ hl-bead-studio/
 ### Phase 0 — Skeleton and decisions
 - `git init`, `.gitignore`, MIT license, `.env.example`, backend and sap-mock packages (pyproject,
   ruff, pytest), Vite React TS frontend with Tailwind, shadcn/ui, react-three-fiber.
-- Decision records: 0001 CadQuery for geometry, 0002 FreeCAD TechDraw for drawings, 0003 Blender
+- Decision records: 0001 CadQuery for geometry, 0002 FreeCAD TechDraw for drawings (superseded by
+  0009), 0003 Blender
   headless renders in a job queue, 0004 provider-agnostic LLM, 0005 confirmation gate, 0006 renders
   pre-generated for the online demo.
 - CI: ruff + pytest + frontend lint/test/build.
@@ -247,7 +250,8 @@ invalid params fail with the right rule id, STEP opens in FreeCAD, drawing PDF h
 - Docker image: Python + CadQuery + built frontend (no FreeCAD: decision 0009). Blender is
   **not** in the online image; the render tab shows the gallery and says renders run locally.
 - `compose.yaml`: app + sap-mock (+ optional ollama, + optional blender worker profile for local use).
-- `start.cmd` / `start.sh`; Hugging Face Spaces with `LLM_PROVIDER=anthropic`, Fake fallback without a key.
+- `start.cmd` / `start.sh`. The public provider is Groq's free tier, falling back to Ollama or
+  demo mode (decision 0018, which replaced Hugging Face Spaces on Anthropic; no Space for now).
 
 **Done when:** `docker compose up` works on a clean machine; public URL works.
 
@@ -267,9 +271,9 @@ invalid params fail with the right rule id, STEP opens in FreeCAD, drawing PDF h
 | Python 3.12+ | CadQuery installs with pip; `cadquery-ocp` has a 3.14 wheel (decision 0007) |
 | FreeCAD 1.x (optional) | `freecadcmd.exe` path in `FREECAD_CMD`; only for the tests that reopen STEP files |
 | Blender 4.x or newer | `blender.exe` path in `BLENDER_BIN` |
-| Node 20+ | frontend |
+| Node 22+ (tested on 24) | frontend |
 | Ollama | `qwen3:4b-instruct-2507` |
-| Anthropic API key | cloud provider and online demo |
+| Dahl, Groq or Anthropic API key (optional) | cloud providers; without one, Ollama or demo mode |
 | Docker Desktop, `gh` | Phase 8 |
 
 ## 8. Open questions (decide before the phase that needs them)
