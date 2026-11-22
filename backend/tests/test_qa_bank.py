@@ -116,3 +116,21 @@ def test_design_proposals_validate_as_expected(entry) -> None:
             assert got == pytest.approx(want, abs=0.05), name
         else:
             assert got == want, name
+
+
+def test_the_committed_markdown_is_up_to_date() -> None:
+    """`docs/qa/qa_bank.md` is generated: run `python scripts/qa_bank_md.py` after editing."""
+    import importlib.util
+    import json
+
+    from app.core.config import REPO_ROOT
+    from app.core.content import QA_BANK
+
+    spec = importlib.util.spec_from_file_location(
+        "qa_bank_md", REPO_ROOT / "scripts" / "qa_bank_md.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    expected = module.render(json.loads(QA_BANK.read_text(encoding="utf-8")))
+    committed = module.OUT.read_bytes().decode("utf-8").replace("\r\n", "\n")
+    assert committed == expected, "run: python scripts/qa_bank_md.py"
