@@ -182,7 +182,11 @@ def _cmd_agent_eval(args: argparse.Namespace) -> int:
     from app.llm import LLMError, make_client
 
     try:
-        scenarios = get_scenarios(args.scenario, args.start_at)
+        if args.variants and not args.fake:
+            raise KeyError("--variants is for --fake only (it would spend a provider's quota)")
+        scenarios = get_scenarios(
+            args.scenario, args.start_at, suite=args.suite, variants=args.variants
+        )
     except KeyError as error:
         print(f"error: {error.args[0]}", file=sys.stderr)
         return 2
@@ -324,6 +328,15 @@ def main(argv: list[str] | None = None) -> int:
     evaluation.add_argument("--scenario", action="append", help="run only this id (repeatable)")
     evaluation.add_argument(
         "--start-at", help="run the scenarios from this id onwards (after a daily limit)"
+    )
+    evaluation.add_argument(
+        "--suite",
+        choices=("core", "qa", "all"),
+        default="core",
+        help="core: the 30 design scenarios (default); qa: the Q&A bank (92); all: both",
+    )
+    evaluation.add_argument(
+        "--variants", action="store_true", help="also run every Q&A phrasing variant (--fake)"
     )
     evaluation.add_argument("--out", help="folder for the Markdown and JSON report")
     evaluation.add_argument("--label", help="suffix of the report file names, e.g. run2")

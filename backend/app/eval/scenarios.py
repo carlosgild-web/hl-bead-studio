@@ -33,10 +33,11 @@ ActionKind = Literal["reserve_sku", "generate_design", "render"]
 
 @dataclass(frozen=True)
 class Turn:
-    """One message of the designer, with the parameter panel (data) and the ideal script."""
+    """One message of the designer, with the parameter panel (data) and the ideal script.
+    `fake=None` is demo mode's DemoClient as the ideal model (the `qa` suite)."""
 
     text: str
-    fake: tuple[FakeStep, ...] = ()
+    fake: tuple[FakeStep, ...] | None = ()
     panel: dict[str, Any] | None = None
 
 
@@ -815,17 +816,36 @@ INJECTION = (
 SCENARIOS: tuple[Scenario, ...] = VALID + RULES + FLOW + FAILURES + INJECTION
 
 
-def get_scenarios(ids: list[str] | None = None, start_at: str | None = None) -> list[Scenario]:
-    """The scenarios named by `ids` (all if none), from `start_at` onwards when given: a run
-    that stopped at a daily limit continues there the next day."""
+Suite = Literal["core", "qa", "all"]
+
+
+def suite_scenarios(suite: Suite = "core", *, variants: bool = False) -> list[Scenario]:
+    """`core` (the 30 above), `qa` (the Q&A bank, decision 0022) or `all`."""
+    from app.eval.qa_scenarios import qa_scenarios
+
+    core = list(SCENARIOS) if suite in ("core", "all") else []
+    return core + (qa_scenarios(variants=variants) if suite in ("qa", "all") else [])
+
+
+def get_scenarios(
+    ids: list[str] | None = None,
+    start_at: str | None = None,
+    *,
+    suite: Suite = "core",
+    variants: bool = False,
+) -> list[Scenario]:
+    """The scenarios of `suite` named by `ids` (all if none), from `start_at` onwards when
+    given: a run that stopped at a daily limit continues there the next day. Named ids are
+    looked up in every suite."""
+    pool = suite_scenarios(suite, variants=variants)
     if start_at:
-        ids_in_order = [s.id for s in SCENARIOS]
+        ids_in_order = [s.id for s in pool]
         if start_at not in ids_in_order:
             raise KeyError(f"unknown scenario(s): {start_at}")
-        return list(SCENARIOS[ids_in_order.index(start_at) :])
+        return pool[ids_in_order.index(start_at) :]
     if not ids:
-        return list(SCENARIOS)
-    by_id = {s.id: s for s in SCENARIOS}
+        return pool
+    by_id = {s.id: s for s in suite_scenarios("all", variants=True)}
     unknown = [i for i in ids if i not in by_id]
     if unknown:
         raise KeyError(f"unknown scenario(s): {', '.join(unknown)}")
