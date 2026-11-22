@@ -82,12 +82,45 @@ All notable changes to this project are documented here. The format follows
     writes an audit row for each.
   - The render tool and the click say at once when Blender is not installed (HTTP 503 on
     the click, `renders` in `/api/health`), instead of queuing a job that can only fail.
+  - The eval saves its report after every scenario, and marks a run that stopped early as
+    incomplete. Real runs on Ollama (16/30), Groq (7/22, incomplete) and Dahl (23/30).
+- Phase 8 packaging and providers (decisions 0016–0021):
+  - Two cloud providers through one OpenAI-compatible client: Dahl (`DAHL_*`, default model
+    `zai-org/GLM-5.3-Flash`) and Groq's free tier (`GROQ_*`), with retries on per-minute
+    limits and a clean stop at a daily limit (the eval stops there and `--start-at`
+    continues).
+  - A fallback for cloud providers (`LLM_FALLBACK`, default `ollama,fake`): without a key,
+    or at a daily limit, the studio uses Ollama if it answers, else demo mode, and stays on
+    it until it restarts.
+  - `python -m app.cli llm-check` and `LLM_PROVIDER=auto`: probe Dahl, Groq and Ollama at
+    launch, suggest one and ask (start scripts), or choose without questions (`auto`, the
+    Docker default). One 429 classifier for the check and the clients.
+  - `python -m app.cli free-ports`: the launchers show what holds ports 8000, 8100 and 5173
+    and offer to stop it.
+  - A Docker image and `compose.yaml` (the app and the mock SAP; Ollama in an optional
+    profile), with the backend serving the built frontend (`FRONTEND_DIST`).
+  - The UI: a Workflow stepper, a next-step chip that works without the LLM, a warning when
+    the drawing is out of date, the next free revision (`next_rev`), the product name field
+    that adds the family word and checks the name while typing, and rule messages in
+    Spanish in the Spanish UI.
+- Phase 8b demo mode (decision 0022):
+  - The Q&A bank (`docs/qa/qa_bank.json`, 46 entries in English and Spanish) with content
+    tests that keep it true to the manual.
+  - Demo mode answers from the bank (`DemoClient`): a design request fills the panel
+    through the real `propose_parameters`, a question about the manual is answered after a
+    real manual search, and anything else gets a bilingual fallback. It never opens a card.
+  - A "Demo mode" badge and two question chips in the chat; why `auto` fell to demo mode is
+    `llm_note` in `/api/health`.
+  - The `qa` eval suite (`agent-eval --suite qa|all`, 92 scenarios; `--variants` adds the
+    phrasing variants). CI runs `--fake --suite all --variants` (183 scenarios).
 
 ### Changed
 
 - The in-memory SAP stand-in moved from `backend/tests/fake_sap.py` to
   `backend/app/sap/memory.py` (`InMemorySap`), for the eval harness.
 - The chat shows the backend's reason when a turn is refused (rate limit, token cap).
+- Demo mode no longer gives the same English notice to every message (decision 0022).
+- The Spanish UI says "dije" for charm, as the manual does.
 
 - Manual and schemas after measuring the fonts (decision 0010): CH-07 minimum heights
   (Pacifico 10.5 mm, Y 18.5 mm; Cinzel Bold 16.5 mm, no K), CH-06 engraved letters at least
@@ -105,3 +138,7 @@ All notable changes to this project are documented here. The format follows
   outside a negative or conditional clause (found by the eval).
 - The revision argument of the generate and render tools lists the GEN-02 letters (a model
   offered revision I in the eval).
+- Groq's last call sends the history as plain text, so gpt-oss answers instead of calling a
+  tool (HTTP 400).
+- The 3D viewer: clearer glass, fully metallic plating, and a flat metal face that is never
+  black.

@@ -7,9 +7,17 @@ tools and confirmation gate, with the in-memory SAP. The scorer
 effects. A scenario passes only when every check passes. The method is in
 [decision 0015](../decisions/0015-phase-7-eval-and-safety.md).
 
+The `qa` suite (decision 0022) adds one scenario per entry and language of the
+[Q&A bank](../qa/qa_bank.json): 92 questions about the manual, how the studio works, and
+guardrails, scored on the same checks (rule ids, numbers, no card, no side effect,
+language). CI runs it on demo mode with every phrasing variant (`agent-eval --fake --suite
+all --variants`, 183 scenarios, all must pass). On a real provider:
+`agent-eval --provider dahl --suite qa --out ../docs/eval`. The runs below are the core suite.
+
 | Run | Provider / model | Passed | Report |
 |---|---|---|---|
 | CI | `fake` (ideal scripts) | 30/30, required | job summary of every CI run |
+| CI | `fake` + demo mode, `--suite all --variants` | 183/183, required | job summary of every CI run |
 | 2026-11-18 run 1 | Anthropic `claude-sonnet-5-5` | 26/30 | [md](2026-11-18-anthropic-claude-sonnet-5-5-run1.md), [json](2026-11-18-anthropic-claude-sonnet-5-5-run1.json) |
 | 2026-11-18 run 2 | Anthropic `claude-sonnet-5-5` | 30/30 | [md](2026-11-18-anthropic-claude-sonnet-5-5-run2.md), [json](2026-11-18-anthropic-claude-sonnet-5-5-run2.json) |
 | 2026-11-19 run 1 | Ollama `qwen3:4b-instruct-2507-q4_K_M`, CPU, 7.2 GB laptop | 16/30 | [md](2026-11-19-ollama-qwen3-4b-instruct-2507-q4-K-M-run1.md), [json](2026-11-19-ollama-qwen3-4b-instruct-2507-q4-K-M-run1.json) |

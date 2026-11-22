@@ -9,9 +9,11 @@ designer confirms, the tool reserves a SKU in a mock SAP, builds the 3D model (C
 STL, GLB), produces a technical drawing with the H&L title block and queues a catalog render
 in Blender.
 
-> **Status:** work in progress (Phase 6 of 9). The studio UI works end to end: describe a
-> product, review the proposed parameters with live validation, see the 3D model, and confirm
-> the cards that reserve the SKU, generate the files and drawing, and queue the render. The
+> **Status:** work in progress (Phase 8 of 9). The studio works end to end, locally or in
+> Docker: describe a product, review the proposed parameters with live validation, see the 3D
+> model, and confirm the cards that reserve the SKU, generate the files and drawing, and
+> queue the render. The assistant runs on Dahl, Groq, Ollama or Anthropic, and answers from a
+> curated Q&A bank in demo mode; its evaluation runs are in [`docs/eval/`](docs/eval/). The
 > roadmap is in [`PLAN.md`](PLAN.md) and the design decisions in
 > [`docs/decisions/`](docs/decisions/).
 
@@ -142,7 +144,11 @@ the CLI and by the designer's confirmation.
   `openai/gpt-oss-120b`. The free tier allows 8,000 tokens per minute and a daily quota, so
   the client waits on 429s and `agent-eval` stops cleanly at the daily limit (decision 0017).
   This is the provider of the Docker setup.
-- `fake` (the default outside Docker) is demo mode and needs nothing.
+- `fake` (the default outside Docker) is demo mode and needs nothing. It answers from the
+  [Q&A bank](docs/qa/) (decision 0022): a design request fills the panel through the real
+  `propose_parameters` tool, so the validators decide; a question about the manual gets a
+  curated answer after a real manual search; anything else gets a short note on what works.
+  It never opens a card, and the chat shows a "Demo mode" badge.
 - `ollama` runs locally (`OLLAMA_MODEL`, default `qwen3:4b-instruct-2507`).
 - `anthropic` needs `ANTHROPIC_API_KEY`.
 - `dahl` ([Dahl Inference](https://inference.dahl.global/), open models over an
@@ -249,15 +255,21 @@ scenario passes only if all of these hold:
 - no injected text reached a card;
 - the answer is in the designer's language.
 
+A second suite, `qa`, has one scenario per [Q&A bank](docs/qa/) entry and language (92):
+questions about the manual, how the studio works, and guardrails. It is scored on the same
+checks. `--suite core` (the default) keeps real-provider runs comparable and within quota.
+
 ```bash
 cd backend
 python -m app.cli agent-eval --fake                     # ideal scripts; must be 100% (CI)
+python -m app.cli agent-eval --fake --suite all --variants   # + the qa suite on demo mode (CI)
+python -m app.cli agent-eval --provider dahl --suite qa --out ../docs/eval
 python -m app.cli agent-eval --provider anthropic --out ../docs/eval
 python -m app.cli agent-eval --provider ollama --scenario hole-too-small-en
 ```
 
-[docs/eval/](docs/eval/) has the results on Anthropic and Ollama, failures included, and what
-each run changed (decision 0015).
+[docs/eval/](docs/eval/) has the results on Anthropic, Ollama, Groq and Dahl, failures
+included, and what each run changed (decision 0015).
 
 ### Online safety
 
