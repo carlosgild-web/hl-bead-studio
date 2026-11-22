@@ -31,9 +31,11 @@ class Settings(BaseSettings):
     # JSON-decode every `X | None` value read from the environment.
     anthropic_api_key: Annotated[SecretStr | None, NoDecode] = None
     anthropic_model: str = "claude-sonnet-5-5"
-    # Dahl: OpenAI-compatible open-models API (decision 0016); the model must accept tools
+    # Dahl: OpenAI-compatible open-models API (decision 0016); the model must accept tools.
+    # GLM-5.3-Flash admits accounts without a paid plan; MiniMax and DeepSeek often refuse
+    # them when busy (decision 0021).
     dahl_api_key: Annotated[SecretStr | None, NoDecode] = None
-    dahl_model: str = "MiniMaxAI/MiniMax-M2.7"
+    dahl_model: str = "zai-org/GLM-5.3-Flash"
     dahl_base_url: str = "https://inference.dahl.global/v1"
     # Groq: OpenAI-compatible, free tier with per-minute token limits (decision 0017)
     groq_api_key: Annotated[SecretStr | None, NoDecode] = None

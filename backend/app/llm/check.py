@@ -1,4 +1,5 @@
-"""The startup model check (decision 0019): Groq, then Ollama, then the demo model.
+"""The startup model check (decisions 0019 and 0021): Dahl, then Groq, then Ollama, then the
+demo model.
 
 `python -m app.cli llm-check` probes each one for real (no side effects, short timeouts),
 prints a status line per provider, suggests the best and lets the designer choose in the
@@ -20,7 +21,7 @@ import sys
 import threading
 import time
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Literal
 from urllib.parse import urlparse
@@ -34,8 +35,10 @@ from app.llm.ratelimit import classify_429
 
 log = logging.getLogger(__name__)
 
-GROQ_PROBE_TIMEOUT_S = 10.0
-GROQ_PROBE_MAX_TOKENS = 64
+CLOUD_PROBE_TIMEOUT_S = 10.0
+CLOUD_PROBE_MAX_TOKENS = 64
+# Dahl's 429 when a model is full: paid accounts are let in first (decision 0021).
+BUSY_CODE = "model_concurrency"
 OLLAMA_START_WAIT_S = 30.0
 # A loaded model takes about its file size in RAM, plus the context and runtime.
 RAM_FACTOR = 1.2
@@ -52,14 +55,29 @@ PROBE_TOOL = {
     },
 }
 
-GroqState = Literal["skipped", "ok", "bad_key", "unreachable", "minute_limit", "used_up", "error"]
+CloudState = Literal[
+    "skipped",
+    "ok",
+    "bad_key",
+    "unreachable",
+    "minute_limit",
+    "used_up",
+    "no_tokens",
+    "busy",
+    "error",
+]
 OllamaState = Literal["ready", "model_missing", "not_running", "not_installed"]
 
 
 @dataclass(frozen=True)
-class GroqStatus:
-    state: GroqState
+class CloudStatus:
+    """An OpenAI-compatible cloud provider (Dahl or Groq) after its probe."""
+
+    state: CloudState
     detail: str = ""
+    name: str = "Groq"
+    key_env: str = "GROQ_API_KEY"
+    model_env: str = "GROQ_MODEL"
 
     @property
     def usable(self) -> bool:
@@ -67,15 +85,17 @@ class GroqStatus:
 
     def line(self, model: str) -> str:
         text = {
-            "skipped": "skipped, GROQ_API_KEY is empty",
+            "skipped": f"skipped, {self.key_env} is empty",
             "ok": "ready",
-            "bad_key": "the key was rejected (401), check GROQ_API_KEY",
+            "bad_key": f"the key was rejected (401), check {self.key_env}",
             "unreachable": "not reachable, check the network",
             "minute_limit": "usable, at its per-minute limit now (answers may wait a little)",
             "used_up": "daily quota used up",
+            "no_tokens": "the key has no tokens left (402)",
+            "busy": f"the model is full now (paid accounts first); try another {self.model_env}",
             "error": "error",
         }[self.state]
-        return f"Groq ({model}): {text}" + (f"; {self.detail}" if self.detail else "")
+        return f"{self.name} ({model}): {text}" + (f"; {self.detail}" if self.detail else "")
 
 
 @dataclass(frozen=True)
@@ -97,45 +117,69 @@ class OllamaStatus:
 # --- probes ----------------------------------------------------------------------------------
 
 
-def probe_groq(settings: Settings, *, transport: httpx.BaseTransport | None = None) -> GroqStatus:
-    """One small real chat completion, shaped like the chat's first turn."""
+def probe_dahl(settings: Settings, *, transport: httpx.BaseTransport | None = None) -> CloudStatus:
+    key = settings.dahl_api_key.get_secret_value() if settings.dahl_api_key else ""
+    status = CloudStatus("skipped", name="Dahl", key_env="DAHL_API_KEY", model_env="DAHL_MODEL")
+    return probe_cloud(status, settings.dahl_base_url, key, settings.dahl_model, transport)
+
+
+def probe_groq(settings: Settings, *, transport: httpx.BaseTransport | None = None) -> CloudStatus:
     key = settings.groq_api_key.get_secret_value() if settings.groq_api_key else ""
+    return probe_cloud(CloudStatus("skipped"), GROQ_URL, key, settings.groq_model, transport)
+
+
+def probe_cloud(
+    base: CloudStatus,
+    base_url: str,
+    key: str,
+    model: str,
+    transport: httpx.BaseTransport | None = None,
+) -> CloudStatus:
+    """One small real chat completion, shaped like the chat's first turn. `base` carries the
+    provider's names; without a key it is returned as it is (skipped), with no request."""
     if not key:
-        return GroqStatus("skipped")
+        return base
     from app.agent.prompts import system_prompt
 
+    def status(state: CloudState, detail: str = "") -> CloudStatus:
+        return replace(base, state=state, detail=detail)
+
     body = {
-        "model": settings.groq_model,
+        "model": model,
         "messages": [
             {"role": "system", "content": system_prompt("en")},
             {"role": "user", "content": "Hola"},
         ],
         "tools": [PROBE_TOOL],
-        "max_tokens": GROQ_PROBE_MAX_TOKENS,
+        "max_tokens": CLOUD_PROBE_MAX_TOKENS,
     }
     try:
         with httpx.Client(
-            base_url=GROQ_URL,
-            timeout=GROQ_PROBE_TIMEOUT_S,
+            base_url=base_url.rstrip("/"),
+            timeout=CLOUD_PROBE_TIMEOUT_S,
             transport=transport,
             headers={"authorization": f"Bearer {key}"},
         ) as http:
             response = http.post("/chat/completions", json=body)
     except httpx.HTTPError as exc:
-        return GroqStatus("unreachable", exc.__class__.__name__)
+        return status("unreachable", exc.__class__.__name__)
     if response.is_success:
-        return GroqStatus("ok")
+        return status("ok")
     if response.status_code == 401:
-        return GroqStatus("bad_key")
+        return status("bad_key")
+    if response.status_code == 402:
+        return status("no_tokens")
     if response.status_code == 429:
+        if BUSY_CODE in response.text:
+            return status("busy")
         limit = classify_429(response)
         if limit.kind == "minute":
-            return GroqStatus("minute_limit", f"resets {limit.reset}" if limit.reset else "")
+            return status("minute_limit", f"resets {limit.reset}" if limit.reset else "")
         detail = [f"resets {limit.reset}" if limit.reset else "resets tomorrow"]
         if limit.usage:
             detail.insert(0, limit.usage)
-        return GroqStatus("used_up", "; ".join(detail))
-    return GroqStatus("error", f"HTTP {response.status_code}")
+        return status("used_up", "; ".join(detail))
+    return status("error", f"HTTP {response.status_code}")
 
 
 def find_ollama(
@@ -201,6 +245,9 @@ def is_local(base_url: str) -> bool:
 # --- the choice ------------------------------------------------------------------------------
 
 
+DEMO_LINE = "Demo model: always available (scripted answers, no LLM)"
+
+
 def ask_stdin(prompt: str) -> str | None:
     """Wait for one line on stdin, with the question on stderr. None at the end of input."""
     print(prompt, end="", file=sys.stderr, flush=True)
@@ -240,7 +287,8 @@ class Questions:
 def choose(
     settings: Settings,
     *,
-    probe_groq: Callable[[], GroqStatus],
+    probe_dahl: Callable[[], CloudStatus],
+    probe_groq: Callable[[], CloudStatus],
     probe_ollama: Callable[[], OllamaStatus],
     ask: Callable[[str], str | None] = ask_stdin,
     start_ollama: Callable[[str], None] = start_ollama,
@@ -249,14 +297,17 @@ def choose(
     interactive: bool = True,
     say: Callable[[str], None] = say_stderr,
 ) -> str:
-    """`groq`, `ollama` or `fake`, after the status lines and the questions."""
+    """`dahl`, `groq`, `ollama` or `fake`, after the status lines and the questions."""
     question = Questions(ask, interactive)
-    groq, ollama = probe_groq(), probe_ollama()
+    dahl, groq, ollama = probe_dahl(), probe_groq(), probe_ollama()
     model, base_url = settings.ollama_model, settings.ollama_base_url
+    say(dahl.line(settings.dahl_model))
     say(groq.line(settings.groq_model))
     say(ollama.line(model, base_url))
-    say("Demo model: always available (scripted answers, no LLM)")
+    say(DEMO_LINE)
 
+    if dahl.usable and question("Use Dahl? [Y/n] ", "yn", "y", unattended="y") == "y":
+        return "dahl"
     if groq.usable and question("Use Groq? [Y/n] ", "yn", "y", unattended="y") == "y":
         return "groq"
 
@@ -284,10 +335,11 @@ def choose(
 
 def check(settings: Settings, *, interactive: bool, say: Callable[[str], None] = say_stderr) -> str:
     """The chain with the real probes. Providers outside it are kept as they are."""
-    if settings.llm_provider in ("fake", "anthropic", "dahl"):
+    if settings.llm_provider in ("fake", "anthropic"):
         return settings.llm_provider
     return choose(
         settings,
+        probe_dahl=lambda: probe_dahl(settings),
         probe_groq=lambda: probe_groq(settings),
         probe_ollama=lambda: probe_ollama(settings),
         interactive=interactive,
@@ -320,13 +372,14 @@ def resolve_auto(settings: Settings) -> str:
 def auto_demo_notice() -> str | None:
     """The demo-mode answer when `auto` found no model: why, from the startup check."""
     with _auto_lock:
-        if _auto_choice != "fake" or len(_auto_lines) < 2:
+        lines = [line for line in _auto_lines if line != DEMO_LINE]
+        if _auto_choice != "fake" or not lines:
             return None
-        found = ". ".join(_auto_lines[:2])
+        found = ". ".join(lines)
     return (
         f"Demo mode: LLM_PROVIDER=auto found no usable model at startup. {found}. "
         "The parameter panel, the checks and the confirmation cards work; restart the app "
-        "once Groq or Ollama is available to talk to the assistant."
+        "once Dahl, Groq or Ollama is available to talk to the assistant."
     )
 
 

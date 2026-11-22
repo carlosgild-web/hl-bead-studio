@@ -1,4 +1,4 @@
-"""The startup model check (decision 0019), with fake probes, answers, starter and clock:
+"""The startup model check (decisions 0019 and 0021), with fake probes, answers, starter and clock:
 no network, no Ollama and no key."""
 
 import json
@@ -11,11 +11,12 @@ from app import cli
 from app.llm import make_client
 from app.llm.base import Message
 from app.llm.check import (
-    GroqStatus,
+    CloudStatus,
     OllamaStatus,
     auto_demo_notice,
     choose,
     find_ollama,
+    probe_dahl,
     probe_groq,
     probe_ollama,
     resolve_auto,
@@ -24,6 +25,13 @@ from tests.conftest import make_settings
 
 READY = OllamaStatus("ready", "ollama", 3.0)
 DOWN = OllamaStatus("not_running", "C:/ollama.exe")
+
+
+def dahl(state: str, detail: str = "") -> CloudStatus:
+    return CloudStatus(state, detail, "Dahl", "DAHL_API_KEY", "DAHL_MODEL")
+
+
+NO_DAHL = dahl("skipped")
 
 
 class Answers:
@@ -50,8 +58,8 @@ class Clock:
         self.now += seconds
 
 
-def _choose(tmp_path, groq, ollama, answers=None, *, interactive=True, **settings):
-    """`ollama` is one status or a list, one per probe."""
+def _choose(tmp_path, groq, ollama, answers=None, *, interactive=True, dahl=NO_DAHL, **settings):
+    """`ollama` is one status or a list, one per probe. Dahl is skipped unless given."""
     statuses = list(ollama) if isinstance(ollama, list) else [ollama]
     started, lines, clock = [], [], Clock()
 
@@ -60,6 +68,7 @@ def _choose(tmp_path, groq, ollama, answers=None, *, interactive=True, **setting
 
     name = choose(
         make_settings(tmp_path, **settings),
+        probe_dahl=lambda: dahl,
         probe_groq=lambda: groq,
         probe_ollama=probe,
         ask=answers or Answers(),
@@ -77,50 +86,76 @@ def _choose(tmp_path, groq, ollama, answers=None, *, interactive=True, **setting
 
 def test_groq_usable_is_suggested_and_enter_accepts_it(tmp_path) -> None:
     answers = Answers("")
-    name, *_ = _choose(tmp_path, GroqStatus("ok"), READY, answers)
+    name, *_ = _choose(tmp_path, CloudStatus("ok"), READY, answers)
     assert name == "groq" and answers.prompts == ["Use Groq? [Y/n] "]
 
 
 def test_status_lines_come_first(tmp_path) -> None:
-    _, _, lines, _ = _choose(tmp_path, GroqStatus("ok"), READY, Answers("y"))
-    assert lines[0].startswith("Groq (openai/gpt-oss-120b): ready")
-    assert lines[1] == "Ollama (qwen3:4b-instruct-2507): ready, needs ~3 GB free RAM"
-    assert lines[2].startswith("Demo model: always available")
+    _, _, lines, _ = _choose(tmp_path, CloudStatus("ok"), READY, Answers("y"))
+    assert lines[0] == "Dahl (zai-org/GLM-5.3-Flash): skipped, DAHL_API_KEY is empty"
+    assert lines[1].startswith("Groq (openai/gpt-oss-120b): ready")
+    assert lines[2] == "Ollama (qwen3:4b-instruct-2507): ready, needs ~3 GB free RAM"
+    assert lines[3].startswith("Demo model: always available")
+
+
+def test_dahl_usable_is_suggested_first(tmp_path) -> None:
+    answers = Answers("")
+    name, *_ = _choose(tmp_path, CloudStatus("ok"), READY, answers, dahl=dahl("ok"))
+    assert name == "dahl" and answers.prompts == ["Use Dahl? [Y/n] "]
+
+
+def test_dahl_declined_offers_groq(tmp_path) -> None:
+    answers = Answers("n", "")
+    name, *_ = _choose(tmp_path, CloudStatus("ok"), READY, answers, dahl=dahl("ok"))
+    assert name == "groq" and answers.prompts == ["Use Dahl? [Y/n] ", "Use Groq? [Y/n] "]
+
+
+@pytest.mark.parametrize("state", ["skipped", "bad_key", "no_tokens", "busy", "unreachable"])
+def test_dahl_not_usable_is_not_offered(tmp_path, state) -> None:
+    answers = Answers("")
+    name, *_ = _choose(tmp_path, CloudStatus("ok"), READY, answers, dahl=dahl(state))
+    assert name == "groq" and answers.prompts == ["Use Groq? [Y/n] "]
+
+
+def test_without_a_terminal_dahl_wins_over_groq(tmp_path) -> None:
+    ask = Answers()
+    name, *_ = _choose(tmp_path, CloudStatus("ok"), READY, ask, interactive=False, dahl=dahl("ok"))
+    assert name == "dahl"
 
 
 def test_a_minute_limit_is_still_usable(tmp_path) -> None:
-    name, *_ = _choose(tmp_path, GroqStatus("minute_limit", "resets in 8s"), READY, Answers("Y"))
+    name, *_ = _choose(tmp_path, CloudStatus("minute_limit", "resets in 8s"), READY, Answers("Y"))
     assert name == "groq"
 
 
 def test_groq_declined_offers_ollama_then_the_demo(tmp_path) -> None:
     answers = Answers("n", "")
-    name, *_ = _choose(tmp_path, GroqStatus("ok"), READY, answers)
+    name, *_ = _choose(tmp_path, CloudStatus("ok"), READY, answers)
     assert name == "ollama"
     assert answers.prompts[1] == (
         "Use [O]llama (local, slower, needs ~3 GB free RAM) or the [D]emo model? [O/d] "
     )
-    name, *_ = _choose(tmp_path, GroqStatus("ok"), READY, Answers("no", "d"))
+    name, *_ = _choose(tmp_path, CloudStatus("ok"), READY, Answers("no", "d"))
     assert name == "fake"
 
 
 def test_an_unclear_answer_asks_again(tmp_path) -> None:
     answers = Answers("maybe", "x", "yes")
-    name, *_ = _choose(tmp_path, GroqStatus("ok"), READY, answers)
+    name, *_ = _choose(tmp_path, CloudStatus("ok"), READY, answers)
     assert name == "groq" and len(answers.prompts) == 3
 
 
 @pytest.mark.parametrize("state", ["skipped", "bad_key", "unreachable", "used_up", "error"])
 def test_groq_not_usable_is_not_offered(tmp_path, state) -> None:
     answers = Answers("")
-    name, *_ = _choose(tmp_path, GroqStatus(state), READY, answers)
+    name, *_ = _choose(tmp_path, CloudStatus(state), READY, answers)
     assert name == "ollama" and "Groq" not in answers.prompts[0]
 
 
 def test_starting_ollama_waits_until_it_answers(tmp_path) -> None:
     answers = Answers("", "")
     name, started, lines, clock = _choose(
-        tmp_path, GroqStatus("used_up"), [DOWN, DOWN, DOWN, READY], answers
+        tmp_path, CloudStatus("used_up"), [DOWN, DOWN, DOWN, READY], answers
     )
     assert answers.prompts[0] == "Ollama is installed but not running. Start it now? [Y/n] "
     assert started == ["C:/ollama.exe"] and clock.slept == [1.0, 1.0, 1.0]
@@ -128,42 +163,42 @@ def test_starting_ollama_waits_until_it_answers(tmp_path) -> None:
 
 
 def test_ollama_that_never_answers_gives_up_after_30_s(tmp_path) -> None:
-    name, started, _, clock = _choose(tmp_path, GroqStatus("used_up"), DOWN, Answers("y"))
+    name, started, _, clock = _choose(tmp_path, CloudStatus("used_up"), DOWN, Answers("y"))
     assert started and clock.now == pytest.approx(30.0) and name == "fake"
 
 
 def test_ollama_start_declined_starts_nothing(tmp_path) -> None:
-    name, started, *_ = _choose(tmp_path, GroqStatus("skipped"), DOWN, Answers("n"))
+    name, started, *_ = _choose(tmp_path, CloudStatus("skipped"), DOWN, Answers("n"))
     assert (name, started) == ("fake", [])
 
 
 def test_a_remote_ollama_is_never_started(tmp_path) -> None:
     name, started, *_ = _choose(
-        tmp_path, GroqStatus("skipped"), DOWN, Answers(), ollama_base_url="http://gpu-box:11434"
+        tmp_path, CloudStatus("skipped"), DOWN, Answers(), ollama_base_url="http://gpu-box:11434"
     )
     assert (name, started) == ("fake", [])
 
 
 def test_nothing_usable_is_the_demo_model_without_a_question(tmp_path) -> None:
     for ollama in (OllamaStatus("not_installed"), OllamaStatus("model_missing", "ollama")):
-        name, started, lines, _ = _choose(tmp_path, GroqStatus("used_up"), ollama, Answers())
+        name, started, lines, _ = _choose(tmp_path, CloudStatus("used_up"), ollama, Answers())
         assert (name, started, lines[-1]) == ("fake", [], "Using the demo model.")
 
 
 def test_without_a_terminal_the_suggestion_wins_and_nothing_starts(tmp_path) -> None:
     ask = Answers()  # any question fails the test
-    assert _choose(tmp_path, GroqStatus("ok"), READY, ask, interactive=False)[0] == "groq"
-    name, started, *_ = _choose(tmp_path, GroqStatus("used_up"), DOWN, ask, interactive=False)
+    assert _choose(tmp_path, CloudStatus("ok"), READY, ask, interactive=False)[0] == "groq"
+    name, started, *_ = _choose(tmp_path, CloudStatus("used_up"), DOWN, ask, interactive=False)
     assert (name, started) == ("fake", [])
-    assert _choose(tmp_path, GroqStatus("skipped"), READY, ask, interactive=False)[0] == "ollama"
+    assert _choose(tmp_path, CloudStatus("skipped"), READY, ask, interactive=False)[0] == "ollama"
 
 
 def test_end_of_input_counts_as_no_terminal(tmp_path) -> None:
     answers = Answers(None)  # `< nul` on Windows: a "terminal" that is empty
-    name, started, *_ = _choose(tmp_path, GroqStatus("used_up"), DOWN, answers)
+    name, started, *_ = _choose(tmp_path, CloudStatus("used_up"), DOWN, answers)
     assert (name, started, len(answers.prompts)) == ("fake", [], 1)
     answers = Answers(None)
-    name, *_ = _choose(tmp_path, GroqStatus("ok"), READY, answers)
+    name, *_ = _choose(tmp_path, CloudStatus("ok"), READY, answers)
     assert name == "groq" and len(answers.prompts) == 1
 
 
@@ -222,6 +257,43 @@ def test_groq_used_up_shows_usage_and_reset(tmp_path) -> None:
     assert "daily quota used up; requests 0 of 1000 left" in status.line("m")
 
 
+def test_dahl_probe_uses_its_url_key_and_model(tmp_path) -> None:
+    seen = []
+
+    def record(request):
+        seen.append(request)
+        return httpx.Response(200, json={"choices": []})
+
+    settings = make_settings(tmp_path, dahl_api_key="sk-dahl", dahl_base_url="https://d.test/v1/")
+    status = probe_dahl(settings, transport=httpx.MockTransport(record))
+    assert status.state == "ok" and status.line("m") == "Dahl (m): ready"
+    assert seen[0].url == "https://d.test/v1/chat/completions"
+    assert seen[0].headers["authorization"] == "Bearer sk-dahl"
+    assert json.loads(seen[0].content)["model"] == "zai-org/GLM-5.3-Flash"
+
+
+def test_dahl_without_a_key_makes_no_request(tmp_path) -> None:
+    def fail(request):
+        raise AssertionError("requested")
+
+    status = probe_dahl(make_settings(tmp_path), transport=httpx.MockTransport(fail))
+    assert status.state == "skipped" and "DAHL_API_KEY is empty" in status.line("m")
+
+
+def test_dahl_states(tmp_path) -> None:
+    settings = make_settings(tmp_path, dahl_api_key="sk-dahl")
+
+    def status(response):
+        return probe_dahl(settings, transport=httpx.MockTransport(lambda r: response))
+
+    assert status(httpx.Response(402)).state == "no_tokens"
+    full = {"error": {"code": "model_concurrency", "message": "This model is at capacity."}}
+    busy = status(httpx.Response(429, headers={"retry-after": "10"}, json=full))
+    assert (busy.state, busy.usable) == ("busy", False)
+    assert "try another DAHL_MODEL" in busy.line("m")
+    assert status(httpx.Response(401)).line("m").endswith("check DAHL_API_KEY")
+
+
 def _tags(models):
     return httpx.MockTransport(lambda r: httpx.Response(200, json={"models": models}))
 
@@ -270,7 +342,7 @@ def test_cli_prints_only_the_name_and_writes_the_file(tmp_path, monkeypatch, cap
     assert out.read_text(encoding="utf-8") == "ollama\n"
 
 
-@pytest.mark.parametrize("provider", ["fake", "anthropic", "dahl"])
+@pytest.mark.parametrize("provider", ["fake", "anthropic"])
 def test_cli_keeps_providers_outside_the_chain_without_probing(
     tmp_path, monkeypatch, capsys, provider
 ) -> None:
@@ -279,8 +351,8 @@ def test_cli_keeps_providers_outside_the_chain_without_probing(
     def no_probe(*args, **kwargs):
         raise AssertionError("probed")
 
-    monkeypatch.setattr("app.llm.check.probe_groq", no_probe)
-    monkeypatch.setattr("app.llm.check.probe_ollama", no_probe)
+    for probe in ("probe_dahl", "probe_groq", "probe_ollama"):
+        monkeypatch.setattr(f"app.llm.check.{probe}", no_probe)
 
     assert cli.main(["llm-check"]) == 0
     assert capsys.readouterr().out == f"{provider}\n"
@@ -303,6 +375,7 @@ def test_auto_resolves_once_without_questions(tmp_path, monkeypatch) -> None:
 
 def test_auto_demo_mode_says_why(tmp_path, monkeypatch) -> None:
     def fake_check(settings, *, interactive, say):
+        say("Dahl (glm): the key has no tokens left (402)")
         say("Groq (gpt): skipped, GROQ_API_KEY is empty")
         say("Ollama (qwen): not installed, and nothing answers at http://ollama:11434")
         say("Demo model: always available (scripted answers, no LLM)")
@@ -313,7 +386,7 @@ def test_auto_demo_mode_says_why(tmp_path, monkeypatch) -> None:
 
     text = make_client(settings).chat([Message("user", "hi")], []).content
     assert text.startswith("Demo mode: LLM_PROVIDER=auto found no usable model")
-    assert "GROQ_API_KEY is empty" in text
+    assert "no tokens left (402)" in text and "GROQ_API_KEY is empty" in text
     assert "nothing answers at http://ollama:11434" in text
     assert "Demo model:" not in text
 

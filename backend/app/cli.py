@@ -335,7 +335,7 @@ def main(argv: list[str] | None = None) -> int:
         decide.set_defaults(func=_cmd_decide)
 
     llm_check = commands.add_parser(
-        "llm-check", help="check Groq, Ollama and the demo model, and choose one"
+        "llm-check", help="check Dahl, Groq, Ollama and the demo model, and choose one"
     )
     llm_check.add_argument("--out", help="also write the chosen name to this file")
     llm_check.set_defaults(func=_cmd_llm_check)
