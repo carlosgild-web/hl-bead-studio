@@ -9,12 +9,11 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-import type { FamilyInfo } from '@/api/types'
 
 import { ActionCard } from './ActionCard'
 import { WithRuleLinks } from './RuleLink'
-import { type CardRequest, dimProps, goToCard, useFamilyInfo, useFocus, useOpenCard, useRenderJob, useStudio } from './context'
-import type { ChatItem, StudioState, ToolStep } from './state'
+import { dimProps, goToCard, useFocus, useOpenCard, useRenderJob, useStudio } from './context'
+import type { ChatItem, StepId, StudioState, ToolStep } from './state'
 
 const EXAMPLES = ['chat.example1', 'chat.example2', 'chat.example3'] as const
 // Questions from the Q&A bank, shown in demo mode (decision 0022).
@@ -63,43 +62,24 @@ function AssistantText({ text }: { text: string }) {
   )
 }
 
-type NextStep = { label: string; request: CardRequest } | { label: string; reset: true }
+type NextStep = { label: string; step: StepId } | { label: string; reset: true }
 
 /**
- * After a confirmed card, the next card of the flow. The chip opens it directly, the same
- * way as the panel's workflow (not through the assistant, so it works with any provider);
- * the designer still confirms it (invariant 2). Once the render is finished, the chip
- * offers a new design.
+ * After a confirmed card, the next step of the flow. The chip points to it in the panel's
+ * workflow, opens its form there and waits (focus mode); the form opens the card and the
+ * designer confirms it (invariant 2). Once the render is finished, it offers a new design.
  */
-function nextStep(
-  state: StudioState,
-  family: FamilyInfo | undefined,
-  renderFinished: boolean,
-  t: TFunction,
-): NextStep | null {
+function nextStep(state: StudioState, renderFinished: boolean, t: TFunction): NextStep | null {
   const open = (kind: string) =>
     Object.values(state.actions).some((a) => a.kind === kind && a.status === 'pending')
   if (state.design && renderFinished && !open('render')) {
     return { label: t('chat.next.newDesign'), reset: true }
   }
   if (state.design && state.renderJobs.length === 0 && !open('render')) {
-    const finish = family ? state.params[family.option_parameter] : undefined
-    return {
-      label: t('chat.next.render', { sku: state.design.sku, rev: state.design.rev }),
-      request: { kind: 'render', sku: state.design.sku, rev: state.design.rev, finish: String(finish ?? '') },
-    }
+    return { label: t('chat.next.render', { sku: state.design.sku, rev: state.design.rev }), step: 'render' }
   }
   if (state.reserved && !state.design && !open('generate_design')) {
-    return {
-      label: t('chat.next.generate', { sku: state.reserved.sku }),
-      request: {
-        kind: 'generate_design',
-        family: state.family ?? '',
-        sku: state.reserved.sku,
-        rev: 'A',
-        params: state.params,
-      },
-    }
+    return { label: t('chat.next.generate', { sku: state.reserved.sku }), step: 'generate' }
   }
   return null
 }
@@ -107,7 +87,6 @@ function nextStep(
 export function ChatPanel() {
   const { t } = useTranslation()
   const { state, dispatch, send } = useStudio()
-  const family = useFamilyInfo(state.family)
   const card = useOpenCard()
   const [text, setText] = useState('')
   const list = useRef<HTMLDivElement>(null)
@@ -116,7 +95,7 @@ export function ChatPanel() {
   const chips = demo ? [...EXAMPLES, ...QUESTIONS] : EXAMPLES
   const lastJob = useRenderJob(state.renderJobs[0] ?? null)
   const renderFinished = lastJob?.status === 'done' || lastJob?.status === 'failed'
-  const next = state.busy ? null : nextStep(state, family.data, renderFinished, t)
+  const next = state.busy ? null : nextStep(state, renderFinished, t)
   const confirmingReset = state.asking === 'reset'
   const setConfirmingReset = (ask: boolean) => dispatch({ type: 'ask', question: ask ? 'reset' : null })
   const started = state.items.length > 0 || state.family !== null
@@ -281,8 +260,8 @@ export function ChatPanel() {
           <span className="text-muted-foreground">{t('chat.next.label')}</span>
           <button
             type="button"
-            disabled={card.working}
-            onClick={() => ('reset' in next ? setConfirmingReset(true) : void card.open(next.request))}
+            disabled={card.working || ('step' in next && state.openStep === next.step)}
+            onClick={() => ('reset' in next ? setConfirmingReset(true) : dispatch({ type: 'openStep', step: next.step }))}
             className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/5 px-3 py-1 font-medium text-primary hover:bg-primary/10 disabled:opacity-60"
           >
             {card.working && <Loader2 className="size-3.5 animate-spin" />}

@@ -262,8 +262,15 @@ function stepOf(id: 'reserve' | 'generate' | 'render'): HTMLElement {
 }
 
 /** After a reservation: Next step → Generate card → Confirm → Next step → Render card → Confirm. */
+/** The workflow step's form that opened by itself: review it, which opens its card. */
+async function reviewOpenStep(name: 'Generate files…' | 'Render…') {
+  const form = await screen.findByRole('form', { name })
+  fireEvent.click(within(form).getByRole('button', { name: 'Review & confirm' }))
+}
+
 async function nextStepThroughRender(calls: { url: string; body?: unknown }[]) {
-  fireEvent.click(await screen.findByRole('button', { name: 'Generate the design files for GB-1034' }))
+  // A reserved SKU opens the Generate step in the workflow; its form opens the card.
+  await reviewOpenStep('Generate files…')
   const generate = await screen.findByRole('article', { name: 'Generate design files' })
   expect(calls.filter((c) => c.url === '/api/actions').at(-1)?.body).toMatchObject({
     kind: 'generate_design',
@@ -274,7 +281,7 @@ async function nextStepThroughRender(calls: { url: string; body?: unknown }[]) {
   fireEvent.click(within(generate).getByRole('button', { name: 'Confirm' }))
   expect(await within(generate).findByText('Files written for GB-1034 rev A')).toBeInTheDocument()
 
-  fireEvent.click(await screen.findByRole('button', { name: 'Render GB-1034 rev A for the catalog' }))
+  await reviewOpenStep('Render…')
   const render = await screen.findByRole('article', { name: 'Queue catalog render' })
   expect(calls.filter((c) => c.url === '/api/actions').at(-1)?.body).toMatchObject({
     kind: 'render',
@@ -404,7 +411,7 @@ describe('App', () => {
     expect(await within(card).findByText('Reserved GB-1034')).toBeInTheDocument()
     expect(calls.filter((c) => c.url === '/api/actions/act1/confirm')).toHaveLength(1)
 
-    // "Next step" opens the next card itself, without the assistant (any provider).
+    // The workflow opens each next step itself, without the assistant (any provider).
     const renderCard = await nextStepThroughRender(calls)
     expect(calls.filter((c) => c.url === '/api/chat')).toHaveLength(1)
     expect(screen.queryByText(/I only have scripted answers/)).toBeNull()
@@ -479,7 +486,16 @@ describe('App', () => {
     const reserve = await screen.findByRole('article', { name: 'Reserve SKU in SAP' })
     fireEvent.click(within(reserve).getByRole('button', { name: 'Confirm' }))
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Generate the design files for GB-1034' }))
+    // The Generate step opened by itself; set aside with Esc, the chat's chip opens it again
+    // and the studio waits there (focus mode) instead of opening a card.
+    const opened = await screen.findByRole('form', { name: 'Generate files…' })
+    expect(screen.getByLabelText('Describe the bead or charm…').closest('form')).toHaveAttribute('data-dimmed')
+    expect(opened.closest('[data-dimmed]')).toBeNull()
+    fireEvent.keyDown(opened, { key: 'Escape' })
+    expect(screen.queryByRole('form', { name: 'Generate files…' })).toBeNull()
+    expect(document.querySelector('[data-dimmed]')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Generate the design files for GB-1034' }))
+    await reviewOpenStep('Generate files…')
     const generate = await screen.findByRole('article', { name: 'Generate design files' })
     // The server returns the open card again; the chat shows it once.
     fireEvent.click(within(generate).getByRole('button', { name: 'Not now' }))
@@ -549,6 +565,10 @@ describe('App', () => {
     fireEvent.click(within(stepOf('reserve')).getByRole('button', { name: /Go to the card/ }))
     fireEvent.click(within(reserve).getByRole('button', { name: 'Confirm' }))
     expect(await within(reserve).findByText('Reserved GB-1034')).toBeInTheDocument()
+    // The next step opens in the workflow and the studio waits there; Esc sets it aside.
+    const generateForm = await screen.findByRole('form', { name: 'Generate files…' })
+    expect(input).toHaveAttribute('data-dimmed')
+    fireEvent.keyDown(generateForm, { key: 'Escape' })
     expect(document.querySelector('[data-dimmed]')).toBeNull()
 
     // The Start-over question dims the rest as well.
@@ -580,7 +600,7 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Send' }))
     const reserve = await screen.findByRole('article', { name: 'Reserve SKU in SAP' })
     fireEvent.click(within(reserve).getByRole('button', { name: 'Confirm' }))
-    fireEvent.click(await screen.findByRole('button', { name: 'Generate the design files for GB-1034' }))
+    await reviewOpenStep('Generate files…')
     const generate = await screen.findByRole('article', { name: 'Generate design files' })
     fireEvent.click(within(generate).getByRole('button', { name: 'Confirm' }))
     expect(await within(generate).findByText('Files written for GB-1034 rev A')).toBeInTheDocument()

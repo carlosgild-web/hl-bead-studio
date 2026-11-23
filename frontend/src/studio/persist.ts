@@ -8,9 +8,9 @@ import { initialState, type StudioState } from './state'
  */
 export const SESSION_KEY = 'hl-bead-studio:session:v1'
 
-/** What is not kept: a turn in flight and an open question belong to the old page. */
+/** What is not kept: a turn in flight, an open question or form belong to the old page. */
 function stored(state: StudioState): StudioState {
-  return { ...state, busy: false, asking: null }
+  return { ...state, busy: false, asking: null, openStep: null, wantStep: null }
 }
 
 export function saveSession(state: StudioState, storage: Storage | undefined = safeStorage()): void {

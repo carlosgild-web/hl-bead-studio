@@ -67,8 +67,12 @@ test('a designer takes a faceted bead from a description to a render', async ({ 
   const sku = (await reserve.getByText(/Reserved GB-\d{4}/).textContent())!.match(/GB-\d{4}/)![0]
 
   // 5. Model + drawing.
-  // The chat offers the next step once the SKU is reserved.
-  await page.getByRole('button', { name: `Generate the design files for ${sku}` }).click()
+  // Once the SKU is reserved, the workflow opens the Generate step and waits there; the
+  // chat's next-step chip points to the same step.
+  const generateStep = page.getByRole('form', { name: 'Generate files…' })
+  await expect(generateStep).toBeVisible()
+  await expect(page.getByRole('button', { name: `Generate the design files for ${sku}` })).toBeDisabled()
+  await generateStep.getByRole('button', { name: 'Review & confirm' }).click()
   const generate = page.getByRole('article', { name: 'Generate design files' })
   await expect(generate).toContainText(sku)
   await generate.getByRole('button', { name: 'Confirm' }).click()
@@ -81,7 +85,9 @@ test('a designer takes a faceted bead from a description to a render', async ({ 
   expect(pdf.headers()['content-type']).toBe('application/pdf')
 
   // 6. Render: queued by the click, followed live until done.
-  await page.getByRole('button', { name: `Render ${sku} rev A for the catalog` }).click()
+  const renderStep = page.getByRole('form', { name: 'Render…' })
+  await expect(renderStep).toBeVisible()
+  await renderStep.getByRole('button', { name: 'Review & confirm' }).click()
   const render = page.getByRole('article', { name: 'Queue catalog render' })
   await render.getByRole('button', { name: 'Confirm' }).click()
   await expect(render).toContainText(/Render job #\d+: (queued|rendering|done)/)
@@ -120,9 +126,9 @@ test('a designer reserves, generates and renders from the panel alone', async ({
   await expect(reserve).toContainText(/Reserved GB-\d{4}/)
   const sku = (await reserve.getByText(/Reserved GB-\d{4}/).textContent())!.match(/GB-\d{4}/)![0]
 
-  // Generate: the SKU comes from the reservation.
-  await page.getByRole('button', { name: 'Generate files…' }).click()
+  // Generate: the step opens by itself once the SKU is reserved; the SKU comes from it.
   const generateForm = page.getByRole('form', { name: 'Generate files…' })
+  await expect(generateForm).toBeVisible()
   await expect(generateForm.getByLabel('SKU')).toHaveValue(sku)
   await generateForm.getByRole('button', { name: 'Review & confirm' }).click()
   const generate = page.getByRole('article', { name: 'Generate design files' })
@@ -131,9 +137,10 @@ test('a designer reserves, generates and renders from the panel alone', async ({
   await expect(page.locator(`iframe[title="Technical drawing ${sku} rev A"]`)).toBeVisible()
 
   // Render in the color chosen in the viewer.
-  await page.getByRole('radio', { name: 'Sea Green' }).click()
-  await page.getByRole('button', { name: 'Render…' }).click()
+  // The render step opened by itself once the files were written.
   const renderForm = page.getByRole('form', { name: 'Render…' })
+  await expect(renderForm).toBeVisible()
+  await page.getByRole('radio', { name: 'Sea Green' }).click()
   await expect(renderForm).toContainText('Sea Green')
   await renderForm.getByRole('button', { name: 'Review & confirm' }).click()
   const render = page.getByRole('article', { name: 'Queue catalog render' })

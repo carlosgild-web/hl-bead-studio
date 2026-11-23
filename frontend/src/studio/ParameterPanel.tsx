@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 
-import { useFamilyInfo, useLanguage, usePanelPreview, useStudio } from './context'
+import { dimProps, useFamilyInfo, useFocus, useLanguage, usePanelPreview, useStudio } from './context'
 import { displayValue, formatNumber } from './display'
 import { RuleLink } from './RuleLink'
 import { PanelActions } from './PanelActions'
@@ -266,6 +266,7 @@ export function ParameterPanel() {
     staleTime: Infinity,
   })
   const info = useFamilyInfo(state.family)
+  const stepFocus = useFocus()?.kind === 'step'
   const preview = usePanelPreview(state.family, state.params)
   const validation =
     preview.data?.validation.family === state.family ? preview.data?.validation : undefined
@@ -282,6 +283,8 @@ export function ParameterPanel() {
 
   return (
     <section aria-labelledby="panel-title" className="flex min-h-0 flex-col gap-3">
+      {/* While a workflow step waits for its form, only the workflow stays sharp. */}
+      <div {...dimProps(stepFocus, 'flex flex-col gap-3')}>
       <div className="flex items-center justify-between gap-2">
         <h2 id="panel-title" className="font-semibold">
           {t('panel.title')}
@@ -331,8 +334,11 @@ export function ParameterPanel() {
         </p>
       )}
 
+      </div>
+
       {info.data && info.data.code === state.family && (
         <>
+          <div {...dimProps(stepFocus, 'flex flex-col gap-3')}>
           <p className="text-xs text-muted-foreground">
             {t('panel.material', {
               material: info.data.material,
@@ -355,6 +361,7 @@ export function ParameterPanel() {
             ))}
           </div>
           <ValidationSummary validation={validation} pending={preview.isFetching} family={info.data} />
+          </div>
           <PanelActions family={info.data} validation={validation} />
           {preview.isError && (
             <p className="text-sm text-destructive" role="alert">

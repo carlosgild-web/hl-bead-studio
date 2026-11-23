@@ -33,6 +33,10 @@ export interface StudioState {
   asking: 'reset' | null
   /** Cards the designer set aside with "Not now": still pending, no longer in focus. */
   dismissed: string[]
+  /** The workflow step whose form is open in the panel: the studio waits for it there. */
+  openStep: StepId | null
+  /** The step to open once the workflow can take it (after a SKU or files arrive). */
+  wantStep: StepId | null
 }
 
 export const initialState: StudioState = {
@@ -49,6 +53,8 @@ export const initialState: StudioState = {
   tab: 'drawing',
   asking: null,
   dismissed: [],
+  openStep: null,
+  wantStep: null,
 }
 
 export type StudioAction =
@@ -70,6 +76,9 @@ export type StudioAction =
   | { type: 'dismiss'; actionId: string }
   /** "Go to the card": the card is in focus again. */
   | { type: 'refocus'; actionId: string }
+  /** Open a workflow step's form in the panel (or close it with null). */
+  | { type: 'openStep'; step: StepId | null }
+  | { type: 'wantStep'; step: StepId | null }
 
 function withSteps(items: ChatItem[], update: (steps: ToolStep[]) => ToolStep[]): ChatItem[] {
   const last = items.at(-1)
@@ -193,13 +202,21 @@ export function studioReducer(state: StudioState, action: StudioAction): StudioS
         : { ...state, dismissed: [...state.dismissed, action.actionId] }
     case 'refocus':
       return { ...state, dismissed: state.dismissed.filter((id) => id !== action.actionId) }
+    case 'openStep':
+      return { ...state, openStep: action.step }
+    case 'wantStep':
+      return { ...state, wantStep: action.step }
   }
 }
 
 // --- focus mode ---------------------------------------------------------------------------
 
 /** What waits for the designer: the studio dims everything else around it. */
-export type FocusTarget = { kind: 'card'; actionId: string } | { kind: 'reset' } | null
+export type FocusTarget =
+  | { kind: 'card'; actionId: string }
+  | { kind: 'reset' }
+  | { kind: 'step'; step: StepId }
+  | null
 
 export function isExpired(action: PendingAction, now = Date.now()): boolean {
   return action.status === 'pending' && new Date(action.expires_at).getTime() < now
@@ -220,6 +237,8 @@ export function focusTarget(state: StudioState, now = Date.now()): FocusTarget {
       return { kind: 'card', actionId: action.id }
     }
   }
+  // An open step of the workflow waits for its form: the rest of the studio is dimmed.
+  if (state.openStep) return { kind: 'step', step: state.openStep }
   return null
 }
 

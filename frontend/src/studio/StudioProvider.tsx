@@ -91,6 +91,11 @@ export function StudioProvider({ children }: { children: ReactNode }) {
         return
       }
       dispatch({ type: 'decided', action })
+      // A step that finished asks the workflow to open the next one (it waits until it can).
+      if (action.status === 'confirmed' && action.result?.ok !== false) {
+        if (action.kind === 'reserve_sku') dispatch({ type: 'wantStep', step: 'generate' })
+        if (action.kind === 'generate_design') dispatch({ type: 'wantStep', step: 'render' })
+      }
       if (action.kind === 'reserve_sku' || action.kind === 'generate_design') {
         void queryClient.invalidateQueries({ queryKey: ['catalog'] })
       }

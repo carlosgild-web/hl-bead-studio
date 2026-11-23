@@ -62,6 +62,8 @@ test.describe('Things to try', () => {
     await expect(reserve).toContainText(/Reserved GB-\d{4}/)
     const sku = (await reserve.getByText(/Reserved GB-\d{4}/).textContent())!.match(/GB-\d{4}/)![0]
 
+    // The Generate step opened and waits; Esc sets it aside to look around.
+    await page.getByRole('form', { name: 'Generate files…' }).press('Escape')
     await page.getByRole('button', { name: 'Catalog' }).click()
     await expect(page).toHaveURL(/\/catalog$/)
     await expect(page.getByRole('row', { name: new RegExp(sku) })).toBeVisible()

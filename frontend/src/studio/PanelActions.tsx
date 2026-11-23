@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Check, FileBox, ImageIcon, Loader2, Tag, TriangleAlert, X } from 'lucide-react'
-import { type FormEvent, type ReactNode, useState } from 'react'
+import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { api } from '@/api/client'
@@ -43,7 +43,7 @@ function Labeled({ id, label, children }: { id: string; label: string; children:
  */
 export function PanelActions({ family, validation }: { family: FamilyInfo; validation?: Validation }) {
   const { t } = useTranslation()
-  const { state } = useStudio()
+  const { state, dispatch } = useStudio()
   const { open: openCard, working, error: openError, clearError } = useOpenCard()
   const design = useDesignStatus()
   const latestJobId = state.renderJobs[0] ?? null
@@ -60,7 +60,12 @@ export function PanelActions({ family, validation }: { family: FamilyInfo; valid
   })
   const olderRender = steps[2].olderRender
 
-  const [form, setForm] = useState<StepId | null>(null)
+  // The open step lives in the studio state: the chat's next-step chip opens it too, and
+  // while it is open the rest of the studio is dimmed (focus mode).
+  const form = state.openStep
+  const setForm = (step: StepId | null) => dispatch({ type: 'openStep', step })
+  // The step whose fields were filled in; a step opened from elsewhere is filled on arrival.
+  const prepared = useRef<StepId | null>(null)
   const [name, setName] = useState('')
   const [nameStatus, setNameStatus] = useState<NameStatus>('empty')
   const [collection, setCollection] = useState('')
@@ -103,7 +108,14 @@ export function PanelActions({ family, validation }: { family: FamilyInfo; valid
     return ''
   }
 
-  function show(step: StepId, existingSku = false) {
+  function show(step: StepId, existingSku = false, toggle = true) {
+    prepare(step, existingSku)
+    setForm(toggle && form === step && !existingSku ? null : step)
+  }
+
+  /** Fill a step's form from what the studio knows (chat, reservation, design). */
+  function prepare(step: StepId, existingSku = false) {
+    prepared.current = step
     clearError()
     setLocalError(null)
     if (step === 'reserve') {
@@ -119,8 +131,44 @@ export function PanelActions({ family, validation }: { family: FamilyInfo; valid
       setSku(existingSku ? '' : (state.design?.sku ?? state.reserved?.sku ?? ''))
       setRev(state.design ? (design.nextRev ?? '') : 'A')
     }
-    setForm(form === step && !existingSku ? null : step)
   }
+
+  // A step opened from the chat (or the auto-open below) is filled in, brought into view and
+  // given the keyboard focus; the studio waits there for the designer.
+  useEffect(() => {
+    if (!form) {
+      prepared.current = null
+      return
+    }
+    if (prepared.current !== form) prepare(form)
+    const box = document.querySelector<HTMLElement>(`[data-step="${form}"]`)
+    box?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' })
+    box?.querySelector<HTMLElement>('form input, form select, form button[type="submit"]')?.focus({ preventScroll: true })
+    // `prepare` reads the latest state; only the open step matters here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form])
+
+  // When a step finishes, the next one opens by itself, so what to do next is in view: the
+  // SKU is reserved -> Generate files; the files are written -> Render. A restored session
+  // (reload) opens nothing: only a change seen on this page counts.
+  // When a step finishes, the next one opens by itself, so what to do next is in view: the
+  // SKU is reserved -> Generate files; the files are written -> Render. It waits until the
+  // step can be worked on (Generate needs the panel's check to pass).
+  const want = state.wantStep
+  const generateStatus = steps[1].status
+  const renderStatus = steps[2].status
+  useEffect(() => {
+    if (!want) return
+    const status = want === 'generate' ? generateStatus : renderStatus
+    if (status === 'current') {
+      dispatch({ type: 'wantStep', step: null })
+      show(want, false, false)
+    } else if (status !== 'blocked') {
+      dispatch({ type: 'wantStep', step: null }) // already done or running
+    }
+    // `show` changes every render; the wanted step and the step states matter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [want, generateStatus, renderStatus])
 
   async function submit(event: FormEvent) {
     event.preventDefault()
@@ -312,7 +360,14 @@ export function PanelActions({ family, validation }: { family: FamilyInfo; valid
                 )}
 
                 {expanded && (
-                  <form onSubmit={submit} className="mt-2 grid gap-2 border-t px-2.5 pt-2.5 pb-2.5" aria-label={m.action}>
+                  <form
+                    onSubmit={submit}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') setForm(null)
+                    }}
+                    className="mt-2 grid gap-2 border-t px-2.5 pt-2.5 pb-2.5"
+                    aria-label={m.action}
+                  >
                     {form === 'reserve' && (
                       <div className="grid items-start gap-2 sm:grid-cols-[2fr_1fr]">
                         <Labeled id="card-name" label={t('panel.actions.name')}>
