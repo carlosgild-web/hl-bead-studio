@@ -20,7 +20,7 @@ from app.core.paths import UnsafePathError, confined, design_dir, design_file_na
 from app.render.jobs import RenderError, read_design
 from app.sap import SapError
 from app.standards.families import UnknownFamilyError, get_family
-from app.standards.identifiers import InvalidIdentifierError, next_revision
+from app.standards.identifiers import InvalidIdentifierError, expected_revision, next_revision
 from app.standards.naming import (
     CatalogEntry,
     find_same_name,
@@ -70,6 +70,8 @@ def catalog(settings: SettingsDep, sap_factory: SapFactoryDep) -> list[dict[str,
                 "created_on": m.created_on.isoformat() if m.created_on else None,
                 "created_by": m.created_by,
                 "generated_revisions": revisions,
+                # What "New revision" offers: after the newest with files (GEN-02, no gaps).
+                "next_revision": expected_revision(revisions, m.revision),
             }
         )
     items.sort(key=lambda i: (i["created_on"] or "", i["sku"]), reverse=True)

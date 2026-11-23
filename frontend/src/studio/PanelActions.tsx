@@ -1,7 +1,9 @@
+import { useQuery } from '@tanstack/react-query'
 import { Check, FileBox, ImageIcon, Loader2, Tag, TriangleAlert, X } from 'lucide-react'
 import { type FormEvent, type ReactNode, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { api } from '@/api/client'
 import type { ActionKind, FamilyInfo, Validation } from '@/api/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -66,6 +68,21 @@ export function PanelActions({ family, validation }: { family: FamilyInfo; valid
   const [rev, setRev] = useState('A')
   const [localError, setLocalError] = useState<string | null>(null)
   const error = localError ?? openError
+  // The existing-SKU form offers the revision SAP and the files allow next (GEN-02, no gaps).
+  const catalog = useQuery({ queryKey: ['catalog'], queryFn: api.catalog, enabled: form === 'generate' })
+
+  function editGenerate(nextSku: string, nextRev?: string) {
+    // A message about the old SKU or revision no longer applies (QA 2026-11-23, item 11).
+    clearError()
+    setLocalError(null)
+    setSku(nextSku)
+    if (nextRev !== undefined) {
+      setRev(nextRev)
+      return
+    }
+    const item = catalog.data?.find((i) => i.sku === nextSku.trim().toUpperCase())
+    if (item) setRev(item.next_revision)
+  }
   const option = state.params[family.option_parameter]
   // The newest card of a step that waits in the chat, whoever opened it (panel or assistant).
   const waiting = (step: StepId) =>
@@ -299,12 +316,12 @@ export function PanelActions({ family, validation }: { family: FamilyInfo; valid
                             value={sku}
                             maxLength={16}
                             placeholder={family.kind === 'glass_bead' ? 'GB-1034' : 'CH-2034'}
-                            onChange={(e) => setSku(e.target.value)}
+                            onChange={(e) => editGenerate(e.target.value)}
                             className="font-mono"
                           />
                         </Labeled>
                         <Labeled id="card-rev" label={t('panel.actions.rev')}>
-                          <Input id="card-rev" value={rev} maxLength={2} onChange={(e) => setRev(e.target.value.toUpperCase())} className="font-mono" />
+                          <Input id="card-rev" value={rev} maxLength={2} onChange={(e) => editGenerate(sku, e.target.value.toUpperCase())} className="font-mono" />
                         </Labeled>
                       </div>
                     )}

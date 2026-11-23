@@ -195,6 +195,8 @@ export interface CatalogItem {
   created_on: string | null
   created_by: string
   generated_revisions: string[]
+  /** The revision a new generation gets: after the newest with files (GEN-02, no gaps). */
+  next_revision: string
 }
 
 export interface GalleryRender {

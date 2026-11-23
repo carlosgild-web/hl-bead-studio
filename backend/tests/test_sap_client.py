@@ -55,6 +55,23 @@ def test_reserve_refetches_once_when_the_token_expired(sap):
     assert len(sap.reservations) == 3  # the refused POST, then the retry
 
 
+def test_set_revision_merges_with_the_csrf_token(sap):
+    with sap.client() as client:
+        client.set_revision("CH-2004", "B")
+        sap.token = "tok-2"  # expired session: fetched again once
+        client.set_revision("CH-2004", "C")
+        assert client.get_material("CH-2004").revision == "C"
+    merges = [r for r in sap.requests if r.method == "MERGE"]
+    assert len(merges) == 3
+    assert merges[0].url.path.endswith("/MaterialSet('CH-2004')")
+
+
+def test_set_revision_of_an_unknown_sku_is_not_found(sap):
+    with sap.client() as client, pytest.raises(SapError) as info:
+        client.set_revision("GB-1999", "B")
+    assert info.value.not_found
+
+
 def test_maintenance_is_unavailable(sap):
     sap.down = True
     with sap.client() as client, pytest.raises(SapError) as info:

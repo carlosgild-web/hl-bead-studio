@@ -51,3 +51,21 @@ def next_revision(rev: str | None) -> str:
     if first + 1 < len(letters):
         return letters[first + 1] + letters[0]
     raise InvalidIdentifierError(f"No revision after {rev!r}")
+
+
+def revision_key(rev: str) -> tuple[int, ...]:
+    """Sort key in GEN-02 order: A < B < ... < Y < AA < AB."""
+    return (len(rev), *(REVISION_LETTERS.index(c) for c in rev))
+
+
+def expected_revision(generated: list[str], current: str | None) -> str:
+    """The only revision whose files may be generated next (GEN-02, no gaps).
+
+    After the newest revision with files; with none yet, SAP's current revision (`A` for
+    a new SKU). So a first generation is never `AA`, and files never skip a letter.
+    """
+    if generated:
+        return next_revision(max(generated, key=revision_key))
+    if current and _REVISION.fullmatch(current):
+        return current
+    return REVISION_LETTERS[0]

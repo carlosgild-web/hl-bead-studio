@@ -7,6 +7,7 @@ concurrent requests never get the same number, and a failed reservation consumes
 """
 
 import json
+import re
 import sqlite3
 from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
@@ -17,6 +18,8 @@ from pathlib import Path
 SEED_FILE = Path(__file__).resolve().parents[1] / "seed" / "materials.json"
 
 FIRST_REVISION = "A"
+REVISION_LETTERS = "ABCDEFGHJKLMNPRTUVWY"  # GEN-02: never I, O, Q, S, X, Z
+REVISION = re.compile(rf"[{REVISION_LETTERS}]{{1,2}}")
 NEW_STATUS = "IN_DESIGN"
 MATERIAL_MAX = 59_999_999  # end of the finished-goods range (Product Design Manual GEN-04)
 COLLECTIONS = ("Permanente", "Coastal Garden", "Amber Hollow")
@@ -175,6 +178,24 @@ class Database:
             return conn.execute(sql, params).fetchall()
 
     # --- writes --------------------------------------------------------------------
+
+    def set_revision(self, sku: str, revision: str) -> bool:
+        """Set a material's current revision (GEN-02 letters); False when the SKU is unknown.
+
+        The backend calls it after it generated the files of a revision, so SAP's
+        `CurrentRevision` always names the newest revision with files.
+        """
+        if not REVISION.fullmatch(revision):
+            raise ReservationError(
+                "ZHL_MM/020",
+                f"Revision '{revision}' is not valid: one or two letters from "
+                f"{REVISION_LETTERS} (GEN-02).",
+            )
+        with self.transaction() as conn:
+            updated = conn.execute(
+                "UPDATE materials SET revision = ? WHERE sku = ?", (revision, sku)
+            ).rowcount
+        return updated == 1
 
     def reserve(
         self,

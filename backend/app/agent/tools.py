@@ -44,9 +44,10 @@ from app.standards.families import (
     get_family,
 )
 from app.standards.identifiers import (
-    REVISION_LETTERS,
     InvalidIdentifierError,
+    expected_revision,
     next_revision,
+    revision_key,
     sku_kind,
     validate_revision,
     validate_sku,
@@ -300,10 +301,6 @@ def _catalog(sap: SapClient) -> list[CatalogEntry]:
     return [CatalogEntry(m.sku, m.description, m.status) for m in sap.list_materials()]
 
 
-def _revision_key(rev: str) -> tuple[int, ...]:
-    return (len(rev), *(REVISION_LETTERS.index(c) for c in rev))
-
-
 def generated_revisions(settings: Settings, sku: str) -> list[str]:
     """Revisions of a SKU that have files, oldest first."""
     folder = settings.designs_root / validate_sku(sku)
@@ -317,7 +314,7 @@ def generated_revisions(settings: Settings, sku: str) -> list[str]:
             continue
         if (child / design_file_names(sku, rev)["params"]).is_file():
             revs.append(rev)
-    return sorted(revs, key=_revision_key)
+    return sorted(revs, key=revision_key)
 
 
 def _material_summary(m: SapMaterial) -> dict[str, Any]:
@@ -627,7 +624,15 @@ def request_generate_design(args: GenerateArgs, ctx: ToolContext) -> ToolResult:
         return _error(
             "revision_exists",
             f"{sku} revision {rev} already has files; files are never overwritten.",
-            next_revision=next_revision(max([rev, *revs], key=_revision_key)),
+            next_revision=next_revision(max([rev, *revs], key=revision_key)),
+        )
+    expected = expected_revision(generated_revisions(ctx.settings, sku), material.revision)
+    if rev != expected:
+        return _error(
+            "revision_out_of_sequence",
+            f"The next revision of {sku} is {expected}; revisions never skip a letter "
+            f"(GEN-02), so {rev} is not possible yet.",
+            next_revision=expected,
         )
     result = validate_parameters(family.code, normalize_params(family, args.params))
     if not result.ok:

@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from app.agent.prompts import event_message
+from app.agent.tools import generated_revisions
 from app.core.config import Settings
 from app.db import write_audit
 from app.db.store import CANCELLED, CONFIRMED, EXECUTING, FAILED, ActionRecord, Store
@@ -24,6 +25,7 @@ from app.designs import DesignError, InvalidDesignError, RevisionExistsError, ge
 from app.render import BLENDER_MISSING, RenderError, blender_available, queue_render
 from app.sap import SapClient, SapError
 from app.standards.families import get_family
+from app.standards.identifiers import expected_revision
 from app.standards.naming import CatalogEntry, validate_product_name
 
 logger = logging.getLogger(__name__)
@@ -162,6 +164,15 @@ def _generate(action: ActionRecord, settings: Settings, sap: SapClient) -> dict[
         return _sap_failure(exc, "no files were written")
     if material.status == "DISCONTINUED":
         return _failure("validation", f"{p['sku']} is discontinued; no files were written.")
+    # Checked again at the click: another card may have generated a revision since this one
+    # opened. Revisions never skip a letter (GEN-02).
+    expected = expected_revision(generated_revisions(settings, p["sku"]), material.revision)
+    if p["rev"] != expected:
+        return _failure(
+            "conflict",
+            f"The next revision of {p['sku']} is {expected}, not {p['rev']} (GEN-02). "
+            "No files were written.",
+        )
     try:
         design = generate_design(
             p["family"],
@@ -183,10 +194,28 @@ def _generate(action: ActionRecord, settings: Settings, sap: SapClient) -> dict[
         return _failure("conflict", f"{exc}. Nothing was overwritten.")
     except (DesignError, ValueError) as exc:
         return _failure("design", f"{exc}. No files were written.")
+    # SAP's current revision follows the newest revision with files. The files are written
+    # already, so a SAP failure here is reported, not undone; the next generation retries.
+    sap_updated = True
+    try:
+        sap.set_revision(design.sku, design.rev)
+    except SapError as exc:
+        sap_updated = False
+        logger.warning("SAP revision of %s not updated to %s: %s", design.sku, design.rev, exc)
+    else:
+        write_audit(
+            settings.data_dir,
+            "sap.revision_set",
+            actor=ACTOR,
+            sku=design.sku,
+            rev=design.rev,
+            details={"action_id": action.id, "previous": material.revision or None},
+        )
     return {
         "ok": True,
         "sku": design.sku,
         "rev": design.rev,
+        "sap_revision_updated": sap_updated,
         "family": design.family,
         "name": material.description,
         "sap_material": material.material,

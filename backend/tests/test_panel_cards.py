@@ -113,6 +113,64 @@ def test_generate_card_checks_the_parameters_again(env) -> None:
     assert (folder / "A" / f"{sku}_A_drawing.pdf").is_file()
 
 
+def _reserved_sku(env) -> tuple[str, str]:
+    reserved = open_card(env, kind="reserve_sku", family="FAC", name="Amber Glow Faceted").json()
+    return env.confirm(reserved["action"]["id"]).json()["result"]["sku"], reserved[
+        "conversation_id"
+    ]
+
+
+def test_a_first_revision_other_than_a_opens_no_card(env) -> None:
+    # QA 2026-11-23: CH-2040 had files only for "AA" while SAP said "A" (GEN-02, no gaps).
+    sku, conversation = _reserved_sku(env)
+    for rev in ("AA", "B"):
+        response = open_card(
+            env,
+            kind="generate_design",
+            sku=sku,
+            rev=rev,
+            family="FAC",
+            params=FAC_10,
+            conversation_id=conversation,
+        )
+        assert response.status_code == 422, rev
+        assert "never skip a letter" in response.json()["detail"]
+
+
+def test_generating_a_revision_sets_the_sap_revision(env) -> None:
+    sku, conversation = _reserved_sku(env)
+    for rev in ("A", "B"):
+        card = open_card(
+            env,
+            kind="generate_design",
+            sku=sku,
+            rev=rev,
+            family="FAC",
+            params=FAC_10 | {"diameter_mm": 10.0 + (rev == "B")},
+            conversation_id=conversation,
+        ).json()
+        done = env.confirm(card["action"]["id"]).json()["result"]
+        assert done["sap_revision_updated"] is True
+        assert env.sap.materials[sku]["Revision"] == rev
+    catalog = {i["sku"]: i for i in env.http.get("/api/catalog").json()}
+    assert catalog[sku]["current_revision"] == "B"
+    assert catalog[sku]["generated_revisions"] == ["A", "B"]
+    assert catalog[sku]["next_revision"] == "C"
+
+
+def test_a_card_that_fell_out_of_sequence_writes_nothing_at_the_click(env) -> None:
+    sku, conversation = _reserved_sku(env)
+    body = dict(kind="generate_design", sku=sku, rev="A", family="FAC", params=FAC_10)
+    first = open_card(env, **body, conversation_id=conversation).json()
+    # Another conversation opens and confirms Rev A first.
+    other = open_card(env, **body).json()
+    assert env.confirm(other["action"]["id"]).status_code == 200
+
+    late = env.confirm(first["action"]["id"])
+    assert late.json()["result"]["ok"] is False
+    assert sorted(p.name for p in (env.settings.designs_root / sku).iterdir()) == ["A"]
+
+
 def test_generate_card_needs_a_sku_from_sap(env) -> None:
     response = open_card(env, kind="generate_design", sku="GB-1099", family="FAC", params=FAC_10)
 

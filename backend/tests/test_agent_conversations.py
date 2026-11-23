@@ -99,8 +99,11 @@ def test_valid_bead_from_description_to_render(env):
     assert [a["action"] for a in read_audit(env.settings.data_dir)] == [
         "sku.reserved",
         "design.generated",
+        "sap.revision_set",
         "render.queued",
     ]
+    # SAP's current revision follows the generated files (QA 2026-11-23, item 4).
+    assert env.sap.materials[rendered.json()["result"]["sku"]]["Revision"] == "A"
 
     history = env.http.get(f"/api/conversations/{conversation}").json()
     assert [m["role"] for m in history["messages"]].count("event") == 3

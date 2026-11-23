@@ -85,6 +85,20 @@ class InMemorySap:
                     headers={"x-csrf-token": "Required"},
                 )
             return self._reserve(json.loads(request.content))
+        match = re.fullmatch(r"/MaterialSet\('((?:[^']|'')*)'\)", path)
+        if request.method in ("MERGE", "PATCH") and match:
+            if request.headers.get("x-csrf-token") != self.token:
+                return _error(
+                    403,
+                    "ZHL_GW/002",
+                    "CSRF token validation failed",
+                    headers={"x-csrf-token": "Required"},
+                )
+            row = self.materials.get(match.group(1).replace("''", "'"))
+            if row is None:
+                return _error(404, "ZHL_MM/001", f"Material {match.group(1)} does not exist")
+            row["Revision"] = json.loads(request.content)["CurrentRevision"]
+            return httpx.Response(204)
         return _error(405, "ZHL_GW/005", "Method not allowed")
 
     def _reserve(self, body: dict[str, Any]) -> httpx.Response:

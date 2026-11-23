@@ -141,6 +141,26 @@ def reserve_material(
     return {"d": entity}
 
 
+class MaterialUpdate(BaseModel):
+    """Body of `MERGE MaterialSet('...')`: only the current revision can change."""
+
+    model_config = ConfigDict(extra="ignore", str_strip_whitespace=True)
+
+    CurrentRevision: str = Field(min_length=1, max_length=2)
+
+
+@router.api_route("/MaterialSet('{sku}')", methods=["MERGE", "PATCH"], status_code=204)
+def update_material(sku: str, payload: MaterialUpdate, db: DbDep) -> Response:
+    """OData v2 MERGE (or PATCH): set the current revision. 204 with no body, as SAP."""
+    try:
+        found = db.set_revision(key_value(sku), payload.CurrentRevision)
+    except ReservationError as exc:
+        raise SapError(400, exc.code, exc.message) from exc
+    if not found:
+        raise SapError(404, MATERIAL_NOT_FOUND, f"Material {key_value(sku)} does not exist")
+    return Response(status_code=204)
+
+
 def _material_or_404(db: Database, sku: str) -> sqlite3.Row:
     row = db.get_material(sku)
     if row is None:

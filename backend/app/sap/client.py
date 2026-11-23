@@ -177,17 +177,30 @@ class SapClient:
             "Family": family or "",
             "Collection": collection or "",
         }
+        response = self._modify("POST", "/MaterialSet", body)
+        return _material(response.json()["d"])
+
+    def set_revision(self, sku: str, revision: str) -> None:
+        """Set the material's `CurrentRevision` (OData v2 `MERGE`, 204 No Content).
+
+        Called after the files of a revision were generated, so SAP names the newest
+        revision with files (GEN-02).
+        """
+        self._modify("MERGE", f"/MaterialSet({_literal(sku)})", {"CurrentRevision": revision})
+
+    def _modify(self, method: str, path: str, body: dict[str, Any]) -> httpx.Response:
+        """A modifying request with the CSRF token; fetches a new token once if it expired."""
         for attempt in range(2):
             token = self._csrf or self._fetch_token()
             response = self._send(
-                "POST", "/MaterialSet", json=body, headers={CSRF_HEADER: token}, check=False
+                method, path, json=body, headers={CSRF_HEADER: token}, check=False
             )
             required = response.headers.get(CSRF_HEADER, "").lower() == "required"
             if response.status_code == 403 and required and attempt == 0:
                 self._csrf = None  # session expired (or the mock restarted): fetch again
                 continue
             self._raise_for(response)
-            return _material(response.json()["d"])
+            return response
         raise AssertionError("unreachable")  # pragma: no cover
 
     # --- transport -------------------------------------------------------------------
