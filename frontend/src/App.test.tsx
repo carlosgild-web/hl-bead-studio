@@ -441,6 +441,53 @@ describe('App', () => {
     expect(await screen.findByText('Rev A, older revision')).toBeInTheDocument()
   })
 
+  it('the chip and the stepper open the same card once; the second click goes to it', async () => {
+    backend()
+    renderApp()
+    fireEvent.change(screen.getByLabelText('Describe the bead or charm…'), { target: { value: 'A faceted bead' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }))
+    const reserve = await screen.findByRole('article', { name: 'Reserve SKU in SAP' })
+    fireEvent.click(within(reserve).getByRole('button', { name: 'Confirm' }))
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Generate the design files for GB-1034' }))
+    await screen.findByRole('article', { name: 'Generate design files' })
+    // The server returns the open card again; the chat shows it once.
+    fireEvent.click(within(stepOf('generate')).getByRole('button', { name: 'Generate files…' }))
+    const form = screen.getByRole('form', { name: 'Generate files…' })
+    fireEvent.click(within(form).getByRole('button', { name: 'Review & confirm' }))
+    expect(await within(stepOf('generate')).findByRole('button', { name: /Go to the card/ })).toBeInTheDocument()
+    expect(screen.getAllByRole('article', { name: 'Generate design files' })).toHaveLength(1)
+  })
+
+  it('after a finished render, "Start a new design" clears the chat and the panel', async () => {
+    const calls = backend()
+    renderApp()
+    fireEvent.change(screen.getByLabelText('Describe the bead or charm…'), { target: { value: 'A faceted bead' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }))
+    const reserve = await screen.findByRole('article', { name: 'Reserve SKU in SAP' })
+    fireEvent.click(within(reserve).getByRole('button', { name: 'Confirm' }))
+    await nextStepThroughRender(calls)
+    expect(screen.queryByRole('button', { name: /Start a new design/ })).toBeNull() // still rendering
+    renderEvent('done')
+
+    fireEvent.click(await screen.findByRole('button', { name: /Start a new design/ }))
+    const ask = screen.getByRole('alertdialog', { name: 'New design' })
+    fireEvent.click(within(ask).getByRole('button', { name: 'Keep working' }))
+    expect(screen.getAllByRole('article')).not.toHaveLength(0)
+
+    fireEvent.click(screen.getByRole('button', { name: 'New design' }))
+    fireEvent.click(within(screen.getByRole('alertdialog', { name: 'New design' })).getByRole('button', { name: 'Start over' }))
+    expect(await screen.findByText(/Describe a glass bead or a charm/)).toBeInTheDocument()
+    expect(screen.queryAllByRole('article')).toHaveLength(0)
+    expect(document.querySelector('[data-step]')).toBeNull()
+
+    // The next message starts a new conversation.
+    fireEvent.change(screen.getByLabelText('Describe the bead or charm…'), { target: { value: 'A round bead' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await waitFor(() => expect(calls.filter((c) => c.url === '/api/chat')).toHaveLength(2))
+    expect(calls.filter((c) => c.url === '/api/chat').at(-1)?.body).toMatchObject({ conversation_id: null })
+  })
+
   it('a fresh workflow starts at step 1, with steps 2 and 3 blocked', async () => {
     backend()
     renderApp()

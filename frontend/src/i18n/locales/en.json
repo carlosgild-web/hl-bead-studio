@@ -33,8 +33,13 @@
       "label": "Next step:",
       "generate": "Generate the design files for {{sku}}",
       "render": "Render {{sku}} rev {{rev}} for the catalog",
+      "newDesign": "Start a new design",
       "failed": "Could not open the card:"
     },
+    "newDesign": "New design",
+    "newDesignConfirm": "Start over? The chat and the panel are cleared; reserved SKUs, design files and renders stay saved.",
+    "newDesignYes": "Start over",
+    "newDesignNo": "Keep working",
     "demo": {
       "badge": "Demo mode · scripted answers",
       "tooltip": "No language model is connected. The assistant answers from a curated list of questions about the manual, through the real tools; the panel, the checks and the cards work as usual."

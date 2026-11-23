@@ -113,6 +113,9 @@ All notable changes to this project are documented here. The format follows
     `llm_note` in `/api/health`.
   - The `qa` eval suite (`agent-eval --suite qa|all`, 92 scenarios; `--variants` adds the
     phrasing variants). CI runs `--fake --suite all --variants` (183 scenarios).
+- A "New design" button in the chat header, and a "Start a new design" next-step chip once
+  the render is finished: the chat and the panel start over (reserved SKUs, files and renders
+  stay saved), with an inline confirmation.
 
 ### Changed
 
@@ -129,6 +132,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- Opening a card that was already open (the stepper twice, or the next-step chip and the
+  stepper) showed it twice in the chat; the server returns the same card, so the chat now
+  shows it once and scrolls to it.
 - Settings failed to read `ANTHROPIC_API_KEY` from the environment in any process that had
   imported CadQuery (its multimethod dispatch makes `typing.Union` look like a sequence to
   pydantic-settings).

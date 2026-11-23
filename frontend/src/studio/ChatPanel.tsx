@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import type { TFunction } from 'i18next'
-import { AlertCircle, ArrowRight, Bot, ChevronRight, Loader2, Send, Wrench } from 'lucide-react'
+import { AlertCircle, ArrowRight, Bot, ChevronRight, Loader2, RotateCcw, Send, Wrench } from 'lucide-react'
 import { type FormEvent, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils'
 import type { FamilyInfo } from '@/api/types'
 
 import { ActionCard } from './ActionCard'
-import { type CardRequest, useFamilyInfo, useOpenCard, useStudio } from './context'
+import { type CardRequest, useFamilyInfo, useOpenCard, useRenderJob, useStudio } from './context'
 import type { StudioState, ToolStep } from './state'
 
 const EXAMPLES = ['chat.example1', 'chat.example2', 'chat.example3'] as const
@@ -60,18 +60,25 @@ function AssistantText({ text }: { text: string }) {
   )
 }
 
+type NextStep = { label: string; request: CardRequest } | { label: string; reset: true }
+
 /**
  * After a confirmed card, the next card of the flow. The chip opens it directly, the same
  * way as the panel's workflow (not through the assistant, so it works with any provider);
- * the designer still confirms it (invariant 2).
+ * the designer still confirms it (invariant 2). Once the render is finished, the chip
+ * offers a new design.
  */
 function nextStep(
   state: StudioState,
   family: FamilyInfo | undefined,
+  renderFinished: boolean,
   t: TFunction,
-): { label: string; request: CardRequest } | null {
+): NextStep | null {
   const open = (kind: string) =>
     Object.values(state.actions).some((a) => a.kind === kind && a.status === 'pending')
+  if (state.design && renderFinished && !open('render')) {
+    return { label: t('chat.next.newDesign'), reset: true }
+  }
   if (state.design && state.renderJobs.length === 0 && !open('render')) {
     const finish = family ? state.params[family.option_parameter] : undefined
     return {
@@ -96,7 +103,7 @@ function nextStep(
 
 export function ChatPanel() {
   const { t } = useTranslation()
-  const { state, send } = useStudio()
+  const { state, dispatch, send } = useStudio()
   const family = useFamilyInfo(state.family)
   const card = useOpenCard()
   const [text, setText] = useState('')
@@ -104,7 +111,18 @@ export function ChatPanel() {
   const health = useQuery({ queryKey: ['health'], queryFn: api.health })
   const demo = health.data?.llm_provider === 'fake'
   const chips = demo ? [...EXAMPLES, ...QUESTIONS] : EXAMPLES
-  const next = state.busy ? null : nextStep(state, family.data, t)
+  const lastJob = useRenderJob(state.renderJobs[0] ?? null)
+  const renderFinished = lastJob?.status === 'done' || lastJob?.status === 'failed'
+  const next = state.busy ? null : nextStep(state, family.data, renderFinished, t)
+  const [confirmingReset, setConfirmingReset] = useState(false)
+  const started = state.items.length > 0 || state.family !== null
+
+  function startOver() {
+    setConfirmingReset(false)
+    card.clearError()
+    setText('')
+    dispatch({ type: 'reset' })
+  }
 
   // Scroll the chat list only (scrollIntoView also scrolled the page), smoothly to its end,
   // so a new card is just in view.
@@ -137,7 +155,33 @@ export function ChatPanel() {
             {t('chat.demo.badge')}
           </Badge>
         )}
+        {started && (
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className={cn('h-7 px-2 text-xs', !demo && 'ml-auto')}
+            disabled={state.busy}
+            aria-expanded={confirmingReset}
+            onClick={() => setConfirmingReset(!confirmingReset)}
+          >
+            <RotateCcw className="size-3.5" /> {t('chat.newDesign')}
+          </Button>
+        )}
       </header>
+      {confirmingReset && (
+        <div role="alertdialog" aria-label={t('chat.newDesign')} className="space-y-2 border-b bg-muted/40 px-4 py-3 text-sm">
+          <p>{t('chat.newDesignConfirm')}</p>
+          <div className="flex gap-2">
+            <Button type="button" size="sm" onClick={startOver}>
+              {t('chat.newDesignYes')}
+            </Button>
+            <Button type="button" size="sm" variant="outline" onClick={() => setConfirmingReset(false)}>
+              {t('chat.newDesignNo')}
+            </Button>
+          </div>
+        </div>
+      )}
 
       <div ref={list} className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4" aria-live="polite">
         {state.items.length === 0 && (
@@ -198,7 +242,7 @@ export function ChatPanel() {
           <button
             type="button"
             disabled={card.working}
-            onClick={() => void card.open(next.request)}
+            onClick={() => ('reset' in next ? setConfirmingReset(true) : void card.open(next.request))}
             className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/5 px-3 py-1 font-medium text-primary hover:bg-primary/10 disabled:opacity-60"
           >
             {card.working && <Loader2 className="size-3.5 animate-spin" />}

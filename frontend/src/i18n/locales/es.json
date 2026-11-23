@@ -33,8 +33,13 @@
       "label": "Siguiente paso:",
       "generate": "Genera los archivos del diseño de {{sku}}",
       "render": "Renderiza {{sku}} rev {{rev}} para el catálogo",
+      "newDesign": "Empieza un diseño nuevo",
       "failed": "No se pudo abrir la tarjeta:"
     },
+    "newDesign": "Nuevo diseño",
+    "newDesignConfirm": "¿Empezar de nuevo? Se vacían el chat y el panel; los SKU reservados, los archivos del diseño y los renders quedan guardados.",
+    "newDesignYes": "Empezar de nuevo",
+    "newDesignNo": "Seguir trabajando",
     "demo": {
       "badge": "Modo demo · respuestas guionadas",
       "tooltip": "No hay un modelo de lenguaje conectado. El asistente responde con una lista curada de preguntas sobre el manual, con las herramientas reales; el panel, las comprobaciones y las tarjetas funcionan igual."
