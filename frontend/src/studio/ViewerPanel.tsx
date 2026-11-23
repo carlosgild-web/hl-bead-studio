@@ -93,6 +93,10 @@ export function ViewerPanel() {
           </div>
         </dl>
       )}
+      {m && info.data?.kind === 'charm' && (
+        // The height field is the body; the loop adds to what the charm measures (QA item 15).
+        <p className="text-xs text-muted-foreground">{t('viewer.overallHeight', { height: m.bbox_mm[1].toFixed(1) })}</p>
+      )}
     </section>
   )
 }

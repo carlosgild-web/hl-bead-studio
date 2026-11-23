@@ -27,8 +27,8 @@
         "CH-04"
       ],
       "x-label": {
-        "en": "Height",
-        "es": "Altura"
+        "en": "Body height (without loop)",
+        "es": "Altura del cuerpo (sin argolla)"
       },
       "description": "Height of the crescent body, without the loop."
     },

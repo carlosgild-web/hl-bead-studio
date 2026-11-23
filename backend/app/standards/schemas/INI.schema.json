@@ -76,8 +76,8 @@
         "CH-04"
       ],
       "x-label": {
-        "en": "Height",
-        "es": "Altura"
+        "en": "Body height (without loop)",
+        "es": "Altura del cuerpo (sin argolla)"
       },
       "description": "Letter height, without the loop."
     },

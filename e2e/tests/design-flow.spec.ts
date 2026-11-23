@@ -50,12 +50,12 @@ test('a designer takes a faceted bead from a description to a render', async ({ 
   const violations = page.getByRole('alert', { name: 'Rule violations' })
   await expect(violations).toBeVisible()
   await expect(violations.getByText(/^GB-\d+$/).first()).toBeVisible()
-  await violations.getByRole('button', { name: 'Facets per row 32' }).click()
+  await page.getByRole('button', { name: 'Facets per row 32' }).click()
   await expect(facets).toHaveValue('32')
   // 32 facets fit the range but are too narrow on a 10 mm bead (GB-05): the next suggestion.
   await expect(violations.getByText('GB-05')).toBeVisible()
   await snap(page, '2-violation')
-  await violations.getByRole('button', { name: 'Facets per row 20' }).click()
+  await page.getByRole('button', { name: 'Facets per row 20' }).click()
   await expect(facets).toHaveValue('20')
   await expect(page.getByText(/Meets the Product Design Manual/)).toBeVisible()
 

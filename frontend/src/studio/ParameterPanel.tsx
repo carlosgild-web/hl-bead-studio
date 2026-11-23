@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { api } from '@/api/client'
-import type { FamilyInfo, ParameterInfo, ParamValue, Validation } from '@/api/types'
+import type { FamilyInfo, ParameterInfo, ParamValue, Validation, Violation } from '@/api/types'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import {
@@ -29,6 +29,7 @@ function Field({
   value,
   proposed,
   invalid,
+  issues = [],
   onChange,
 }: {
   name: string
@@ -37,11 +38,13 @@ function Field({
   value: ParamValue | undefined
   proposed: boolean
   invalid: boolean
+  issues?: Violation[]
   onChange: (value: ParamValue) => void
 }) {
   const { t } = useTranslation()
   const id = `param-${name}`
   const isOption = name === family.option_parameter
+  const capitals = name === 'letter' || name === 'engraving_text'
   const range =
     info.minimum !== undefined && info.maximum !== undefined
       ? `${info.minimum}–${info.maximum}${info.unit ? ` ${info.unit}` : ''}`
@@ -119,9 +122,12 @@ function Field({
         id={id}
         aria-invalid={invalid}
         value={value === undefined ? '' : String(value)}
-        maxLength={40}
-        onChange={(e) => onChange(e.target.value)}
-        className="font-mono"
+        // A letter is one capital (CH-07) and an engraving is capitals too (CH-06): typed
+        // lowercase, they are shown and sent uppercase.
+        maxLength={name === 'letter' ? 1 : name === 'engraving_text' ? 12 : 40}
+        autoCapitalize={capitals ? 'characters' : undefined}
+        onChange={(e) => onChange(capitals ? e.target.value.toUpperCase() : e.target.value)}
+        className={cn('font-mono', capitals && 'uppercase')}
       />
     )
   }
@@ -148,8 +154,54 @@ function Field({
         </span>
       </div>
       {control}
+      {issues.map((v, i) => (
+        <ViolationNote key={`${v.rule}-${i}`} v={v} family={family} />
+      ))}
     </div>
   )
+}
+
+/** One broken rule: its id, the message in the UI language and the nearest valid values. */
+function ViolationNote({ v, family }: { v: Violation; family?: FamilyInfo }) {
+  const { t } = useTranslation()
+  const { dispatch } = useStudio()
+  const language = useLanguage()
+  return (
+    <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm">
+      <div className="flex items-start gap-2">
+        <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
+        <div className="min-w-0 space-y-1">
+          <p>
+            <Badge variant="destructive" className="mr-2 font-mono">
+              {v.rule}
+            </Badge>
+            {language === 'es' && v.message_es ? v.message_es : v.message}
+          </p>
+          {v.nearest_valid && v.nearest_valid.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5 text-xs">
+              <span className="text-muted-foreground">{t('panel.nearest')}</span>
+              {v.nearest_valid.map((s) => (
+                <button
+                  key={`${s.parameter}-${String(s.value)}`}
+                  type="button"
+                  className="rounded border bg-background px-1.5 py-0.5 hover:bg-accent"
+                  onClick={() => dispatch({ type: 'edit', name: s.parameter, value: s.value })}
+                >
+                  {family?.parameters[s.parameter]?.label ?? t('panel.value')}{' '}
+                  {displayValue(family?.parameters[s.parameter], s.value, t)}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** A violation about one field is shown under that field (QA 2026-11-23, item 10). */
+function fieldOf(v: Violation, family?: FamilyInfo): string | null {
+  return v.parameters.length === 1 && family?.parameters[v.parameters[0]] ? v.parameters[0] : null
 }
 
 function ValidationSummary({
@@ -162,53 +214,42 @@ function ValidationSummary({
   family?: FamilyInfo
 }) {
   const { t } = useTranslation()
-  const { dispatch } = useStudio()
   const language = useLanguage()
   if (!validation) return null
   if (validation.valid) {
+    // The edition text comes from the manual in English ("Edition 1 (2026-11)").
+    const edition =
+      language === 'es' ? validation.rule_edition.replace(/^Edition /, 'Edición ') : validation.rule_edition
     return (
       <div className="flex items-center gap-2 rounded-md border border-success/40 bg-success/10 px-3 py-2 text-sm text-success" role="status">
         <CheckCircle2 className="size-4" />
         {t('panel.valid')}
         {validation.rule_edition && (
-          <span className="text-xs opacity-80">· {t('panel.edition', { edition: validation.rule_edition })}</span>
+          <span className="text-xs opacity-80">· {t('panel.edition', { edition })}</span>
         )}
         {pending && <Loader2 className="ml-auto size-4 animate-spin" />}
       </div>
     )
   }
+  const general = validation.violations.filter((v) => fieldOf(v, family) === null)
+  const atFields = validation.violations.filter((v) => fieldOf(v, family) !== null)
   return (
     <div className="space-y-2" role="alert" aria-label={t('panel.violations')}>
-      {validation.violations.map((v, i) => (
-        <div key={`${v.rule}-${i}`} className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm">
-          <div className="flex items-start gap-2">
-            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
-            <div className="min-w-0 space-y-1">
-              <p>
-                <Badge variant="destructive" className="mr-2 font-mono">
-                  {v.rule}
-                </Badge>
-                {language === 'es' && v.message_es ? v.message_es : v.message}
-              </p>
-              {v.nearest_valid && v.nearest_valid.length > 0 && (
-                <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                  <span className="text-muted-foreground">{t('panel.nearest')}</span>
-                  {v.nearest_valid.map((s) => (
-                    <button
-                      key={`${s.parameter}-${String(s.value)}`}
-                      type="button"
-                      className="rounded border bg-background px-1.5 py-0.5 hover:bg-accent"
-                      onClick={() => dispatch({ type: 'edit', name: s.parameter, value: s.value })}
-                    >
-                      {family?.parameters[s.parameter]?.label ?? t('panel.value')}{' '}
-                      {displayValue(family?.parameters[s.parameter], s.value, t)}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+      {atFields.length > 0 && (
+        <p className="flex flex-wrap items-center gap-1.5 text-sm text-destructive">
+          <AlertTriangle className="size-4 shrink-0" />
+          {t('panel.seeFields', {
+            fields: [...new Set(atFields.map((v) => family?.parameters[v.parameters[0]]?.label ?? ''))].join(', '),
+          })}
+          {[...new Set(atFields.map((v) => v.rule))].map((rule) => (
+            <Badge key={rule} variant="destructive" className="font-mono">
+              {rule}
+            </Badge>
+          ))}
+        </p>
+      )}
+      {general.map((v, i) => (
+        <ViolationNote key={`${v.rule}-${i}`} v={v} family={family} />
       ))}
     </div>
   )
@@ -307,6 +348,7 @@ export function ParameterPanel() {
                 value={state.params[name]}
                 proposed={state.proposed.includes(name)}
                 invalid={invalid.has(name)}
+                issues={validation?.violations.filter((v) => fieldOf(v, info.data) === name)}
                 onChange={(value) => dispatch({ type: 'edit', name, value })}
               />
             ))}

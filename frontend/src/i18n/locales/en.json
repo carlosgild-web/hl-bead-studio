@@ -111,7 +111,8 @@
       "cardOpened": "Card opened in the chat. Confirm it there.",
       "goToCard": "Go to the card"
     },
-    "value": "Value"
+    "value": "Value",
+    "seeFields": "Fix the fields marked in red ({{fields}}):"
   },
   "viewer": {
     "title": "3D model",
@@ -124,7 +125,8 @@
     "measurements": "Measurements",
     "size": "Size",
     "volume": "Volume",
-    "mass": "Mass"
+    "mass": "Mass",
+    "overallHeight": "Overall height with the loop: {{height}} mm."
   },
   "outputs": {
     "drawing": "Drawing",

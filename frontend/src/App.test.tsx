@@ -640,7 +640,8 @@ describe('App', () => {
     expect(hole.closest('[data-proposed]')).toBeNull()
     const alert = await screen.findByRole('alert', { name: 'Rule violations' })
     expect(within(alert).getByText('GB-02')).toBeInTheDocument()
-    fireEvent.click(within(alert).getByRole('button', { name: 'Hole 0.8 mm' }))
+    // The message and its fix sit under the field (QA 2026-11-23, item 10).
+    fireEvent.click(screen.getByRole('button', { name: 'Hole 0.8 mm' }))
     await waitFor(() => expect(screen.getByLabelText('Hole')).toHaveValue(0.8))
   })
 
@@ -656,9 +657,9 @@ describe('App', () => {
 
     fireEvent.change(hole, { target: { value: '0.5' } })
 
-    const alert = await screen.findByRole('alert', { name: 'Reglas incumplidas' })
-    expect(within(alert).getByText(/El agujero debe ajustarse/)).toBeInTheDocument()
-    expect(within(alert).queryByText(/The hole must fit/)).toBeNull()
+    await screen.findByRole('alert', { name: 'Reglas incumplidas' })
+    expect(screen.getByText(/El agujero debe ajustarse/)).toBeInTheDocument()
+    expect(screen.queryByText(/The hole must fit/)).toBeNull()
   })
 
   it('the name field adds the family word and checks the name while typing', async () => {

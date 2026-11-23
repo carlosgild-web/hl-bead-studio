@@ -24,7 +24,7 @@ test.describe('Things to try', () => {
     // No parameter key or note for the model anywhere in the panel.
     await expect(violations).not.toContainText('hole_mm')
     await expect(violations).not.toContainText('instruction')
-    await violations.getByRole('button', { name: 'Hole diameter 1 mm' }).click()
+    await page.getByRole('button', { name: 'Hole diameter 1 mm' }).click()
     await expect(page.getByText(/Meets the Product Design Manual/)).toBeVisible()
   })
 

@@ -111,7 +111,8 @@
       "cardOpened": "Tarjeta abierta en el chat. Confírmala allí.",
       "goToCard": "Ir a la tarjeta"
     },
-    "value": "Valor"
+    "value": "Valor",
+    "seeFields": "Corrige los campos marcados en rojo ({{fields}}):"
   },
   "viewer": {
     "title": "Modelo 3D",
@@ -124,7 +125,8 @@
     "measurements": "Medidas",
     "size": "Tamaño",
     "volume": "Volumen",
-    "mass": "Masa"
+    "mass": "Masa",
+    "overallHeight": "Altura total con la argolla: {{height}} mm."
   },
   "outputs": {
     "drawing": "Plano",
