@@ -5,6 +5,8 @@ import * as THREE from 'three'
 
 import type { Kind, Swatch } from '@/api/types'
 
+import { MODEL_ROTATION } from './orientation'
+
 /** Borosilicate glass (manual 07-colors-and-finishes); the Blender presets use the same IOR. */
 const GLASS_IOR = 1.47
 
@@ -52,8 +54,7 @@ function Model({ url, kind, swatch }: { url: string; kind: Kind; swatch?: Swatch
   }, [scene, look])
   return (
     <Center>
-      {/* CadQuery models are Z-up; three.js is Y-up. */}
-      <primitive object={object} rotation={[-Math.PI / 2, 0, 0]} />
+      <primitive object={object} rotation={MODEL_ROTATION} />
     </Center>
   )
 }
