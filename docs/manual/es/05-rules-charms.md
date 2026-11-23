@@ -105,8 +105,9 @@ La altura mínima mantiene cada trazo y cada separación de la letra en 0.6 mm o
 la Y de Pacifico casi cierra el lazo de su cola y necesita 18.5 mm, y Cinzel Bold dibuja su
 K en dos piezas separadas, así que no se puede fundir como un solo dije.
 
-La argolla se coloca sobre el trazo más alto cercano al eje central de la letra, unida a él
-(en una H, sobre uno de los trazos verticales).
+La argolla se coloca sobre el trazo más alto cercano al eje central de la letra, la vertical
+que pasa por su centro de masa para que el dije cuelgue derecho, unida a él (en una H, sobre
+uno de los trazos verticales).
 
 *Por qué:* solo las tipografías con licencia abierta se pueden usar en productos que vendemos,
 y las tipografías con trazos finísimos no se pueden fundir.

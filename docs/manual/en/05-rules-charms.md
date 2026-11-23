@@ -101,8 +101,9 @@ The minimum height keeps every stroke and every gap of the letter at 0.6 mm or m
 are exceptions: Pacifico's Y nearly closes the loop of its tail and needs 18.5 mm, and
 Cinzel Bold draws its K in two separate pieces, so it cannot be cast as one charm.
 
-The loop is placed above the highest stroke nearest the letter's center line and joined to
-it (for an H, above one of the stems).
+The loop is placed above the highest stroke nearest the letter's center line, the vertical
+through its center of mass so the charm hangs straight, and joined to it (for an H, above
+one of the stems).
 
 *Why:* only fonts with an open license can be used in products we sell, and fonts with
 hairline strokes cannot be cast.

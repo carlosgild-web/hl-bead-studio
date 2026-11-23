@@ -59,14 +59,18 @@ def _top_at(body: BaseGeometry, x: float) -> float | None:
     return None if hit.is_empty else hit.bounds[3]
 
 
-def place_loop(body: BaseGeometry, inner: float, wall: float) -> tuple[float, float, float]:
+def place_loop(
+    body: BaseGeometry, inner: float, wall: float, *, balanced: bool = False
+) -> tuple[float, float, float]:
     """Loop hole center (x, y) and the top of the stroke it joins.
 
     The loop goes above the highest stroke closest to the body's center line (CH-07: a
-    letter like H has no stroke at the top center, so its loop sits above a stem).
+    letter like H has no stroke at the top center, so its loop sits above a stem). With
+    `balanced` (initials), the center line runs through the center of mass, where the charm
+    hangs: a C or a J then hangs straight instead of tilting (QA 2026-11-23, item 22).
     """
     minx, miny, maxx, maxy = body.bounds
-    center = (minx + maxx) / 2
+    center = body.centroid.x if balanced else (minx + maxx) / 2
     threshold = maxy - _ATTACH_BAND * (maxy - miny)
     steps = int((maxx - minx) / 0.05) + 1
     attach_x, attach_top = center, maxy
@@ -83,14 +87,19 @@ def place_loop(body: BaseGeometry, inner: float, wall: float) -> tuple[float, fl
 
 
 def _finish_charm(
-    body_faces: list[cq.Face], thickness: float, inner: float, wall: float
+    body_faces: list[cq.Face],
+    thickness: float,
+    inner: float,
+    wall: float,
+    *,
+    balanced: bool = False,
 ) -> tuple[cq.Shape, BaseGeometry, tuple[float, float]]:
     """Body plus loop (CH-02) as an exact solid, its 2D profile, and the loop center.
 
     The loop is a ring with a short connector down into the stroke it joins.
     """
     body2d = to_polygon(body_faces)
-    x, y, attach_top = place_loop(body2d, inner, wall)
+    x, y, attach_top = place_loop(body2d, inner, wall, balanced=balanced)
     outer = inner / 2 + wall
     bottom = attach_top - wall
 
@@ -188,7 +197,9 @@ def letter_faces(letter: str, font: str, height: float) -> list[cq.Face]:
 def build_initial(p: dict) -> BuiltModel:
     height, t = p["height_mm"], p["thickness_mm"]
     faces = letter_faces(p["letter"], p["font"], height)
-    solid, profile, loop = _finish_charm(faces, t, p["loop_inner_mm"], p["loop_wall_mm"])
+    solid, profile, loop = _finish_charm(
+        faces, t, p["loop_inner_mm"], p["loop_wall_mm"], balanced=True
+    )
     body = to_polygon(faces)
     xmin, _, xmax, _ = body.bounds
     return BuiltModel(

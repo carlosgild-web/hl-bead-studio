@@ -225,3 +225,27 @@ def test_glb_is_a_metre_scaled_mesh() -> None:
     mesh = scene.to_geometry() if hasattr(scene, "to_geometry") else scene.dump(concatenate=True)
 
     assert mesh.extents.max() == pytest.approx(0.008, rel=0.01)  # 8 mm bead in metres
+
+
+@pytest.mark.parametrize(
+    ("letter", "font"),
+    [("C", "montserrat_extrabold"), ("J", "montserrat_extrabold"), ("C", "cinzel_bold")],
+)
+def test_an_initial_hangs_from_its_center_of_mass_when_a_stroke_is_there(letter, font) -> None:
+    # QA 2026-11-23, item 22: a C with its loop at the box center hung crooked.
+    from app.geometry.charms import letter_faces, place_loop
+    from app.geometry.profile import to_polygon
+
+    body = to_polygon(letter_faces(letter, font, 14.0))
+    x, _, _ = place_loop(body, 2.0, 1.0, balanced=True)
+    assert abs(x - body.centroid.x) < 0.06
+
+
+def test_an_h_keeps_its_loop_above_a_stem() -> None:
+    # CH-07: no stroke at the top center of an H, so the loop sits above one of the stems.
+    from app.geometry.charms import letter_faces, place_loop
+    from app.geometry.profile import to_polygon
+
+    body = to_polygon(letter_faces("H", "montserrat_extrabold", 14.0))
+    x, _, _ = place_loop(body, 2.0, 1.0, balanced=True)
+    assert abs(x) > 1.5
