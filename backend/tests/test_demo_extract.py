@@ -63,3 +63,7 @@ def test_language_and_questions() -> None:
     assert is_question("How thin can a lentil bead be?")
     assert is_question("¿Puedo hacer un dije de 35 mm?")
     assert not is_question("A 12 mm ruby lentil bead")
+    # Without a question mark too (the word must stand alone: "Isla" is not "is").
+    assert is_question("What is the smallest hole for a 10 mm bead")
+    assert is_question("Cual es el agujero mas chico de una cuenta de 10 mm")
+    assert not is_question("Island Blue round bead, 10 mm")

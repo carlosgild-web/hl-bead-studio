@@ -75,7 +75,7 @@ _SPANISH_HINT = frozenset(_ES_WORDS.split())
 _ENGLISH_HINT = frozenset(_EN_WORDS.split())
 _QUESTION_START = re.compile(
     r"(?:what|how|which|why|can|could|is|are|do|does"
-    r"|que|cual|como|cuanto|cuanta|por que|puedo|se puede)"
+    r"|que|cual|como|cuanto|cuanta|por que|puedo|se puede)\b"
 )
 
 
