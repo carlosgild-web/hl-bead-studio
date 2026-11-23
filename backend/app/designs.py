@@ -104,6 +104,7 @@ def generate_design(
         date=today,
         designer=designer,
         file=names["step"],
+        mass_label="MASS (BEFORE PLATING)" if family.is_charm else "MASS",
     )
     svg = drawing_svg(model, family.kind, title)
 

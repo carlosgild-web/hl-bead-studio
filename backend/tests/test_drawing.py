@@ -109,3 +109,10 @@ def test_pdf_is_rendered() -> None:
 
     assert pdf.startswith(b"%PDF")
     assert len(pdf) > 5000
+
+
+def test_the_mass_label_says_before_plating_only_for_charms() -> None:
+    glass, kind = model("FAC")
+    assert ">MASS<" in drawing_svg(glass, kind, title(mass_label="MASS"))
+    charm, kind = model("CRS")
+    assert ">MASS (BEFORE PLATING)<" in drawing_svg(charm, kind, title(sku="CH-2034"))

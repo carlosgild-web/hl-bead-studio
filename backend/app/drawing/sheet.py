@@ -48,6 +48,8 @@ class TitleBlock:
     date: str
     designer: str
     file: str
+    # Plating adds to a charm's mass; glass has none, so it is just the mass (QA item 25).
+    mass_label: str = "MASS (BEFORE PLATING)"
 
 
 def _fmt(value: float) -> str:
@@ -222,6 +224,7 @@ def drawing_svg(model: BuiltModel, kind: str, title: TitleBlock) -> str:
         "family": title.family,
         "material": title.material,
         "mass": title.mass,
+        "mass_label": title.mass_label,
         "scale": f"{scale}:1",
         "date": title.date,
         "designer": title.designer,
