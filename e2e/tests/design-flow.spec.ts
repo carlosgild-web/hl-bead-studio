@@ -41,7 +41,7 @@ test('a designer takes a faceted bead from a description to a render', async ({ 
   await snap(page, '1-proposal')
 
   // The reserve card waits in focus (the rest is inert): set it aside to edit the panel.
-  await page.getByRole('article', { name: 'Reserve SKU in SAP' }).getByRole('button', { name: 'Not now' }).click()
+  await page.getByRole('article', { name: 'Reserve SKU in SAP' }).getByRole('button', { name: 'Use the chat' }).click()
 
   // 3. Validation: a value outside the manual is refused with a rule id; the nearest valid
   //    value fixes it.

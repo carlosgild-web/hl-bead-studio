@@ -498,7 +498,7 @@ describe('App', () => {
     await reviewOpenStep('Generate files…')
     const generate = await screen.findByRole('article', { name: 'Generate design files' })
     // The server returns the open card again; the chat shows it once.
-    fireEvent.click(within(generate).getByRole('button', { name: 'Not now' }))
+    fireEvent.click(within(generate).getByRole('button', { name: 'Use the chat' }))
     fireEvent.click(within(stepOf('generate')).getByRole('button', { name: 'Generate files…' }))
     const form = screen.getByRole('form', { name: 'Generate files…' })
     fireEvent.click(within(form).getByRole('button', { name: 'Review & confirm' }))
@@ -553,9 +553,11 @@ describe('App', () => {
     expect(reserve).toHaveAttribute('data-focused')
     await waitFor(() => expect(within(reserve).getByRole('button', { name: 'Confirm' })).toHaveFocus())
 
-    // "Not now" sets it aside; the stepper's "Go to the card" brings it back.
-    fireEvent.click(within(reserve).getByRole('button', { name: 'Not now' }))
+    // "Use the chat" sets it aside; the stepper's "Go to the card" brings it back.
+    fireEvent.click(within(reserve).getByRole('button', { name: 'Use the chat' }))
     expect(document.querySelector('[data-dimmed]')).toBeNull()
+    // ...and the chat takes the cursor, so the designer can ask first.
+    await waitFor(() => expect(screen.getByLabelText('Describe the bead or charm…')).toHaveFocus())
     expect(within(reserve).getByRole('button', { name: 'Confirm' })).toBeInTheDocument()
     fireEvent.click(within(stepOf('reserve')).getByRole('button', { name: /Go to the card/ }))
     expect(input).toHaveAttribute('data-dimmed')

@@ -84,7 +84,6 @@
       "rev": "Revision",
       "finish": "Color / finish",
       "open": "Review & confirm",
-      "close": "Close",
       "needFamily": "Choose a family first.",
       "needValid": "Fix the rule violations first.",
       "needSku": "Reserve a SKU first, or type an existing one.",
@@ -109,7 +108,8 @@
       "statusFailed": "Failed",
       "statusStale": "Out of date",
       "cardOpened": "Card opened in the chat. Confirm it there.",
-      "goToCard": "Go to the card"
+      "goToCard": "Go to the card",
+      "useChat": "Use the chat"
     },
     "value": "Value",
     "seeFields": "Fix the fields marked in red ({{fields}}):"
@@ -190,9 +190,9 @@
     "finish": "Color / finish",
     "confirm": "Confirm",
     "cancel": "Cancel",
-    "notNow": "Not now",
     "expiredHelp": "Cards expire after 30 minutes; ask the assistant again.",
-    "brokenRules": "The panel's design breaks {{rules}} right now. The SKU is reserved anyway (it names the product); the files can only be generated once the design passes."
+    "brokenRules": "The panel's design breaks {{rules}} right now. The SKU is reserved anyway (it names the product); the files can only be generated once the design passes.",
+    "useChat": "Use the chat"
   },
   "catalog": {
     "title": "Catalog",

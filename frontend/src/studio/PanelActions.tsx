@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Check, FileBox, ImageIcon, Loader2, Tag, TriangleAlert, X } from 'lucide-react'
+import { Check, FileBox, ImageIcon, Loader2, MessageSquare, Tag, TriangleAlert, X } from 'lucide-react'
 import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 
 import { CardOpenedNote } from './ActionCard'
-import { type CardRequest, useDesignStatus, useOpenCard, useRenderJob, useStudio } from './context'
+import { type CardRequest, focusChatInput, useDesignStatus, useOpenCard, useRenderJob, useStudio } from './context'
 import { NameField, type NameStatus } from './NameField'
 import { StaleNotice } from './OutputTabs'
 import { fullName, isExpired, type StepId, workflowSteps } from './state'
@@ -64,6 +64,12 @@ export function PanelActions({ family, validation }: { family: FamilyInfo; valid
   // while it is open the rest of the studio is dimmed (focus mode).
   const form = state.openStep
   const setForm = (step: StepId | null) => dispatch({ type: 'openStep', step })
+  // "Use the chat": the step closes (its form keeps what was typed) and the chat takes the
+  // cursor, so the designer can ask before going on.
+  const goToChat = () => {
+    setForm(null)
+    focusChatInput()
+  }
   // The step whose fields were filled in; a step opened from elsewhere is filled on arrival.
   const prepared = useRef<StepId | null>(null)
   const [name, setName] = useState('')
@@ -363,7 +369,7 @@ export function PanelActions({ family, validation }: { family: FamilyInfo; valid
                   <form
                     onSubmit={submit}
                     onKeyDown={(e) => {
-                      if (e.key === 'Escape') setForm(null)
+                      if (e.key === 'Escape') goToChat()
                     }}
                     className="mt-2 grid gap-2 border-t px-2.5 pt-2.5 pb-2.5"
                     aria-label={m.action}
@@ -420,8 +426,8 @@ export function PanelActions({ family, validation }: { family: FamilyInfo; valid
                         {working && <Loader2 className="animate-spin" />}
                         {t('panel.actions.open')}
                       </Button>
-                      <Button type="button" size="sm" variant="ghost" onClick={() => setForm(null)}>
-                        {t('panel.actions.close')}
+                      <Button type="button" size="sm" variant="ghost" onClick={goToChat}>
+                        <MessageSquare /> {t('panel.actions.useChat')}
                       </Button>
                     </div>
                   </form>

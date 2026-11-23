@@ -1,4 +1,4 @@
-import { ArrowUp, Ban, Check, CheckCircle2, Clock, Loader2, ShieldCheck, TriangleAlert, XCircle } from 'lucide-react'
+import { ArrowUp, Ban, Check, CheckCircle2, Clock, Loader2, MessageSquare, ShieldCheck, TriangleAlert, XCircle } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -6,7 +6,7 @@ import type { ParamValue, PendingAction } from '@/api/types'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-import { cardAnchor, goToCard, useFamilyInfo, usePanelPreview, useRenderJob, useStudio, useSwatchName } from './context'
+import { cardAnchor, focusChatInput, goToCard, useFamilyInfo, usePanelPreview, useRenderJob, useStudio, useSwatchName } from './context'
 import { displayValue } from './display'
 import { isExpired } from './state'
 
@@ -22,7 +22,7 @@ export function CardOpenedNote({ actionId }: { actionId: string | null }) {
     <p role="status" className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-primary">
       <span>{t('panel.actions.cardOpened')}</span>
       <button type="button" className="inline-flex items-center gap-0.5 font-medium underline underline-offset-2" onClick={() => {
-          // A card set aside with "Not now" is in focus again.
+          // A card set aside with "Use the chat" is in focus again.
           dispatch({ type: 'refocus', actionId })
           goToCard(actionId)
         }}
@@ -61,7 +61,7 @@ function Row({ label, value }: { label: string; value: unknown }) {
 /**
  * A confirmation card. The assistant can only open it; the designer's click on Confirm is
  * the one thing that reserves a SKU, writes files or queues a render (invariant 2).
- * `focused`: the studio is dimmed around it (focus mode); "Not now" or Esc sets it aside.
+ * `focused`: the studio is dimmed around it (focus mode); "Use the chat" or Esc sets it aside.
  */
 export function ActionCard({ action, focused = false }: { action: PendingAction; focused?: boolean }) {
   const { t } = useTranslation()
@@ -75,7 +75,11 @@ export function ActionCard({ action, focused = false }: { action: PendingAction;
     action.kind === 'reserve_sku' && panel.data && !panel.data.validation.valid
       ? [...new Set(panel.data.validation.violations.map((v) => v.rule))]
       : []
-  const notNow = () => dispatch({ type: 'dismiss', actionId: action.id })
+  // "Use the chat": the card stays pending, set aside, and the designer can ask first.
+  const goToChat = () => {
+    dispatch({ type: 'dismiss', actionId: action.id })
+    focusChatInput()
+  }
   const [working, setWorking] = useState<'confirm' | 'cancel' | null>(null)
   const p = action.payload
   const r = action.result
@@ -98,7 +102,7 @@ export function ActionCard({ action, focused = false }: { action: PendingAction;
       data-status={status}
       data-focused={focused || undefined}
       onKeyDown={(e) => {
-        if (focused && e.key === 'Escape') notNow()
+        if (focused && e.key === 'Escape') goToChat()
       }}
       className={cn(
         'rounded-lg border bg-card p-3 text-sm shadow-sm transition-shadow',
@@ -168,8 +172,8 @@ export function ActionCard({ action, focused = false }: { action: PendingAction;
               <Ban /> {t('card.cancel')}
             </Button>
             {focused && (
-              <Button size="sm" variant="ghost" className="ml-auto" onClick={notNow} disabled={working !== null}>
-                {t('card.notNow')}
+              <Button size="sm" variant="ghost" className="ml-auto" onClick={goToChat} disabled={working !== null}>
+                <MessageSquare /> {t('card.useChat')}
               </Button>
             )}
           </div>

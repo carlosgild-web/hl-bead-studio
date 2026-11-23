@@ -31,7 +31,7 @@ export interface StudioState {
   tab: 'drawing' | 'renders'
   /** A question to the designer outside the cards ("Start over?"). */
   asking: 'reset' | null
-  /** Cards the designer set aside with "Not now": still pending, no longer in focus. */
+  /** Cards the designer set aside with "Use the chat": still pending, no longer in focus. */
   dismissed: string[]
   /** The workflow step whose form is open in the panel: the studio waits for it there. */
   openStep: StepId | null
@@ -72,7 +72,7 @@ export type StudioAction =
   | { type: 'tab'; tab: StudioState['tab'] }
   | { type: 'reset' }
   | { type: 'ask'; question: StudioState['asking'] }
-  /** "Not now" on a card: it stays pending, the studio is no longer dimmed for it. */
+  /** "Use the chat" on a card: it stays pending, the studio is no longer dimmed for it. */
   | { type: 'dismiss'; actionId: string }
   /** "Go to the card": the card is in focus again. */
   | { type: 'refocus'; actionId: string }

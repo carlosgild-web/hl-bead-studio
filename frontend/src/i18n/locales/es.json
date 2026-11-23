@@ -84,7 +84,6 @@
       "rev": "Revisión",
       "finish": "Color / acabado",
       "open": "Revisar y confirmar",
-      "close": "Cerrar",
       "needFamily": "Elige primero una familia.",
       "needValid": "Corrige primero las reglas incumplidas.",
       "needSku": "Reserva primero un SKU, o escribe uno existente.",
@@ -109,7 +108,8 @@
       "statusFailed": "Falló",
       "statusStale": "Desactualizado",
       "cardOpened": "Tarjeta abierta en el chat. Confírmala allí.",
-      "goToCard": "Ir a la tarjeta"
+      "goToCard": "Ir a la tarjeta",
+      "useChat": "Usar el chat"
     },
     "value": "Valor",
     "seeFields": "Corrige los campos marcados en rojo ({{fields}}):"
@@ -190,9 +190,9 @@
     "finish": "Color / acabado",
     "confirm": "Confirmar",
     "cancel": "Cancelar",
-    "notNow": "Ahora no",
     "expiredHelp": "Las tarjetas caducan a los 30 minutos; pídelo de nuevo al asistente.",
-    "brokenRules": "El diseño del panel incumple ahora {{rules}}. El SKU se reserva igualmente (nombra el producto); los archivos solo se generan cuando el diseño cumpla."
+    "brokenRules": "El diseño del panel incumple ahora {{rules}}. El SKU se reserva igualmente (nombra el producto); los archivos solo se generan cuando el diseño cumpla.",
+    "useChat": "Usar el chat"
   },
   "catalog": {
     "title": "Catálogo",

@@ -131,6 +131,14 @@ export function dimProps(active: boolean, className?: string) {
   }
 }
 
+/**
+ * "Use the chat": put the cursor in the chat input. Called right after focus mode ends, so it
+ * waits a frame for the input to be enabled again (it is inert while the studio is dimmed).
+ */
+export function focusChatInput() {
+  requestAnimationFrame(() => document.getElementById('chat-input')?.focus())
+}
+
 /** The id of a card's element in the chat, for links that bring the designer to it. */
 export const cardAnchor = (actionId: string) => `card-${actionId}`
 
