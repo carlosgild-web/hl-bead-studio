@@ -40,6 +40,9 @@ test('a designer takes a faceted bead from a description to a render', async ({ 
   await page.waitForTimeout(1500) // let the viewer draw
   await snap(page, '1-proposal')
 
+  // The reserve card waits in focus (the rest is inert): set it aside to edit the panel.
+  await page.getByRole('article', { name: 'Reserve SKU in SAP' }).getByRole('button', { name: 'Not now' }).click()
+
   // 3. Validation: a value outside the manual is refused with a rule id; the nearest valid
   //    value fixes it.
   const facets = page.getByLabel('Facets', { exact: false }).first()
@@ -47,12 +50,12 @@ test('a designer takes a faceted bead from a description to a render', async ({ 
   const violations = page.getByRole('alert', { name: 'Rule violations' })
   await expect(violations).toBeVisible()
   await expect(violations.getByText(/^GB-\d+$/).first()).toBeVisible()
-  await violations.getByRole('button', { name: /facet_count = 32/ }).click()
+  await violations.getByRole('button', { name: 'Facets per row 32' }).click()
   await expect(facets).toHaveValue('32')
   // 32 facets fit the range but are too narrow on a 10 mm bead (GB-05): the next suggestion.
   await expect(violations.getByText('GB-05')).toBeVisible()
   await snap(page, '2-violation')
-  await violations.getByRole('button', { name: /facet_count = 20/ }).click()
+  await violations.getByRole('button', { name: 'Facets per row 20' }).click()
   await expect(facets).toHaveValue('20')
   await expect(page.getByText(/Meets the Product Design Manual/)).toBeVisible()
 
@@ -145,11 +148,11 @@ test('a designer reserves, generates and renders from the panel alone', async ({
  */
 test('demo mode answers a design chip, a manual question and an off-topic message', async ({ page }) => {
   await page.goto('/')
-  await expect(page.getByText('Demo mode · scripted answers')).toBeVisible()
+  await expect(page.getByText('Demo mode', { exact: true })).toBeVisible()
 
-  // The first example chip: the panel shows the proposal, highlighted, checked by the code.
+  // The first example chip sends at once: the panel shows the proposal, highlighted,
+  // checked by the code.
   await page.getByRole('button', { name: 'A 10 mm faceted amber bead for the Amber Hollow collection' }).click()
-  await page.getByRole('button', { name: 'Send' }).click()
   const answers = page.locator('[data-role="assistant"]')
   await expect(answers.last()).toContainText('I put a Faceted bead in the panel: Diameter 10.0 mm')
   await expect(answers.last()).toContainText('amber')

@@ -324,18 +324,23 @@ describe('App', () => {
   })
 
   it('shows the demo-mode badge and the question chips only in demo mode', async () => {
-    backend({
+    const calls = backend({
       'GET /api/health': () =>
         json({ status: 'ok', version: '0.1.0', llm_provider: 'fake', llm_note: 'auto found no model.' }),
     })
 
     renderApp()
 
-    const badge = await screen.findByText('Demo mode · scripted answers')
+    const badge = await screen.findByText('Demo mode')
     expect(badge.getAttribute('title')).toMatch(/curated list of questions.*auto found no model\./)
     expect(screen.getByRole('button', { name: 'Which fonts can I use for an initial charm?' })).toBeInTheDocument()
+    // A chip sends its question at once (QA 2026-11-23, item 6): the input was below the fold.
     fireEvent.click(screen.getByRole('button', { name: "What's the smallest hole I can put in a glass bead?" }))
-    expect(screen.getByRole('textbox')).toHaveValue("What's the smallest hole I can put in a glass bead?")
+    await waitFor(() =>
+      expect(calls.find((c) => c.url === '/api/chat')?.body).toMatchObject({
+        message: "What's the smallest hole I can put in a glass bead?",
+      }),
+    )
   })
 
   it('shows no demo badge or question chips with a model', async () => {

@@ -113,7 +113,8 @@ export const cardAnchor = (actionId: string) => `card-${actionId}`
 /** Scroll the chat smoothly to a card and put the focus on its Confirm button. */
 export function goToCard(actionId: string) {
   const card = document.getElementById(cardAnchor(actionId))
-  card?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' })
+  // 'end': the whole card, down to its Confirm and Cancel buttons (QA 2026-11-23, item 14).
+  card?.scrollIntoView?.({ behavior: 'smooth', block: 'end' })
   card?.querySelector<HTMLButtonElement>('[data-confirm]')?.focus({ preventScroll: true })
 }
 

@@ -41,9 +41,10 @@
     "newDesignYes": "Start over",
     "newDesignNo": "Keep working",
     "demo": {
-      "badge": "Demo mode · scripted answers",
+      "badge": "Demo mode",
       "tooltip": "No language model is connected. The assistant answers from a curated list of questions about the manual, through the real tools; the panel, the checks and the cards work as usual."
-    }
+    },
+    "seeParameters": "See the parameters"
   },
   "panel": {
     "title": "Parameters",

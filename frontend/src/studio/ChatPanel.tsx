@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import type { TFunction } from 'i18next'
-import { AlertCircle, ArrowRight, Bot, ChevronRight, Loader2, RotateCcw, Send, Wrench } from 'lucide-react'
+import { AlertCircle, ArrowDown, ArrowRight, Bot, ChevronRight, Loader2, RotateCcw, Send, Wrench } from 'lucide-react'
 import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -180,9 +180,9 @@ export function ChatPanel() {
 
   return (
     <section aria-labelledby="chat-title" className="flex min-h-[28rem] flex-col rounded-lg border bg-card lg:h-full lg:min-h-0">
-      <header {...dimProps(focusing, 'flex items-center gap-2 border-b px-4 py-3')}>
+      <header {...dimProps(focusing, 'flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 border-b px-4 py-3')}>
         <Bot className="size-4 text-primary" />
-        <h2 id="chat-title" className="font-semibold">
+        <h2 id="chat-title" className="min-w-0 font-semibold">
           {t('chat.title')}
         </h2>
         {demo && (
@@ -204,7 +204,7 @@ export function ChatPanel() {
             aria-expanded={confirmingReset}
             onClick={() => setConfirmingReset(!confirmingReset)}
           >
-            <RotateCcw className="size-3.5" /> {t('chat.newDesign')}
+            <RotateCcw className="size-3.5" /> <span className="max-sm:sr-only">{t('chat.newDesign')}</span>
           </Button>
         )}
       </header>
@@ -238,7 +238,8 @@ export function ChatPanel() {
                 <button
                   key={key}
                   type="button"
-                  onClick={() => setText(t(key))}
+                  disabled={state.busy}
+                  onClick={() => void send(t(key))}
                   className="rounded-md border bg-background px-3 py-2 text-left text-foreground hover:bg-accent"
                 >
                   {t(key)}
@@ -260,6 +261,18 @@ export function ChatPanel() {
         )}
       </div>
 
+      {state.proposed.length > 0 && !state.busy && (
+        // On a phone the panel is far below the chat: a cue that the values arrived there.
+        <button
+          type="button"
+          className="mx-3 mb-1 inline-flex items-center gap-1 self-start text-sm font-medium text-primary underline-offset-2 hover:underline lg:hidden"
+          onClick={() =>
+            document.getElementById('panel-title')?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
+          }
+        >
+          {t('chat.seeParameters')} <ArrowDown className="size-3.5" />
+        </button>
+      )}
       {next && (
         <div {...dimProps(focusing, 'flex flex-wrap items-center gap-2 border-t px-3 pt-3 text-sm')}>
           <span className="text-muted-foreground">{t('chat.next.label')}</span>

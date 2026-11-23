@@ -56,15 +56,15 @@ function Shell() {
   const focus = useFocus()
 
   return (
-    <div className="min-h-svh">
+    <div className="flex min-h-svh flex-col lg:h-svh">
       <DemoGuide config={guide} step={currentStep(state)} />
       <header {...dimProps(focus !== null, 'border-b bg-brand-navy text-white')}>
-        <div className="mx-auto flex max-w-[110rem] flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2.5 sm:px-6">
+        <div className="mx-auto flex max-w-[110rem] flex-wrap items-center gap-x-6 gap-y-1.5 px-4 py-1.5 sm:px-6 sm:py-2.5">
           <div className="flex items-center gap-3">
-            <img src="/hl_logo.svg" alt="" className="h-9 rounded bg-white p-0.5" />
+            <img src="/hl_logo.svg" alt="" className="h-7 rounded bg-white p-0.5 sm:h-9" />
             <div>
               <h1 className="text-lg leading-tight font-semibold tracking-tight">{t('app.title')}</h1>
-              <p className="text-xs text-white/70">{t('app.subtitle')}</p>
+              <p className="text-xs text-white/70 max-sm:hidden">{t('app.subtitle')}</p>
             </div>
           </div>
           <nav aria-label={t('app.nav')} className="flex gap-1">
@@ -84,10 +84,12 @@ function Shell() {
             ))}
           </nav>
           <div className="ml-auto flex items-center gap-4 [&_p]:text-white/70 [&_span]:text-white">
-            <HealthStatus />
+            <div className="max-md:hidden">
+              <HealthStatus />
+            </div>
             <button
               type="button"
-              className="rounded-md border border-white/30 px-3 py-1.5 text-sm hover:bg-white/10"
+              className="rounded-md border border-white/30 px-3 py-1.5 text-sm hover:bg-white/10 max-sm:px-2 max-sm:py-1 max-sm:text-xs"
               onClick={() => void i18n.changeLanguage(nextLanguage)}
             >
               {t('app.switchLanguage')}
@@ -95,7 +97,7 @@ function Shell() {
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-[110rem] p-4 sm:px-6">
+      <main className="mx-auto w-full max-w-[110rem] min-w-0 p-4 sm:px-6 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
         {view === 'studio' ? <StudioPage /> : <CatalogPage />}
       </main>
     </div>
