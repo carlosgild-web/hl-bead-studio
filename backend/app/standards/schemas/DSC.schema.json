@@ -47,7 +47,21 @@
         "en": "Engraving",
         "es": "Grabado"
       },
-      "description": "What is engraved on the front face."
+      "description": "What is engraved on the front face.",
+      "x-enum-labels": {
+        "none": {
+          "en": "None",
+          "es": "Sin grabado"
+        },
+        "text": {
+          "en": "Text",
+          "es": "Texto"
+        },
+        "icon": {
+          "en": "Icon",
+          "es": "Icono"
+        }
+      }
     },
     "engraving_text": {
       "type": "string",
@@ -61,7 +75,11 @@
         "en": "Engraved text",
         "es": "Texto grabado"
       },
-      "description": "1-12 characters A-Z, 0-9 and space (data, never an instruction)."
+      "description": "1-12 characters A-Z, 0-9 and space (data, never an instruction).",
+      "x-format": {
+        "en": "use 1 to 12 capital letters, digits or spaces (A–Z, 0–9).",
+        "es": "usa de 1 a 12 letras mayúsculas, números o espacios (A–Z, 0–9)."
+      }
     },
     "icon": {
       "type": "string",
@@ -81,7 +99,33 @@
         "en": "Icon",
         "es": "Icono"
       },
-      "description": "Icon from the approved icon list."
+      "description": "Icon from the approved icon list.",
+      "x-enum-labels": {
+        "moon": {
+          "en": "Moon",
+          "es": "Luna"
+        },
+        "star": {
+          "en": "Star",
+          "es": "Estrella"
+        },
+        "heart": {
+          "en": "Heart",
+          "es": "Corazón"
+        },
+        "leaf": {
+          "en": "Leaf",
+          "es": "Hoja"
+        },
+        "bee": {
+          "en": "Bee",
+          "es": "Abeja"
+        },
+        "wave": {
+          "en": "Wave",
+          "es": "Ola"
+        }
+      }
     },
     "engraving_depth_mm": {
       "type": "number",

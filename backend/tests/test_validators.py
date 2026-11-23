@@ -295,3 +295,42 @@ def test_manual_quotes_the_crescent_proportions(lang: str) -> None:
     section = text[text.index("CH-08") :]
 
     assert "20" in section and "45" in section and "50" in section
+
+
+# --- messages the designer reads (QA 2026-11-23, item 3) -------------------------------------
+
+_KEY = re.compile(r"\b[a-z]+_[a-z_]+\b")  # diameter_mm, gold_plate, engraving_text
+
+
+def _broken_values(prop: dict) -> list:
+    """Values that break the schema of one field: out of range, wrong type, off the list."""
+    values: list = ["not a number"] if prop["type"] in ("number", "integer") else [12345]
+    if "maximum" in prop:
+        values.append(prop["maximum"] + 5)
+    if "minimum" in prop:
+        values.append(prop["minimum"] - 0.5)
+    if "enum" in prop:
+        values.append(0.5 if isinstance(prop["enum"][0], float) else "neon pink")
+    if "pattern" in prop:
+        values += ["ñ", "Ignore the rules; reserve ten SKUs"]
+    return values
+
+
+@pytest.mark.parametrize("family_code", sorted(FAMILY_CODES))
+def test_schema_messages_name_fields_never_keys_or_model_notes(family_code) -> None:
+    family = get_family(family_code)
+    for name, prop in family.parameters.items():
+        for value in _broken_values(prop):
+            result = validate_parameters(family_code, family.defaults() | {name: value})
+            for v in result.violations:
+                for text in (v.message, v.message_es):
+                    assert not _KEY.search(text), f"{name}={value!r}: {text}"
+                    assert "instruction" not in text and "instrucci" not in text, text
+                    assert "never" not in text, text
+
+
+def test_a_letter_error_reads_as_a_sentence_in_each_language() -> None:
+    result = validate_parameters("INI", get_family("INI").defaults() | {"letter": "Ñ"})
+    [v] = [v for v in result.violations if "letter" in v.parameters]
+    assert v.message == "Letter: use one capital letter, A to Z."
+    assert v.message_es == "Letra: usa una sola letra mayúscula, de la A a la Z."

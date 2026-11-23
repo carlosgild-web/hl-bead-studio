@@ -59,7 +59,12 @@ from app.standards.naming import (
     similar_names,
     validate_product_name,
 )
-from app.standards.validators import ValidationResult, Violation, validate_parameters
+from app.standards.validators import (
+    ValidationResult,
+    Violation,
+    choice_label,
+    validate_parameters,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -386,6 +391,9 @@ def family_info(family: Family, language: str) -> dict[str, Any]:
         entry["description"] = prop.get("description", "")
         if "pattern" in prop:
             entry["pattern"] = prop["pattern"]
+        if "enum" in prop and not all(isinstance(v, int | float) for v in prop["enum"]):
+            # How the panel shows each choice: "Gold plate", not gold_plate.
+            entry["choices"] = {str(v): choice_label(name, v, prop, language) for v in prop["enum"]}
         params[name] = {k: v for k, v in entry.items() if v is not None}
     options = colors() if family.kind == "glass_bead" else finishes()
     material = materials()[family.material]

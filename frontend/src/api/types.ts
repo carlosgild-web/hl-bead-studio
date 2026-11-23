@@ -20,6 +20,8 @@ export interface ParameterInfo {
   maximum?: number
   step?: number
   enum?: (string | number)[]
+  /** Display label of each text choice ({ gold_plate: 'Gold plate' }). */
+  choices?: Record<string, string>
   default?: ParamValue
   rules: string[]
   description?: string

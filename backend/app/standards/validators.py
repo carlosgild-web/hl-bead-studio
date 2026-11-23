@@ -22,6 +22,7 @@ from typing import Any
 from jsonschema import Draft202012Validator
 from shapely.geometry.base import BaseGeometry
 
+from app.core.content import colors, finishes
 from app.geometry import build_model
 from app.geometry.charms import (
     engraving_letter_height,
@@ -132,6 +133,39 @@ def _closest_choice(value: str, allowed: list[str]) -> str | None:
     return shared[0] if len(shared) == 1 else None
 
 
+_TYPE_WORDS = {
+    "number": ("a number", "un número"),
+    "integer": ("a whole number", "un número entero"),
+    "boolean": ("yes or no", "sí o no"),
+    "string": ("text", "texto"),
+}
+
+
+def field_label(prop: dict[str, Any], name: str, language: str) -> str:
+    """The field's name as the panel shows it ("Diameter"), never the parameter key."""
+    label = prop.get("x-label", {})
+    return label.get(language) or label.get("en") or name.replace("_mm", "").replace("_", " ")
+
+
+def choice_label(name: str, value: Any, prop: dict[str, Any], language: str) -> str:
+    """A choice as the panel shows it: "Gold plate", "Ámbar", "Montserrat ExtraBold"."""
+    table = colors() if name == "color" else finishes() if name == "finish" else None
+    if table is not None and value in table:
+        return table[value]["name"].get(language, str(value))
+    labels = prop.get("x-enum-labels", {}).get(str(value), {})
+    return labels.get(language) or labels.get("en") or str(value).replace("_", " ")
+
+
+def _format_text(prop: dict[str, Any]) -> tuple[str, str]:
+    """The allowed format in words for the designer (`x-format`). The schema `description`
+    is written for the model and is never shown."""
+    text = prop.get("x-format", {})
+    return (
+        text.get("en", "the value does not have the allowed format."),
+        text.get("es", "el valor no tiene el formato permitido."),
+    )
+
+
 def _schema_violations(family: Family, params: dict[str, Any]) -> list[Violation]:
     found: list[Violation] = []
     for error in Draft202012Validator(family.schema).iter_errors(params):
@@ -159,9 +193,11 @@ def _schema_violations(family: Family, params: dict[str, Any]) -> list[Violation
                         Violation(
                             "SCHEMA",
                             (name,),
-                            f"Missing parameter {name!r}.",
+                            f"{field_label(family.parameters[name], name, 'en')} is missing.",
                             (Suggestion(name, default),),
-                            message_es=f"Falta el parámetro {name!r}.",
+                            message_es=(
+                                f"Falta {field_label(family.parameters[name], name, 'es')}."
+                            ),
                         )
                     )
             continue
@@ -178,59 +214,66 @@ def _schema_violations(family: Family, params: dict[str, Any]) -> list[Violation
             continue
         prop, value = family.parameters[name], error.instance
         unit = " mm" if prop.get("x-unit") == "mm" else ""
+        en, es = field_label(prop, name, "en"), field_label(prop, name, "es")
         if kind == "type":
+            word_en, word_es = _TYPE_WORDS.get(prop["type"], (prop["type"], prop["type"]))
             found.append(
                 Violation(
                     "SCHEMA",
                     (name,),
-                    f"{name} must be of type {prop['type']}.",
+                    f"{en} must be {word_en}.",
                     (Suggestion(name, prop["default"]),),
-                    message_es=f"{name} debe ser de tipo {prop['type']}.",
+                    message_es=f"{es} debe ser {word_es}.",
                 )
             )
         elif kind in ("minimum", "maximum"):
             limit = error.validator_value
-            word = "at least" if kind == "minimum" else "at most"
-            word_es = "como mínimo" if kind == "minimum" else "como máximo"
+            word = "minimum" if kind == "minimum" else "maximum"
+            word_es = "mínimo" if kind == "minimum" else "máximo"
+            shown = _fmt(value) if _is_number(value) else str(value)[:40]
             found.append(
                 Violation(
                     _rule_of(family, name),
                     (name,),
-                    f"{name} is {value}{unit}; it must be {word} {limit}{unit}.",
+                    f"{en}: {shown}{unit}; the {word} is {_fmt(limit)}{unit}.",
                     (Suggestion(name, limit),),
-                    message_es=f"{name} es {value}{unit}; debe ser {word_es} {limit}{unit}.",
+                    message_es=f"{es}: {shown}{unit}; el {word_es} es {_fmt(limit)}{unit}.",
                 )
             )
         elif kind == "enum":
             allowed = prop["enum"]
-            if _is_number(value):
-                nearest = min(allowed, key=lambda a: (abs(a - value), -a))
-                suggestion: tuple[Suggestion, ...] = (Suggestion(name, nearest),)
-                choices = ", ".join(f"{a}" for a in allowed)
+            numeric = all(_is_number(a) for a in allowed)
+            suggestion: tuple[Suggestion, ...] = ()
+            if numeric:
+                if _is_number(value):
+                    nearest = min(allowed, key=lambda a: (abs(a - value), -a))
+                    suggestion = (Suggestion(name, nearest),)
+                choices_en = choices_es = ", ".join(_fmt(a) for a in allowed) + unit
             else:
-                close = _closest_choice(str(value), allowed)
+                close = _closest_choice(str(value), [str(a) for a in allowed])
                 suggestion = (Suggestion(name, close),) if close else ()
-                choices = ", ".join(allowed)
+                choices_en = ", ".join(choice_label(name, a, prop, "en") for a in allowed)
+                choices_es = ", ".join(choice_label(name, a, prop, "es") for a in allowed)
+            shown = f"{_fmt(value)}{unit}" if _is_number(value) else repr(str(value)[:40])
             found.append(
                 Violation(
                     _rule_of(family, name),
                     (name,),
-                    f"{str(value)[:40]!r} is not allowed for {name}; "
-                    f"choose one of {choices}{unit}.",
+                    f"{en}: {shown} is not allowed; choose {choices_en}.",
                     suggestion,
-                    message_es=f"{str(value)[:40]!r} no está permitido para {name}; "
-                    f"elige uno de {choices}{unit}.",
+                    message_es=f"{es}: {shown} no está permitido; elige {choices_es}.",
                 )
             )
         elif kind == "pattern":
             fixed = _text_suggestion(name, value) if isinstance(value, str) else None
+            rule_en, rule_es = _format_text(prop)
             found.append(
                 Violation(
                     _rule_of(family, name),
                     (name,),
-                    f"{name} does not follow the allowed format ({prop['description']})",
+                    f"{en}: {rule_en}",
                     (Suggestion(name, fixed),) if fixed else (),
-                    message_es=f"{name} no sigue el formato permitido ({prop['description']})",
+                    message_es=f"{es}: {rule_es}",
                 )
             )
         else:
@@ -238,8 +281,8 @@ def _schema_violations(family: Family, params: dict[str, Any]) -> list[Violation
                 Violation(
                     _rule_of(family, name),
                     (name,),
-                    error.message[:200],
-                    message_es=f"{name} no es válido: {error.message[:200]}",
+                    f"{en} is not valid.",
+                    message_es=f"{es} no es válido.",
                 )
             )
     return found

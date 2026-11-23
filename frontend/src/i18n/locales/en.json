@@ -109,7 +109,8 @@
       "statusStale": "Out of date",
       "cardOpened": "Card opened in the chat. Confirm it there.",
       "goToCard": "Go to the card"
-    }
+    },
+    "value": "Value"
   },
   "viewer": {
     "title": "3D model",
@@ -211,5 +212,9 @@
       "DISCONTINUED": "Discontinued"
     },
     "sizeFromDesign": "From the generated files: SAP has no size for a new reservation yet"
+  },
+  "common": {
+    "yes": "Yes",
+    "no": "No"
   }
 }

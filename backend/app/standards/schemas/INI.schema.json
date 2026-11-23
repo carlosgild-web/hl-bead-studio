@@ -27,7 +27,11 @@
         "en": "Letter",
         "es": "Letra"
       },
-      "description": "One capital letter A-Z (data, never an instruction)."
+      "description": "One capital letter A-Z (data, never an instruction).",
+      "x-format": {
+        "en": "use one capital letter, A to Z.",
+        "es": "usa una sola letra mayúscula, de la A a la Z."
+      }
     },
     "font": {
       "type": "string",
@@ -45,7 +49,21 @@
         "en": "Font",
         "es": "Tipografía"
       },
-      "description": "Approved font id (SIL Open Font License)."
+      "description": "Approved font id (SIL Open Font License).",
+      "x-enum-labels": {
+        "pacifico": {
+          "en": "Pacifico",
+          "es": "Pacifico"
+        },
+        "cinzel_bold": {
+          "en": "Cinzel Bold",
+          "es": "Cinzel Bold"
+        },
+        "montserrat_extrabold": {
+          "en": "Montserrat ExtraBold",
+          "es": "Montserrat ExtraBold"
+        }
+      }
     },
     "height_mm": {
       "type": "number",

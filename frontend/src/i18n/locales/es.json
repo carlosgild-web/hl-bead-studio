@@ -109,7 +109,8 @@
       "statusStale": "Desactualizado",
       "cardOpened": "Tarjeta abierta en el chat. Confírmala allí.",
       "goToCard": "Ir a la tarjeta"
-    }
+    },
+    "value": "Valor"
   },
   "viewer": {
     "title": "Modelo 3D",
@@ -211,5 +212,9 @@
       "DISCONTINUED": "Descatalogado"
     },
     "sizeFromDesign": "De los archivos generados: SAP aún no tiene tamaño para una reserva nueva"
+  },
+  "common": {
+    "yes": "Sí",
+    "no": "No"
   }
 }

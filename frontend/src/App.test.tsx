@@ -610,7 +610,7 @@ describe('App', () => {
     expect(hole.closest('[data-proposed]')).toBeNull()
     const alert = await screen.findByRole('alert', { name: 'Rule violations' })
     expect(within(alert).getByText('GB-02')).toBeInTheDocument()
-    fireEvent.click(within(alert).getByRole('button', { name: 'hole_mm = 0.8' }))
+    fireEvent.click(within(alert).getByRole('button', { name: 'Hole 0.8 mm' }))
     await waitFor(() => expect(screen.getByLabelText('Hole')).toHaveValue(0.8))
   })
 

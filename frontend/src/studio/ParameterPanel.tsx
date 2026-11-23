@@ -19,11 +19,8 @@ import {
 import { cn } from '@/lib/utils'
 
 import { useFamilyInfo, useLanguage, usePanelPreview, useStudio } from './context'
+import { displayValue, formatNumber } from './display'
 import { PanelActions } from './PanelActions'
-
-function formatValue(value: ParamValue): string {
-  return typeof value === 'number' ? String(Number(value.toFixed(3))) : String(value)
-}
 
 function Field({
   name,
@@ -77,7 +74,7 @@ function Field({
         <SelectContent>
           {info.enum.map((option) => (
             <SelectItem key={option} value={String(option)}>
-              {option}
+              {typeof option === 'number' ? formatNumber(option) : (info.choices?.[option] ?? option)}
               {info.unit && ` ${info.unit}`}
             </SelectItem>
           ))}
@@ -155,7 +152,15 @@ function Field({
   )
 }
 
-function ValidationSummary({ validation, pending }: { validation?: Validation; pending: boolean }) {
+function ValidationSummary({
+  validation,
+  pending,
+  family,
+}: {
+  validation?: Validation
+  pending: boolean
+  family?: FamilyInfo
+}) {
   const { t } = useTranslation()
   const { dispatch } = useStudio()
   const language = useLanguage()
@@ -192,10 +197,11 @@ function ValidationSummary({ validation, pending }: { validation?: Validation; p
                     <button
                       key={`${s.parameter}-${String(s.value)}`}
                       type="button"
-                      className="rounded border bg-background px-1.5 py-0.5 font-mono hover:bg-accent"
+                      className="rounded border bg-background px-1.5 py-0.5 hover:bg-accent"
                       onClick={() => dispatch({ type: 'edit', name: s.parameter, value: s.value })}
                     >
-                      {s.parameter} = {formatValue(s.value)}
+                      {family?.parameters[s.parameter]?.label ?? t('panel.value')}{' '}
+                      {displayValue(family?.parameters[s.parameter], s.value, t)}
                     </button>
                   ))}
                 </div>
@@ -305,7 +311,7 @@ export function ParameterPanel() {
               />
             ))}
           </div>
-          <ValidationSummary validation={validation} pending={preview.isFetching} />
+          <ValidationSummary validation={validation} pending={preview.isFetching} family={info.data} />
           <PanelActions family={info.data} validation={validation} />
           {preview.isError && (
             <p className="text-sm text-destructive" role="alert">
