@@ -1,6 +1,6 @@
 {
   "$comment": "Written by scripts/build_gallery.py. Renders run locally (decision 0006).",
-  "generated_at": "2026-11-18",
+  "generated_at": "2026-11-23",
   "resolution_px": 800,
   "renders": [
     {
@@ -22,7 +22,7 @@
       ],
       "mass_g": 0.567,
       "samples": 64,
-      "render_s": 55.8
+      "render_s": 65.0
     },
     {
       "file": "GB-1002_A_desert_sand.webp",
@@ -39,11 +39,11 @@
       "bbox_mm": [
         10.0,
         10.0,
-        7.0
+        8.0
       ],
-      "mass_g": 1.167,
+      "mass_g": 0.792,
       "samples": 64,
-      "render_s": 58.0
+      "render_s": 63.8
     },
     {
       "file": "GB-1017_A_opal_white.webp",
@@ -64,7 +64,7 @@
       ],
       "mass_g": 0.904,
       "samples": 64,
-      "render_s": 51.1
+      "render_s": 62.2
     },
     {
       "file": "GB-1020_A_aqua.webp",
@@ -85,7 +85,7 @@
       ],
       "mass_g": 0.186,
       "samples": 64,
-      "render_s": 65.6
+      "render_s": 73.0
     },
     {
       "file": "GB-1034_A_honey.webp",
@@ -107,7 +107,7 @@
       ],
       "mass_g": 0.792,
       "samples": 64,
-      "render_s": 65.3
+      "render_s": 67.1
     },
     {
       "file": "GB-1034_A_ruby.webp",
@@ -129,7 +129,7 @@
       ],
       "mass_g": 0.792,
       "samples": 64,
-      "render_s": 60.6
+      "render_s": 64.1
     },
     {
       "file": "CH-2004_A_antique_bronze.webp",
@@ -150,7 +150,7 @@
       ],
       "mass_g": 0.989,
       "samples": 64,
-      "render_s": 48.7
+      "render_s": 52.4
     },
     {
       "file": "CH-2004_A_gold_plate.webp",
@@ -171,7 +171,7 @@
       ],
       "mass_g": 0.989,
       "samples": 64,
-      "render_s": 48.9
+      "render_s": 53.5
     },
     {
       "file": "CH-2004_A_rhodium.webp",
@@ -192,7 +192,7 @@
       ],
       "mass_g": 0.989,
       "samples": 64,
-      "render_s": 48.9
+      "render_s": 53.5
     },
     {
       "file": "CH-2014_A_rhodium.webp",
@@ -211,9 +211,9 @@
         17.3,
         1.5
       ],
-      "mass_g": 0.846,
+      "mass_g": 0.841,
       "samples": 64,
-      "render_s": 48.8
+      "render_s": 53.5
     },
     {
       "file": "CH-2028_A_antique_bronze.webp",
@@ -234,7 +234,7 @@
       ],
       "mass_g": 1.974,
       "samples": 64,
-      "render_s": 49.7
+      "render_s": 53.3
     }
   ]
 }

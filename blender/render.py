@@ -198,8 +198,9 @@ def add_backdrop(color: tuple[float, float, float]) -> None:
     mesh = bpy.data.meshes.new("Backdrop")
     bm = bmesh.new()
     # Profile in the YZ plane: flat floor to y = 2, a quarter circle, then the wall. The
-    # camera sees the floor only to about y = -0.7; beyond that it fades to dark (below), so
-    # flat metal faces, which reflect the floor in front of them, get a soft gradient.
+    # camera sees the floor only to about y = -0.7; beyond that it fades to a mid tone
+    # (below), so flat metal faces, which reflect the floor in front of them, get a soft
+    # gradient. Fading to black gave them a harsh black-to-white band (QA 2026-11-23).
     radius, depth, height, half_width, steps = 3.0, 6.0, 8.0, 12.0, 16
     curve = [
         (2.0 + radius * math.sin(t), radius - radius * math.cos(t))
@@ -222,7 +223,7 @@ def add_backdrop(color: tuple[float, float, float]) -> None:
     links = material.node_tree.links
     bsdf = nodes["Principled BSDF"]
     bsdf.inputs["Roughness"].default_value = 0.9
-    # Base color: the backdrop color from y = -0.9 back, fading to near black at y = -3.5.
+    # Base color: the backdrop color from y = -0.9 back, fading to a fifth of it at y = -3.5.
     coords = nodes.new("ShaderNodeTexCoord")
     split = nodes.new("ShaderNodeSeparateXYZ")
     fade = nodes.new("ShaderNodeMapRange")
@@ -231,7 +232,7 @@ def add_backdrop(color: tuple[float, float, float]) -> None:
     fade.inputs["From Max"].default_value = -0.9
     mix = nodes.new("ShaderNodeMix")
     mix.data_type = "RGBA"
-    mix.inputs["A"].default_value = (0.01, 0.01, 0.01, 1.0)
+    mix.inputs["A"].default_value = (*(c * 0.18 for c in color), 1.0)
     mix.inputs["B"].default_value = (*color, 1.0)
     links.new(coords.outputs["Object"], split.inputs["Vector"])
     links.new(split.outputs["Y"], fade.inputs["Value"])
@@ -257,10 +258,12 @@ def add_area_light(
 
 
 def add_lights() -> None:
-    """Three soft boxes: key (front left, high), fill (front right, low), rim (behind)."""
+    """Three soft boxes: key (front left, high), fill (front right, low), rim (behind), and
+    a wide, dim card above the camera that a flat metal face mirrors as an even sheen."""
     add_area_light("Key", (-2.6, -2.8, 3.2), (1.4, 3.0), 420.0)
     add_area_light("Fill", (3.2, -2.4, 1.4), (2.0, 3.5), 160.0)
     add_area_light("Rim", (0.8, 2.6, 3.4), (3.0, 1.0), 260.0)
+    add_area_light("Card", (0.0, -5.5, 2.2), (6.0, 2.5), 70.0)
 
 
 def add_world(color: tuple[float, float, float]) -> None:
