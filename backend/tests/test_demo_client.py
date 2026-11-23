@@ -38,7 +38,7 @@ def test_a_design_chip_fills_the_panel_through_the_real_tool(env) -> None:
     assert proposal["validation"]["params"]["diameter_mm"] == 10.0
     text = answer(events)
     assert text.startswith("I put a Faceted bead in the panel: Diameter 10.0 mm")
-    assert "amber" in text and "It passes the manual." in text
+    assert "Glass color Amber" in text and "It passes the manual." in text
 
 
 def test_a_broken_design_names_the_rule_and_the_nearest_values(env) -> None:

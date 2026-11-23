@@ -38,6 +38,30 @@ export function useDebounced<T>(value: T, delayMs: number): T {
   return debounced
 }
 
+/** Whole seconds since `since` (an ISO time), ticking every second; null without a time. */
+export function useElapsed(since: string | null | undefined): number | null {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    if (!since) return
+    const timer = window.setInterval(() => setNow(Date.now()), 1000)
+    return () => window.clearInterval(timer)
+  }, [since])
+  if (!since) return null
+  const start = Date.parse(since)
+  return Number.isNaN(start) ? null : Math.max(0, Math.round((now - start) / 1000))
+}
+
+/**
+ * The display name of a glass color or plating finish id ("sea_green" -> "Sea Green"),
+ * whatever the current family: one bead and one charm family carry all of them.
+ */
+export function useSwatchName(): (id: string) => string {
+  const beads = useFamilyInfo('FAC')
+  const charms = useFamilyInfo('INI')
+  return (id: string) =>
+    [...(beads.data?.swatches ?? []), ...(charms.data?.swatches ?? [])].find((s) => s.id === id)?.name ?? id
+}
+
 export function useFamilyInfo(code: string | null) {
   const language = useLanguage()
   return useQuery({

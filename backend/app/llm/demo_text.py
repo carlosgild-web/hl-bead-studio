@@ -13,6 +13,7 @@ from typing import Any, Literal
 
 from app.llm.base import Message
 from app.standards.families import FAMILY_CODES, get_family
+from app.standards.validators import choice_label
 
 Language = Literal["en", "es"]
 PARAM_TOOLS = ("validate_parameters", "propose_parameters", "preview_geometry")
@@ -25,8 +26,19 @@ def mm(value: Any, language: str) -> str:
     return (text.replace(".", ",") if language == "es" else text) + " mm"
 
 
-def value_text(name: str, value: Any, language: str) -> str:
-    return mm(value, language) if name.endswith("_mm") else str(value)
+def value_text(name: str, value: Any, language: str, family: str | None = None) -> str:
+    """A value as the panel shows it: "10.0 mm", "Gold plate", "Yes" (with a family; the eval
+    scripts call it without one and keep the raw value)."""
+    if name.endswith("_mm"):
+        return mm(value, language)
+    if family is None or family not in FAMILY_CODES:
+        return str(value)
+    if isinstance(value, bool):
+        return ("Sí" if value else "No") if language == "es" else ("Yes" if value else "No")
+    prop = get_family(family).parameters.get(name, {})
+    if "enum" in prop and isinstance(value, str):
+        return choice_label(name, value, prop, language)
+    return str(value)
 
 
 def _label(family: str, name: str, language: str, labels: bool) -> str:
@@ -62,7 +74,8 @@ def summary_text(result: dict[str, Any], language: str, *, labels: bool = False)
     """The parameters of a valid result."""
     family = result["family"]
     values = ", ".join(
-        f"{_label(family, k, language, labels)} {value_text(k, v, language)}"
+        f"{_label(family, k, language, labels)} "
+        f"{value_text(k, v, language, family if labels else None)}"
         for k, v in result["params"].items()
     )
     name = _family(family, language, labels)
@@ -85,7 +98,7 @@ def explain_text(
     for v in result["violations"]:
         near = either.join(
             f"{_label(family, s['parameter'], language, labels)} "
-            f"{value_text(s['parameter'], s['value'], language)}"
+            f"{value_text(s['parameter'], s['value'], language, family if labels else None)}"
             for s in v.get("nearest_valid", [])
         )
         parts.append(f"{breaks} {v['rule']}" + (f"; {near_label}: {near}" if near else ""))

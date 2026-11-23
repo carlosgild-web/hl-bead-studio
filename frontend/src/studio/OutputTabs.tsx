@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 
 import { CardOpenedNote } from './ActionCard'
-import { useDesignStatus, useLanguage, useOpenCard, useRenderJob, useStudio } from './context'
+import { useDesignStatus, useElapsed, useLanguage, useOpenCard, useRenderJob, useStudio, useSwatchName } from './context'
 
 function shown(value: ParamValue | undefined): string {
   if (value === undefined) return '—'
@@ -122,7 +122,9 @@ export function RenderProgress({ jobId }: { jobId: number }) {
   const { t } = useTranslation()
   const { state } = useStudio()
   const job = useRenderJob(jobId)
+  const swatchName = useSwatchName()
   const older = job && state.design && job.sku === state.design.sku && job.rev !== state.design.rev
+  const elapsed = useElapsed(job?.status === 'running' ? job.started_at : job?.status === 'queued' ? job.created_at : null)
 
   const status = job?.status ?? 'queued'
   return (
@@ -131,7 +133,7 @@ export function RenderProgress({ jobId }: { jobId: number }) {
         {(status === 'queued' || status === 'running') && <Loader2 className="size-4 animate-spin" />}
         <span className="font-medium">
           {t('outputs.renderJob', { id: jobId })}
-          {job && ` · ${job.sku} Rev ${job.rev} · ${job.finish}`}
+          {job && ` · ${job.sku} Rev ${job.rev} · ${swatchName(job.finish)}`}
         </span>
         {older && (
           <Badge variant="secondary" className="font-normal">
@@ -145,16 +147,22 @@ export function RenderProgress({ jobId }: { jobId: number }) {
           <span className="text-xs text-muted-foreground">{job.duration_s.toFixed(0)} s</span>
         )}
       </div>
-      {status === 'running' && (
-        <div className="h-1.5 overflow-hidden rounded bg-muted">
-          <div className="h-full w-1/3 animate-[pulse_1.5s_ease-in-out_infinite] rounded bg-primary" />
-        </div>
+      {(status === 'running' || status === 'queued') && (
+        <>
+          <div className="h-1.5 overflow-hidden rounded bg-muted" role="progressbar" aria-label={t(`renderStatus.${status}`)}>
+            <div className="progress-indeterminate h-full w-1/3 rounded bg-primary" />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {elapsed !== null && `${t('outputs.elapsed', { seconds: elapsed })} · `}
+            {t('outputs.renderUsually')}
+          </p>
+        </>
       )}
       {status === 'failed' && <p className="text-sm text-destructive">{job?.error}</p>}
       {status === 'done' && (
         <img
           src={renderImageUrl(jobId)}
-          alt={t('outputs.renderAlt', { sku: job?.sku, finish: job?.finish })}
+          alt={t('outputs.renderAlt', { sku: job?.sku, finish: job ? swatchName(job.finish) : '' })}
           className="mx-auto max-h-96 rounded-md"
         />
       )}

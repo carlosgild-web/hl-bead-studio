@@ -6,7 +6,7 @@ import type { PendingAction } from '@/api/types'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-import { cardAnchor, goToCard, useRenderJob, useStudio } from './context'
+import { cardAnchor, goToCard, useRenderJob, useStudio, useSwatchName } from './context'
 import { isExpired } from './state'
 
 /**
@@ -56,6 +56,7 @@ function Row({ label, value }: { label: string; value: unknown }) {
  */
 export function ActionCard({ action, focused = false }: { action: PendingAction; focused?: boolean }) {
   const { t } = useTranslation()
+  const swatchName = useSwatchName()
   const { decide, dispatch } = useStudio()
   const notNow = () => dispatch({ type: 'dismiss', actionId: action.id })
   const [working, setWorking] = useState<'confirm' | 'cancel' | null>(null)
@@ -114,7 +115,7 @@ export function ActionCard({ action, focused = false }: { action: PendingAction;
         {action.kind === 'render' && (
           <>
             <Row label="SKU" value={`${String(p.sku)} · Rev ${String(p.rev)}`} />
-            <Row label={t('card.finish')} value={p.finish} />
+            <Row label={t('card.finish')} value={swatchName(String(p.finish ?? ''))} />
           </>
         )}
       </dl>
