@@ -29,6 +29,10 @@ export interface StudioState {
   design: { sku: string; rev: string } | null
   renderJobs: number[]
   tab: 'drawing' | 'renders'
+  /** A question to the designer outside the cards ("Start over?"). */
+  asking: 'reset' | null
+  /** Cards the designer set aside with "Not now": still pending, no longer in focus. */
+  dismissed: string[]
 }
 
 export const initialState: StudioState = {
@@ -43,6 +47,8 @@ export const initialState: StudioState = {
   design: null,
   renderJobs: [],
   tab: 'drawing',
+  asking: null,
+  dismissed: [],
 }
 
 export type StudioAction =
@@ -57,6 +63,11 @@ export type StudioAction =
   | { type: 'decided'; action: PendingAction }
   | { type: 'tab'; tab: StudioState['tab'] }
   | { type: 'reset' }
+  | { type: 'ask'; question: StudioState['asking'] }
+  /** "Not now" on a card: it stays pending, the studio is no longer dimmed for it. */
+  | { type: 'dismiss'; actionId: string }
+  /** "Go to the card": the card is in focus again. */
+  | { type: 'refocus'; actionId: string }
 
 function withSteps(items: ChatItem[], update: (steps: ToolStep[]) => ToolStep[]): ChatItem[] {
   const last = items.at(-1)
@@ -168,7 +179,42 @@ export function studioReducer(state: StudioState, action: StudioAction): StudioS
       return { ...state, tab: action.tab }
     case 'reset':
       return initialState
+    case 'ask':
+      return { ...state, asking: action.question }
+    case 'dismiss':
+      return state.dismissed.includes(action.actionId)
+        ? state
+        : { ...state, dismissed: [...state.dismissed, action.actionId] }
+    case 'refocus':
+      return { ...state, dismissed: state.dismissed.filter((id) => id !== action.actionId) }
   }
+}
+
+// --- focus mode ---------------------------------------------------------------------------
+
+/** What waits for the designer: the studio dims everything else around it. */
+export type FocusTarget = { kind: 'card'; actionId: string } | { kind: 'reset' } | null
+
+export function isExpired(action: PendingAction, now = Date.now()): boolean {
+  return action.status === 'pending' && new Date(action.expires_at).getTime() < now
+}
+
+/**
+ * The decision the flow waits for: the Start-over question, else the newest pending card
+ * in the chat that is not expired or set aside. None while the assistant is answering.
+ */
+export function focusTarget(state: StudioState, now = Date.now()): FocusTarget {
+  if (state.busy) return null
+  if (state.asking === 'reset') return { kind: 'reset' }
+  for (let i = state.items.length - 1; i >= 0; i--) {
+    const item = state.items[i]
+    if (item.kind !== 'action') continue
+    const action = state.actions[item.actionId]
+    if (action?.status === 'pending' && !isExpired(action, now) && !state.dismissed.includes(action.id)) {
+      return { kind: 'card', actionId: action.id }
+    }
+  }
+  return null
 }
 
 /** A stable text key for a parameter set (query keys must not depend on key order). */

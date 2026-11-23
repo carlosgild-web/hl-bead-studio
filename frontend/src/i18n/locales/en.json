@@ -182,6 +182,7 @@
     "finish": "Color / finish",
     "confirm": "Confirm",
     "cancel": "Cancel",
+    "notNow": "Not now",
     "expiredHelp": "Cards expire after 30 minutes; ask the assistant again."
   },
   "catalog": {

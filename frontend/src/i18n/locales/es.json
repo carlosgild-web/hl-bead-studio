@@ -182,6 +182,7 @@
     "finish": "Color / acabado",
     "confirm": "Confirmar",
     "cancel": "Cancelar",
+    "notNow": "Ahora no",
     "expiredHelp": "Las tarjetas caducan a los 30 minutos; pídelo de nuevo al asistente."
   },
   "catalog": {

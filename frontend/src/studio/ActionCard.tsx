@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 import { cardAnchor, goToCard, useRenderJob, useStudio } from './context'
+import { isExpired } from './state'
 
 /**
  * Shown next to a button that opened a card without the assistant (the workflow, "Generate
@@ -14,11 +15,17 @@ import { cardAnchor, goToCard, useRenderJob, useStudio } from './context'
  */
 export function CardOpenedNote({ actionId }: { actionId: string | null }) {
   const { t } = useTranslation()
+  const { dispatch } = useStudio()
   if (!actionId) return null
   return (
     <p role="status" className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-primary">
       <span>{t('panel.actions.cardOpened')}</span>
-      <button type="button" className="inline-flex items-center gap-0.5 font-medium underline underline-offset-2" onClick={() => goToCard(actionId)}>
+      <button type="button" className="inline-flex items-center gap-0.5 font-medium underline underline-offset-2" onClick={() => {
+          // A card set aside with "Not now" is in focus again.
+          dispatch({ type: 'refocus', actionId })
+          goToCard(actionId)
+        }}
+      >
         {t('panel.actions.goToCard')} <ArrowUp className="size-3" />
       </button>
     </p>
@@ -42,17 +49,15 @@ function Row({ label, value }: { label: string; value: unknown }) {
   )
 }
 
-function isExpired(action: PendingAction): boolean {
-  return action.status === 'pending' && new Date(action.expires_at).getTime() < Date.now()
-}
-
 /**
  * A confirmation card. The assistant can only open it; the designer's click on Confirm is
  * the one thing that reserves a SKU, writes files or queues a render (invariant 2).
+ * `focused`: the studio is dimmed around it (focus mode); "Not now" or Esc sets it aside.
  */
-export function ActionCard({ action }: { action: PendingAction }) {
+export function ActionCard({ action, focused = false }: { action: PendingAction; focused?: boolean }) {
   const { t } = useTranslation()
-  const { decide } = useStudio()
+  const { decide, dispatch } = useStudio()
+  const notNow = () => dispatch({ type: 'dismiss', actionId: action.id })
   const [working, setWorking] = useState<'confirm' | 'cancel' | null>(null)
   const p = action.payload
   const r = action.result
@@ -73,9 +78,14 @@ export function ActionCard({ action }: { action: PendingAction }) {
       id={cardAnchor(action.id)}
       aria-label={t(`card.title.${action.kind}`)}
       data-status={status}
+      data-focused={focused || undefined}
+      onKeyDown={(e) => {
+        if (focused && e.key === 'Escape') notNow()
+      }}
       className={cn(
-        'rounded-lg border bg-card p-3 text-sm shadow-sm',
+        'rounded-lg border bg-card p-3 text-sm shadow-sm transition-shadow',
         open && 'border-primary/50 ring-1 ring-primary/20',
+        focused && 'shadow-lg ring-2 ring-primary/60',
         status === 'failed' && 'border-destructive/50',
       )}
     >
@@ -120,6 +130,11 @@ export function ActionCard({ action }: { action: PendingAction }) {
             <Button size="sm" variant="outline" onClick={() => void click('cancel')} disabled={working !== null}>
               <Ban /> {t('card.cancel')}
             </Button>
+            {focused && (
+              <Button size="sm" variant="ghost" className="ml-auto" onClick={notNow} disabled={working !== null}>
+                {t('card.notNow')}
+              </Button>
+            )}
           </div>
         </>
       )}

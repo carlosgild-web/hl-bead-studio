@@ -11,7 +11,7 @@ import { CardOpenedNote } from './ActionCard'
 import { type CardRequest, useDesignStatus, useOpenCard, useRenderJob, useStudio } from './context'
 import { NameField, type NameStatus } from './NameField'
 import { StaleNotice } from './OutputTabs'
-import { fullName, type StepId, workflowSteps } from './state'
+import { fullName, isExpired, type StepId, workflowSteps } from './state'
 
 const NATIVE_SELECT =
   'h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50'
@@ -42,7 +42,7 @@ function Labeled({ id, label, children }: { id: string; label: string; children:
 export function PanelActions({ family, validation }: { family: FamilyInfo; validation?: Validation }) {
   const { t } = useTranslation()
   const { state } = useStudio()
-  const { open: openCard, working, error: openError, clearError, pendingId } = useOpenCard()
+  const { open: openCard, working, error: openError, clearError } = useOpenCard()
   const design = useDesignStatus()
   const latestJobId = state.renderJobs[0] ?? null
   const job = useRenderJob(latestJobId)
@@ -67,6 +67,11 @@ export function PanelActions({ family, validation }: { family: FamilyInfo; valid
   const [localError, setLocalError] = useState<string | null>(null)
   const error = localError ?? openError
   const option = state.params[family.option_parameter]
+  // The newest card of a step that waits in the chat, whoever opened it (panel or assistant).
+  const waiting = (step: StepId) =>
+    Object.values(state.actions)
+      .filter((a) => a.kind === KIND[step] && a.status === 'pending' && !isExpired(a))
+      .at(-1)?.id ?? null
 
   function show(step: StepId, existingSku = false) {
     clearError()
@@ -261,9 +266,9 @@ export function PanelActions({ family, validation }: { family: FamilyInfo; valid
                   )}
                 </div>
                 {step.id === 'generate' && step.warning === 'stale' && !expanded && <StaleNotice compact />}
-                {!expanded && pendingId && state.actions[pendingId]?.kind === KIND[step.id] && (
+                {!expanded && waiting(step.id) && (
                   <div className="mt-1">
-                    <CardOpenedNote actionId={pendingId} />
+                    <CardOpenedNote actionId={waiting(step.id)} />
                   </div>
                 )}
 

@@ -116,6 +116,10 @@ All notable changes to this project are documented here. The format follows
 - A "New design" button in the chat header, and a "Start a new design" next-step chip once
   the render is finished: the chat and the panel start over (reserved SKUs, files and renders
   stay saved), with an inline confirmation.
+- Focus mode: while a confirmation card or the Start-over question waits for the designer, the
+  rest of the studio is grayed, slightly blurred and inert, and the card gets the keyboard
+  focus. "Not now" (or Esc) sets a card aside; "Go to the card" in the stepper, now shown for
+  any waiting card, brings it back.
 
 ### Changed
 

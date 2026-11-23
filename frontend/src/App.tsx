@@ -7,7 +7,7 @@ import { CatalogPage } from '@/catalog/CatalogPage'
 import { DemoGuide } from '@/demo-guide/DemoGuide'
 import { guide } from '@/demo-guide/guide.config'
 import { cn } from '@/lib/utils'
-import { useStudio } from '@/studio/context'
+import { dimProps, useFocus, useStudio } from '@/studio/context'
 import { currentStep } from '@/studio/state'
 import { StudioProvider } from '@/studio/StudioProvider'
 import { StudioPage } from '@/studio/StudioPage'
@@ -34,11 +34,12 @@ function Shell() {
   const { state } = useStudio()
   const [view, setView] = useState<View>('studio')
   const nextLanguage = i18n.language === 'es' ? 'en' : 'es'
+  const focus = useFocus()
 
   return (
     <div className="min-h-svh">
       <DemoGuide config={guide} step={currentStep(state)} />
-      <header className="border-b bg-brand-navy text-white">
+      <header {...dimProps(focus !== null, 'border-b bg-brand-navy text-white')}>
         <div className="mx-auto flex max-w-[110rem] flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2.5 sm:px-6">
           <div className="flex items-center gap-3">
             <img src="/hl_logo.svg" alt="" className="h-9 rounded bg-white p-0.5" />

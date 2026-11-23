@@ -5,7 +5,9 @@ import { useTranslation } from 'react-i18next'
 import { ApiError, api, renderEventsUrl } from '@/api/client'
 import type { Language, OpenCardRequest, Params, RenderJob } from '@/api/types'
 
-import { paramsDiff, paramsKey, type StudioAction, type StudioState } from './state'
+import { cn } from '@/lib/utils'
+
+import { type FocusTarget, focusTarget, paramsDiff, paramsKey, type StudioAction, type StudioState } from './state'
 
 export interface StudioContextValue {
   state: StudioState
@@ -68,6 +70,41 @@ export function refusal(error: unknown): string {
   const body = error.body as { result?: { violations?: { rule: string; message: string }[] } }
   const violations = body?.result?.violations ?? []
   return [error.message, ...violations.map((v) => `${v.rule}: ${v.message}`)].join('\n')
+}
+
+/**
+ * Focus mode: what waits for the designer, if anything. A card that expires while it waits
+ * releases the focus on time.
+ */
+export function useFocus(): FocusTarget {
+  const { state } = useStudio()
+  const [now, setNow] = useState(() => Date.now())
+  const target = focusTarget(state, now)
+  const expiresAt = target?.kind === 'card' ? state.actions[target.actionId]?.expires_at : undefined
+  useEffect(() => {
+    if (!expiresAt) return
+    const wait = new Date(expiresAt).getTime() - Date.now()
+    // Timers hold at most ~24.8 days; a card never waits that long.
+    const timer = setTimeout(() => setNow(Date.now()), Math.min(Math.max(wait + 50, 0), 2 ** 31 - 1))
+    return () => clearTimeout(timer)
+  }, [expiresAt])
+  return target
+}
+
+/**
+ * The same look for every region focus mode dims: grayed, a little blurred (not with
+ * reduced motion), and inert, so no click, key or screen reader reaches it.
+ */
+export function dimProps(active: boolean, className?: string) {
+  return {
+    inert: active || undefined,
+    'data-dimmed': active || undefined,
+    className: cn(
+      'transition-[opacity,filter] duration-200 motion-reduce:transition-none',
+      active && 'pointer-events-none opacity-40 blur-[1px] grayscale select-none motion-reduce:blur-none',
+      className,
+    ),
+  }
 }
 
 /** The id of a card's element in the chat, for links that bring the designer to it. */

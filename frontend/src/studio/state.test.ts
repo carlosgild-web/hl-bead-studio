@@ -5,6 +5,7 @@ import type { PendingAction, Validation } from '@/api/types'
 
 import {
   currentStep,
+  focusTarget,
   initialState,
   paramsDiff,
   paramsKey,
@@ -39,6 +40,38 @@ const action = (kind: PendingAction['kind'], extra: Partial<PendingAction> = {})
 function run(...actions: Parameters<typeof studioReducer>[1][]): StudioState {
   return actions.reduce(studioReducer, initialState)
 }
+
+describe('focusTarget', () => {
+  const open = (a: PendingAction) => ({ type: 'event', event: { type: 'pending_action', data: { action: a } } }) as const
+
+  it('is nothing without a pending card', () => {
+    expect(focusTarget(initialState)).toBeNull()
+    expect(focusTarget(run(open(action('reserve_sku', { status: 'confirmed' }))))).toBeNull()
+  })
+
+  it('is the newest pending card; the older one once the newest is set aside', () => {
+    const state = run(open(action('reserve_sku')), open(action('generate_design')))
+    expect(focusTarget(state)).toEqual({ kind: 'card', actionId: 'a-generate_design' })
+    const aside = studioReducer(state, { type: 'dismiss', actionId: 'a-generate_design' })
+    expect(focusTarget(aside)).toEqual({ kind: 'card', actionId: 'a-reserve_sku' })
+    const back = studioReducer(aside, { type: 'refocus', actionId: 'a-generate_design' })
+    expect(focusTarget(back)).toEqual({ kind: 'card', actionId: 'a-generate_design' })
+  })
+
+  it('waits while the assistant answers, and lets go of an expired card', () => {
+    expect(focusTarget(run({ type: 'send', text: 'hi' }, open(action('reserve_sku'))))).toBeNull()
+    const card = action('reserve_sku', { expires_at: '2026-11-18T10:15:00Z' })
+    const state = run(open(card))
+    expect(focusTarget(state, Date.parse('2026-11-18T10:10:00Z'))).not.toBeNull()
+    expect(focusTarget(state, Date.parse('2026-11-18T10:16:00Z'))).toBeNull()
+  })
+
+  it('the Start-over question comes before any card', () => {
+    const state = run(open(action('reserve_sku')), { type: 'ask', question: 'reset' })
+    expect(focusTarget(state)).toEqual({ kind: 'reset' })
+    expect(focusTarget(studioReducer(state, { type: 'ask', question: null }))).toEqual({ kind: 'card', actionId: 'a-reserve_sku' })
+  })
+})
 
 describe('studioReducer', () => {
   it('fills the panel from a proposal and highlights the proposed values', () => {

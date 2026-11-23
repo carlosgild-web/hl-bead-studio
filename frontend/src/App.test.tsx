@@ -450,8 +450,9 @@ describe('App', () => {
     fireEvent.click(within(reserve).getByRole('button', { name: 'Confirm' }))
 
     fireEvent.click(await screen.findByRole('button', { name: 'Generate the design files for GB-1034' }))
-    await screen.findByRole('article', { name: 'Generate design files' })
+    const generate = await screen.findByRole('article', { name: 'Generate design files' })
     // The server returns the open card again; the chat shows it once.
+    fireEvent.click(within(generate).getByRole('button', { name: 'Not now' }))
     fireEvent.click(within(stepOf('generate')).getByRole('button', { name: 'Generate files…' }))
     const form = screen.getByRole('form', { name: 'Generate files…' })
     fireEvent.click(within(form).getByRole('button', { name: 'Review & confirm' }))
@@ -486,6 +487,47 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Send' }))
     await waitFor(() => expect(calls.filter((c) => c.url === '/api/chat')).toHaveLength(2))
     expect(calls.filter((c) => c.url === '/api/chat').at(-1)?.body).toMatchObject({ conversation_id: null })
+  })
+
+  it('focus mode dims the studio around a waiting card until it is decided or set aside', async () => {
+    backend()
+    renderApp()
+    fireEvent.change(screen.getByLabelText('Describe the bead or charm…'), { target: { value: 'A faceted bead' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }))
+    const reserve = await screen.findByRole('article', { name: 'Reserve SKU in SAP' })
+
+    const panel = (await waitFor(() => stepOf('reserve'))).closest('[data-dimmed]')
+    const input = screen.getByLabelText('Describe the bead or charm…').closest('form')!
+    const answer = screen.getByText('10 mm').closest('[data-dimmed]')
+    for (const region of [panel, input, answer, screen.getByRole('heading', { name: 'Bead Studio', level: 1 }).closest('header')]) {
+      expect(region).toHaveAttribute('data-dimmed')
+      expect(region).toHaveAttribute('inert')
+    }
+    expect(reserve.closest('[data-dimmed]')).toBeNull()
+    expect(reserve).toHaveAttribute('data-focused')
+    await waitFor(() => expect(within(reserve).getByRole('button', { name: 'Confirm' })).toHaveFocus())
+
+    // "Not now" sets it aside; the stepper's "Go to the card" brings it back.
+    fireEvent.click(within(reserve).getByRole('button', { name: 'Not now' }))
+    expect(document.querySelector('[data-dimmed]')).toBeNull()
+    expect(within(reserve).getByRole('button', { name: 'Confirm' })).toBeInTheDocument()
+    fireEvent.click(within(stepOf('reserve')).getByRole('button', { name: /Go to the card/ }))
+    expect(input).toHaveAttribute('data-dimmed')
+    fireEvent.keyDown(reserve, { key: 'Escape' })
+    expect(input).not.toHaveAttribute('data-dimmed')
+
+    fireEvent.click(within(stepOf('reserve')).getByRole('button', { name: /Go to the card/ }))
+    fireEvent.click(within(reserve).getByRole('button', { name: 'Confirm' }))
+    expect(await within(reserve).findByText('Reserved GB-1034')).toBeInTheDocument()
+    expect(document.querySelector('[data-dimmed]')).toBeNull()
+
+    // The Start-over question dims the rest as well.
+    fireEvent.click(screen.getByRole('button', { name: 'New design' }))
+    expect(screen.getByRole('alertdialog', { name: 'New design' }).closest('[data-dimmed]')).toBeNull()
+    expect(input).toHaveAttribute('data-dimmed')
+    expect(reserve.closest('[data-dimmed]')).not.toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Keep working' }))
+    expect(document.querySelector('[data-dimmed]')).toBeNull()
   })
 
   it('a fresh workflow starts at step 1, with steps 2 and 3 blocked', async () => {
