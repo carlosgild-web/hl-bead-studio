@@ -34,11 +34,14 @@ function material(kind: Kind, swatch: Swatch | undefined): THREE.Material {
     transmission,
     thickness: 1.2,
     ior: GLASS_IOR,
-    clearcoat: 1,
+    // A lighter clearcoat: at grazing angles it mirrored the pale surround and washed the
+    // lower facets out.
+    clearcoat: 0.4,
     clearcoatRoughness: 0.03,
     attenuationColor: color,
-    attenuationDistance: 7,
-    envMapIntensity: 1.2,
+    // Short enough that the thick lower facets keep the glass color instead of turning white.
+    attenuationDistance: 3.5,
+    envMapIntensity: 0.9,
   })
 }
 
@@ -77,8 +80,10 @@ export function BeadPreview({
   return (
     <div className="size-full" role="img" aria-label={label}>
       <Canvas camera={{ position: [0, 6, 30], fov: 35 }} dpr={[1, 2]}>
-        <color attach="background" args={['#f3f0ea']} />
-        <ambientLight intensity={0.5} />
+        {/* Glass needs a light page behind it; light metal (rhodium) disappears on one, so
+            charms get a slate backdrop (QA 2026-11-23, item 21). */}
+        <color attach="background" args={[kind === 'charm' ? '#4a505c' : '#e4dfd6']} />
+        <ambientLight intensity={0.35} />
         <directionalLight position={[10, 20, 10]} intensity={1.6} />
         <directionalLight position={[-12, 5, -8]} intensity={0.6} />
         <Environment resolution={256}>
@@ -86,10 +91,10 @@ export function BeadPreview({
               transmits and the metal reflects, and a ring for highlights. The warm grey
               surround fills every other direction: a flat metal face (an initial charm seen
               from the front) reflects one direction only, and without it that was black. */}
-          <color attach="background" args={['#9c958c']} />
+          <color attach="background" args={['#857e75']} />
           <Lightformer form="rect" intensity={3} position={[0, 6, 6]} scale={[12, 4, 1]} />
           <Lightformer form="rect" intensity={1.6} color="#ffe2b8" position={[-8, 2, -4]} scale={[6, 6, 1]} />
-          <Lightformer form="rect" intensity={1.2} color="#f6f1e8" position={[0, 0, -12]} scale={[40, 24, 1]} />
+          <Lightformer form="rect" intensity={0.7} color="#f6f1e8" position={[0, 0, -12]} scale={[40, 24, 1]} />
           <Lightformer form="ring" intensity={2} position={[8, 4, 2]} scale={3} />
           {/* The reflector behind the camera, facing the model: a flat metal face seen from
               the front mirrors exactly this direction, so without it the face was black. */}
