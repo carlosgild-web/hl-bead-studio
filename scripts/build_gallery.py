@@ -126,6 +126,8 @@ def main(argv: list[str] | None = None) -> int:
                     "file": file_name,
                     "sku": sku,
                     "rev": rev,
+                    # Not a product of the SAP seed: shown as a showcase design (0024).
+                    **({"showcase": True} if design.get("showcase") else {}),
                     "name": design["name"],
                     "collection": design["collection"],
                     "family": design["family"],

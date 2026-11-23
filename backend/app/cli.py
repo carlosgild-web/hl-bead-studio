@@ -281,6 +281,41 @@ def _cmd_free_ports(args: argparse.Namespace) -> int:
         return 130
 
 
+def _cmd_demo_reset(args: argparse.Namespace) -> int:
+    from app.reset import ResetError, plan_reset, run_reset
+
+    try:
+        plan = plan_reset(get_settings(), Path(args.sap_db) if args.sap_db else None)
+    except ResetError as exc:
+        print(f"demo-reset: {exc}", file=sys.stderr)
+        return 1
+    if plan.empty:
+        print("demo-reset: nothing to delete; the demo is already clean.")
+        return 0
+    print("demo-reset deletes:")
+    for path in plan.files:
+        print(f"  file    {path}")
+    for folder in plan.folders:
+        print(f"  folder  {folder} (everything inside)")
+    print(
+        "The mock SAP re-creates its catalog from sap-mock/seed/materials.json on its next start."
+    )
+    if not args.yes:
+        if not sys.stdin.isatty():
+            print("demo-reset: add --yes to delete without a question.", file=sys.stderr)
+            return 1
+        if input("Delete these? [y/N] ").strip().lower() not in ("y", "yes", "s", "si", "sí"):
+            print("Nothing deleted.")
+            return 1
+    try:
+        run_reset(plan)
+    except ResetError as exc:
+        print(f"demo-reset: {exc}", file=sys.stderr)
+        return 1
+    print("Done. Start the servers again for a clean demo.")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m app.cli", description=__doc__.split("\n")[0])
     commands = parser.add_subparsers(dest="command", required=True)
@@ -357,6 +392,13 @@ def main(argv: list[str] | None = None) -> int:
         "free-ports", help="stop what holds the launcher's ports, after asking"
     )
     ports.set_defaults(func=_cmd_free_ports)
+
+    reset = commands.add_parser(
+        "demo-reset", help="delete test SKUs, designs and renders: back to the seed catalog"
+    )
+    reset.add_argument("--yes", action="store_true", help="delete without asking")
+    reset.add_argument("--sap-db", help="the mock SAP database (default DATA_DIR/sap_mock.db)")
+    reset.set_defaults(func=_cmd_demo_reset)
 
     args = parser.parse_args(argv)
     # Spanish answers on a Windows console or pipe (cp1252 by default).

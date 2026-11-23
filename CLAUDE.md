@@ -44,6 +44,7 @@ python -m app.cli confirm <action_id>    # or: cancel <action_id>
 python -m app.cli agent-eval --fake --suite all --variants   # core + qa suites (CI)
 python -m app.cli llm-check              # probe Dahl, Groq, Ollama; suggest and ask
 python -m app.cli free-ports             # what holds 8000/8100/5173; offers to stop it
+python -m app.cli demo-reset             # servers stopped: back to the seed catalog, no test data
 
 # everything at once (mock SAP, backend, UI, browser), after the one-time setup
 start.cmd            # Windows; ./start.sh on Linux/macOS; `start.cmd groq` skips the check

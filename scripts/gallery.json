@@ -40,6 +40,7 @@
     {
       "sku": "GB-1034",
       "rev": "A",
+      "showcase": true,
       "name": "Honey Glow Faceted",
       "collection": "Amber Hollow",
       "family": "FAC",

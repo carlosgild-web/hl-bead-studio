@@ -90,6 +90,10 @@ Stopping is suggested only for Bead Studio's own processes (uvicorn `app.main`, 
 anything else gets `[y/N]`. Without a terminal nothing is stopped and nothing starts.
 Alone: `cd backend && python -m app.cli free-ports`.
 
+After a round of testing, `cd backend && python -m app.cli demo-reset` (servers stopped)
+deletes the reserved test SKUs, generated designs, renders and conversations, and the mock
+SAP starts again from its seed catalog (decision 0024).
+
 On Windows, `start.cmd` finds Blender in `Program Files` when `BLENDER_BIN` is not set.
 
 ```bash

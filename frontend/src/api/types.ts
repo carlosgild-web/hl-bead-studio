@@ -204,6 +204,8 @@ export interface GalleryRender {
   url: string
   sku: string
   rev: string
+  /** A design made for the gallery, not a product of the SAP catalog. */
+  showcase?: boolean
   name: string
   collection: string
   family: string

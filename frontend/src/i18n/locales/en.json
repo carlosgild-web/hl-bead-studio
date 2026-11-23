@@ -143,7 +143,8 @@
       "revert": "Revert to Rev {{rev}} parameters",
       "tab": "out of date"
     },
-    "olderRevision": "Rev {{rev}}, older revision"
+    "olderRevision": "Rev {{rev}}, older revision",
+    "showcase": "Showcase design"
   },
   "renderStatus": {
     "queued": "queued",

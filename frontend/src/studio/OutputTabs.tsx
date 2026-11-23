@@ -176,7 +176,7 @@ export function Gallery() {
           <li key={r.file} className="overflow-hidden rounded-md border bg-card">
             <img src={r.url} alt={`${r.name}, ${r.finish_name[language]}`} loading="lazy" className="aspect-square w-full object-cover" />
             <p className="px-2 py-1 text-xs">
-              <span className="font-mono">{r.sku}</span> · {r.finish_name[language]}
+              {r.showcase ? t('outputs.showcase') : <span className="font-mono">{r.sku}</span>} · {r.finish_name[language]}
             </p>
           </li>
         ))}
