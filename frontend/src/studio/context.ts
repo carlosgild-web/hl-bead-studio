@@ -80,7 +80,7 @@ export function usePanelPreview(family: string | null, params: Params) {
   const key = useDebounced(family && Object.keys(params).length ? paramsKey(params) : null, 350)
   return useQuery({
     queryKey: ['preview', family, key],
-    queryFn: () => api.preview(family!, Object.fromEntries(JSON.parse(key!)) as Params),
+    queryFn: ({ signal }) => api.preview(family!, Object.fromEntries(JSON.parse(key!)) as Params, signal),
     enabled: Boolean(family && key),
     placeholderData: keepPreviousData,
     staleTime: Infinity,

@@ -46,11 +46,12 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
   return body as T
 }
 
-function post<T>(url: string, body?: unknown): Promise<T> {
+function post<T>(url: string, body?: unknown, signal?: AbortSignal): Promise<T> {
   return request<T>(url, {
     method: 'POST',
     headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
     body: body === undefined ? undefined : JSON.stringify(body),
+    signal,
   })
 }
 
@@ -61,8 +62,9 @@ export const api = {
     request<FamilyInfo>(`/api/families/${encodeURIComponent(code)}?lang=${lang}`),
   validate: (family: string, params: Params) =>
     post<Validation>('/api/validate', { family, params }),
-  preview: (family: string, params: Params) =>
-    post<PreviewResponse>('/api/preview', { family, params }),
+  /** `signal`: React Query aborts a preview nobody waits for any more (an older edit). */
+  preview: (family: string, params: Params, signal?: AbortSignal) =>
+    post<PreviewResponse>('/api/preview', { family, params }, signal),
   catalog: () => request<CatalogItem[]>('/api/catalog'),
   /** Each manual rule id with its file and heading anchor (read only). */
   rules: (lang: Language) =>

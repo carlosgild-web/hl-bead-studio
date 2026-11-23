@@ -66,7 +66,9 @@ def test_route_groups_have_their_own_budget(env):
     env.settings = env.settings.model_copy(update={"rate_limit_per_minute": 1})
     env.chat([say("hi")], "hello")
     body = {"family": "RND", "params": {"diameter_mm": 8.0, "hole_mm": 1.5, "color": "amber"}}
-    assert env.http.post("/api/preview", json=body).status_code == 200
+    # The panel's check has four times the budget: it runs after each pause in typing.
+    for _ in range(4):
+        assert env.http.post("/api/preview", json=body).status_code == 200
     assert env.http.post("/api/preview", json=body).status_code == 429
     assert env.http.post("/api/actions/" + "0" * 32 + "/cancel").status_code == 404
 

@@ -67,10 +67,16 @@ def client_key(request: Request) -> str:
     return request.client.host if request.client else "unknown"
 
 
+# The panel's live check runs after each pause in typing, so it gets a larger budget than a
+# chat turn or a card (QA 2026-11-23, item 26: fast edits hit the limit).
+GROUP_FACTOR = {"preview": 4}
+
+
 def enforce_rate_limit(
     group: str, request: Request, settings: Settings, limiter: RateLimiter
 ) -> None:
-    wait = limiter.hit(f"{group}:{client_key(request)}", settings.rate_limit_per_minute)
+    limit = settings.rate_limit_per_minute * GROUP_FACTOR.get(group, 1)
+    wait = limiter.hit(f"{group}:{client_key(request)}", limit)
     if wait is not None:
         seconds = max(1, math.ceil(wait))
         raise HTTPException(
