@@ -417,6 +417,31 @@ describe('App', () => {
     expect(stepOf('render')).toHaveAttribute('data-status', 'done')
   })
 
+  it('a reload keeps the chat and the panel', async () => {
+    backend()
+    const first = renderApp()
+    fireEvent.change(screen.getByLabelText('Describe the bead or charm…'), {
+      target: { value: 'A 10 mm faceted amber bead' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }))
+    expect(await screen.findByLabelText('Diameter')).toHaveValue(10)
+    first.unmount()
+
+    renderApp()
+
+    expect(screen.getByText('A 10 mm faceted amber bead')).toBeInTheDocument()
+    expect(await screen.findByLabelText('Diameter')).toHaveValue(10)
+  })
+
+  it('the catalog view lives in the URL', async () => {
+    backend()
+    renderApp()
+    fireEvent.click(screen.getByRole('button', { name: 'Catalog' }))
+    expect(window.location.pathname).toBe('/catalog')
+    fireEvent.click(screen.getByRole('button', { name: 'Studio' }))
+    expect(window.location.pathname).toBe('/')
+  })
+
   it('after Rev B, a render of Rev A no longer counts and is labelled as older', async () => {
     const calls = backend()
     renderApp()

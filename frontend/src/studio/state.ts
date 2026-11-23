@@ -58,6 +58,8 @@ export type StudioAction =
   /** "Revert to Rev A parameters": the whole panel at once, from a saved revision. */
   | { type: 'setParams'; params: Params }
   | { type: 'send'; text: string }
+  /** A restored card's status from the server; nothing else changes. */
+  | { type: 'refreshAction'; action: PendingAction }
   | { type: 'event'; event: ChatEvent }
   | { type: 'failed'; text: string }
   | { type: 'decided'; action: PendingAction }
@@ -175,6 +177,10 @@ export function studioReducer(state: StudioState, action: StudioAction): StudioS
       return { ...state, busy: false, items: [...state.items, { kind: 'error', text: action.text }] }
     case 'decided':
       return onDecided(state, action.action)
+    case 'refreshAction':
+      return state.actions[action.action.id]
+        ? { ...state, actions: { ...state.actions, [action.action.id]: action.action } }
+        : state
     case 'tab':
       return { ...state, tab: action.tab }
     case 'reset':

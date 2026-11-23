@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { api } from '@/api/client'
@@ -13,6 +13,25 @@ import { StudioProvider } from '@/studio/StudioProvider'
 import { StudioPage } from '@/studio/StudioPage'
 
 type View = 'studio' | 'catalog'
+
+/** The view lives in the URL (`/catalog`), so a reload or the back button keeps it. */
+function viewFromPath(): View {
+  return window.location.pathname.replace(/\/+$/, '') === '/catalog' ? 'catalog' : 'studio'
+}
+
+function useView(): [View, (view: View) => void] {
+  const [view, setView] = useState<View>(viewFromPath)
+  useEffect(() => {
+    const onPop = () => setView(viewFromPath())
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
+  const go = (next: View) => {
+    if (next !== viewFromPath()) window.history.pushState(null, '', next === 'catalog' ? '/catalog' : '/')
+    setView(next)
+  }
+  return [view, go]
+}
 
 function HealthStatus() {
   const { t } = useTranslation()
@@ -32,7 +51,7 @@ function HealthStatus() {
 function Shell() {
   const { t, i18n } = useTranslation()
   const { state } = useStudio()
-  const [view, setView] = useState<View>('studio')
+  const [view, setView] = useView()
   const nextLanguage = i18n.language === 'es' ? 'en' : 'es'
   const focus = useFocus()
 

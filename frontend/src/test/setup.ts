@@ -6,6 +6,8 @@ import '@/i18n'
 
 afterEach(() => {
   cleanup()
+  // The studio keeps its session in sessionStorage: each test starts empty.
+  window.sessionStorage.clear()
 })
 
 // jsdom lacks the pointer-capture and scrolling APIs that Radix Select calls.

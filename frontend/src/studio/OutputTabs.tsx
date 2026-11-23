@@ -97,6 +97,7 @@ function DrawingTab() {
             <a
               key={kind}
               href={d.urls[kind]}
+              download
               className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium uppercase hover:bg-accent"
             >
               <Download className="size-3" /> {kind}

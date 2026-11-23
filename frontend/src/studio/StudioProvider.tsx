@@ -5,17 +5,33 @@ import { api, streamChat } from '@/api/client'
 import type { ChatEvent, PendingAction, PreviewResponse } from '@/api/types'
 
 import { StudioContext, useLanguage } from './context'
-import { initialState, paramsKey, studioReducer } from './state'
+import { loadSession, saveSession } from './persist'
+import { paramsKey, studioReducer } from './state'
 
 /** Holds the studio state: the panel, the conversation, the cards and the outputs. */
 export function StudioProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(studioReducer, initialState)
+  const [state, dispatch] = useReducer(studioReducer, undefined, loadSession)
   const queryClient = useQueryClient()
   const language = useLanguage()
   const stateRef = useRef(state)
   useEffect(() => {
     stateRef.current = state
+    saveSession(state)
   }, [state])
+
+  // After a reload, a card that was pending may have been decided or expired since: ask the
+  // server once for the current status of each restored pending card.
+  useEffect(() => {
+    for (const action of Object.values(stateRef.current.actions)) {
+      if (action.status !== 'pending') continue
+      api
+        .action(action.id)
+        .then((fresh) => dispatch({ type: 'refreshAction', action: fresh }))
+        .catch(() => {
+          // Unknown to the server (a reset database): the card's own expiry still applies.
+        })
+    }
+  }, [])
 
   // The rule edition of the latest proposal: a preview event carries no validation of its own.
   const edition = useRef('')

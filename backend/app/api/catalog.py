@@ -160,7 +160,9 @@ def design_file(sku: str, rev: str, kind: FileKind, settings: SettingsDep) -> Fi
         raise HTTPException(422, str(exc)) from exc
     if not path.is_file():
         raise HTTPException(404, f"{sku} revision {rev} has no {kind} file")
-    inline = kind in ("drawing", "glb")
+    # Only the drawing opens in the browser; STEP, STL and GLB download (a GLB link that
+    # opened inline left the app). The viewer fetches the GLB, so it is not affected.
+    inline = kind == "drawing"
     return FileResponse(
         path,
         media_type=MEDIA_TYPES[kind],

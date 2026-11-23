@@ -74,6 +74,8 @@ export const api = {
     ),
   gallery: () => request<{ generated_at: string | null; renders: GalleryRender[] }>('/api/gallery'),
   renderJob: (id: number) => request<RenderJob>(`/api/renders/${id}`),
+  /** A card's current status (read only), to refresh cards restored after a reload. */
+  action: (id: string) => request<PendingAction>(`/api/actions/${encodeURIComponent(id)}`),
   /**
    * The designer's click on a confirmation card: the only way anything is reserved, written
    * or queued (invariant 2). Failures (422, 409, 410, 502) still carry the action.
