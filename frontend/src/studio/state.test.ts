@@ -118,6 +118,28 @@ describe('studioReducer', () => {
     expect(confirmed.reserved).toEqual({ sku: 'GB-1034', name: undefined, sapMaterial: '50000134' })
   })
 
+  it('a card the server returns again is updated, not drawn twice', () => {
+    const pending = action('reserve_sku')
+    const state = run(
+      { type: 'event', event: { type: 'pending_action', data: { action: pending } } },
+      { type: 'event', event: { type: 'pending_action', data: { action: { ...pending, payload: { name: 'Sol' } } } } },
+    )
+
+    expect(state.items.filter((item) => item.kind === 'action')).toHaveLength(1)
+    expect(state.actions[pending.id].payload).toEqual({ name: 'Sol' })
+  })
+
+  it('reset starts a new design from scratch', () => {
+    const state = run(
+      { type: 'chooseFamily', family: 'FAC' },
+      { type: 'send', text: 'hi' },
+      { type: 'event', event: { type: 'conversation', data: { id: 'c1' } } },
+      { type: 'reset' },
+    )
+
+    expect(state).toEqual(initialState)
+  })
+
   it('a generated design opens the drawing tab; a queued render the renders tab', () => {
     const generated = run({
       type: 'decided',

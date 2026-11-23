@@ -6,17 +6,7 @@ import type { PendingAction } from '@/api/types'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-import { useRenderJob, useStudio } from './context'
-
-/** The id of a card's element in the chat, for links that bring the designer to it. */
-const cardAnchor = (actionId: string) => `card-${actionId}`
-
-/** Scroll the chat smoothly to a card and put the focus on its Confirm button. */
-function goToCard(actionId: string) {
-  const card = document.getElementById(cardAnchor(actionId))
-  card?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' })
-  card?.querySelector<HTMLButtonElement>('[data-confirm]')?.focus({ preventScroll: true })
-}
+import { cardAnchor, goToCard, useRenderJob, useStudio } from './context'
 
 /**
  * Shown next to a button that opened a card without the assistant (the workflow, "Generate

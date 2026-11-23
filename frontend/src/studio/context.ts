@@ -70,7 +70,17 @@ export function refusal(error: unknown): string {
   return [error.message, ...violations.map((v) => `${v.rule}: ${v.message}`)].join('\n')
 }
 
-export type CardRequest = Omit<OpenCardRequest, 'conversation_id' | 'language'>
+/** The id of a card's element in the chat, for links that bring the designer to it. */
+export const cardAnchor = (actionId: string) => `card-${actionId}`
+
+/** Scroll the chat smoothly to a card and put the focus on its Confirm button. */
+export function goToCard(actionId: string) {
+  const card = document.getElementById(cardAnchor(actionId))
+  card?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' })
+  card?.querySelector<HTMLButtonElement>('[data-confirm]')?.focus({ preventScroll: true })
+}
+
+export type CardRequest =Omit<OpenCardRequest, 'conversation_id' | 'language'>
 
 /**
  * Open a confirmation card without the assistant (decision 0014): the panel's workflow
@@ -84,15 +94,19 @@ export function useOpenCard() {
   const [error, setError] = useState<string | null>(null)
   const [openedId, setOpenedId] = useState<string | null>(null)
   const conversationId = state.conversationId
+  const actions = state.actions
   const open = useCallback(
     async (request: CardRequest): Promise<boolean> => {
       setWorking(true)
       setError(null)
       try {
         const opened = await api.openCard({ ...request, conversation_id: conversationId, language })
+        const known = opened.action.id in actions
         dispatch({ type: 'event', event: { type: 'conversation', data: { id: opened.conversation_id } } })
         dispatch({ type: 'event', event: { type: 'pending_action', data: { action: opened.action } } })
         setOpenedId(opened.action.id)
+        // The card was already in the chat: bring the designer to it.
+        if (known) goToCard(opened.action.id)
         return true
       } catch (caught) {
         setError(refusal(caught))
@@ -101,7 +115,7 @@ export function useOpenCard() {
         setWorking(false)
       }
     },
-    [conversationId, language, dispatch],
+    [conversationId, language, dispatch, actions],
   )
   // The card this hook opened, while it still waits for the designer's Confirm or Cancel.
   const pendingId = openedId && state.actions[openedId]?.status === 'pending' ? openedId : null

@@ -98,11 +98,14 @@ function onEvent(state: StudioState, event: ChatEvent): StudioState {
       }
     }
     case 'pending_action': {
+      // The server returns an open card again instead of a second one of its kind: the
+      // card is updated, never drawn twice.
       const action = event.data.action
+      const shown = state.items.some((item) => item.kind === 'action' && item.actionId === action.id)
       return {
         ...state,
         actions: { ...state.actions, [action.id]: action },
-        items: [...state.items, { kind: 'action', actionId: action.id }],
+        items: shown ? state.items : [...state.items, { kind: 'action', actionId: action.id }],
       }
     }
     case 'message':
