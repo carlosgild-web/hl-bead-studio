@@ -90,3 +90,13 @@ def explain_text(
         )
         parts.append(f"{breaks} {v['rule']}" + (f"; {near_label}: {near}" if near else ""))
     return ". ".join(parts) + "." + (f" {extra}" if extra else "")
+
+
+def defaults_note(family: str, unread: list[str], language: str) -> str:
+    """Demo mode's note on what it could not read from the message (decision 0023)."""
+    if not unread:
+        return ""
+    names = ", ".join(_label(family, name, language, True).lower() for name in unread)
+    if language == "es":
+        return f"Modo demo: usé el valor por defecto para {names}."
+    return f"Demo mode: I used the default for {names}."
