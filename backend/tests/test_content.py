@@ -237,3 +237,18 @@ def test_title_block_logo_is_an_svg() -> None:
     text = (TEMPLATES_DIR / "hl_logo.svg").read_text(encoding="utf-8")
 
     assert "<svg" in text and "viewBox" in text
+
+
+def test_every_rule_has_a_manual_anchor_in_both_languages() -> None:
+    # The UI links rule ids to these headings on GitHub (QA 2026-11-23, item 20).
+    from app.core.content import rule_anchors
+
+    en, es = rule_anchors("en"), rule_anchors("es")
+    assert set(en) == set(es)
+    assert en["GB-01"] == {
+        "file": "04-rules-glass-beads.md",
+        "anchor": "gb-01-hole-diameter-and-mandrel-sizes",
+        "title": "Hole diameter and mandrel sizes",
+    }
+    assert es["GEN-01"]["anchor"] == "gen-01-unidades-y-resolución"
+    assert all(at["anchor"].startswith(rule.lower()) for rule, at in en.items())

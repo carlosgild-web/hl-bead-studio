@@ -111,7 +111,8 @@ function DrawingTab() {
       </div>
       <iframe
         title={t('outputs.drawingTitle', { sku: d.sku, rev: d.rev })}
-        src={d.urls.drawing}
+        // No thumbnail sidebar, page fitted to the width (Chrome's and Firefox's PDF viewers).
+        src={`${d.urls.drawing}#navpanes=0&view=FitH`}
         className="h-[32rem] w-full rounded-md border bg-white"
       />
     </div>
@@ -174,17 +175,23 @@ export function RenderProgress({ jobId }: { jobId: number }) {
   )
 }
 
-export function Gallery() {
+/** The committed renders; `query` (the catalog search) filters them like the table. */
+export function Gallery({ query = '' }: { query?: string }) {
   const { t } = useTranslation()
   const language = useLanguage()
   const gallery = useQuery({ queryKey: ['gallery'], queryFn: api.gallery, staleTime: Infinity })
   if (!gallery.data?.renders.length) return null
+  const q = query.trim().toLowerCase()
+  const renders = gallery.data.renders.filter(
+    (r) => !q || [r.sku, r.name, r.collection, r.family, r.finish_name[language]].some((v) => v?.toLowerCase().includes(q)),
+  )
+  if (!renders.length) return null
   return (
     <div className="space-y-2">
       <h3 className="text-sm font-semibold">{t('outputs.gallery')}</h3>
       <p className="text-xs text-muted-foreground">{t('outputs.galleryNote')}</p>
       <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 2xl:grid-cols-6">
-        {gallery.data.renders.map((r) => (
+        {renders.map((r) => (
           <li key={r.file} className="overflow-hidden rounded-md border bg-card">
             <img src={r.url} alt={`${r.name}, ${r.finish_name[language]}`} loading="lazy" className="aspect-square w-full object-cover" />
             <p className="px-2 py-1 text-xs">

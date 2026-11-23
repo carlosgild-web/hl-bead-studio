@@ -64,6 +64,9 @@ export const api = {
   preview: (family: string, params: Params) =>
     post<PreviewResponse>('/api/preview', { family, params }),
   catalog: () => request<CatalogItem[]>('/api/catalog'),
+  /** Each manual rule id with its file and heading anchor (read only). */
+  rules: (lang: Language) =>
+    request<Record<string, { file: string; anchor: string; title: string }>>(`/api/rules?lang=${lang}`),
   /** The reserve form's live GEN-03 check (read only). */
   checkName: (family: string, name: string) => post<NameCheck>('/api/names/check', { family, name }),
   design: (sku: string, rev: string) =>

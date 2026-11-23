@@ -219,7 +219,8 @@
       "ACTIVE": "Active",
       "DISCONTINUED": "Discontinued"
     },
-    "sizeFromDesign": "From the generated files: SAP has no size for a new reservation yet"
+    "sizeFromDesign": "From the generated files: SAP has no size for a new reservation yet",
+    "clearSearch": "Clear the search"
   },
   "common": {
     "yes": "Yes",

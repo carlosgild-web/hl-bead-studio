@@ -219,7 +219,8 @@
       "ACTIVE": "Activo",
       "DISCONTINUED": "Descatalogado"
     },
-    "sizeFromDesign": "De los archivos generados: SAP aún no tiene tamaño para una reserva nueva"
+    "sizeFromDesign": "De los archivos generados: SAP aún no tiene tamaño para una reserva nueva",
+    "clearSearch": "Borrar la búsqueda"
   },
   "common": {
     "yes": "Sí",

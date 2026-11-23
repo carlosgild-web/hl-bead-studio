@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 
 from app.agent.tools import build_preview, family_info, normalize_params, validation_summary
 from app.api.deps import PreviewsDep, rate_limit
-from app.core.content import colors, finishes, materials
+from app.core.content import colors, finishes, materials, rule_anchors
 from app.standards.families import Family, UnknownFamilyError, all_families, get_family
 from app.standards.naming import COLLECTIONS
 from app.standards.validators import validate_parameters
@@ -91,3 +91,9 @@ def preview(body: ParamsBody, previews: PreviewsDep) -> dict[str, Any]:
     family = _family_or_404(body.family)
     result, built = build_preview(family, body.params, previews)
     return {"validation": validation_summary(result, with_es=True), "preview": built}
+
+
+@router.get("/rules")
+def rules(lang: Language = "en") -> dict[str, dict[str, str]]:
+    """Each manual rule id with its file and heading anchor, so the UI can link to it."""
+    return rule_anchors(lang)

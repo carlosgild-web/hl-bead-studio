@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { FileText, Loader2, Search } from 'lucide-react'
+import { FileText, Loader2, Search, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -23,7 +23,9 @@ export function CatalogPage() {
   const { t } = useTranslation()
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<Filter>('all')
-  const catalog = useQuery({ queryKey: ['catalog'], queryFn: api.catalog })
+  // A short staleTime: opening the view twice in a row (or StrictMode's double mount) does
+  // not ask SAP again; a reservation or generation invalidates it at once.
+  const catalog = useQuery({ queryKey: ['catalog'], queryFn: api.catalog, staleTime: 15_000 })
 
   const items = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -49,8 +51,18 @@ export function CatalogPage() {
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t('catalog.search')}
               aria-label={t('catalog.search')}
-              className="w-56 pl-8"
+              className="w-56 pr-8 pl-8"
             />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery('')}
+                aria-label={t('catalog.clearSearch')}
+                className="absolute top-1.5 right-1.5 rounded p-1 text-muted-foreground hover:bg-accent"
+              >
+                <X className="size-4" />
+              </button>
+            )}
           </div>
           <div className="flex rounded-md border p-0.5 text-sm" role="group" aria-label={t('catalog.filter')}>
             {(['all', 'GLASS_BEAD', 'CHARM', 'new'] as const).map((f) => (
@@ -152,7 +164,7 @@ export function CatalogPage() {
         )}
       </section>
       <section className="rounded-lg border bg-card p-4">
-        <Gallery />
+        <Gallery query={query} />
       </section>
     </div>
   )

@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils'
 
 import { useFamilyInfo, useLanguage, usePanelPreview, useStudio } from './context'
 import { displayValue, formatNumber } from './display'
+import { RuleLink } from './RuleLink'
 import { PanelActions } from './PanelActions'
 
 function Field({
@@ -173,7 +174,7 @@ function ViolationNote({ v, family }: { v: Violation; family?: FamilyInfo }) {
         <div className="min-w-0 space-y-1">
           <p>
             <Badge variant="destructive" className="mr-2 font-mono">
-              {v.rule}
+              <RuleLink rule={v.rule} />
             </Badge>
             {language === 'es' && v.message_es ? v.message_es : v.message}
           </p>
@@ -243,7 +244,7 @@ function ValidationSummary({
           })}
           {[...new Set(atFields.map((v) => v.rule))].map((rule) => (
             <Badge key={rule} variant="destructive" className="font-mono">
-              {rule}
+              <RuleLink rule={rule} />
             </Badge>
           ))}
         </p>

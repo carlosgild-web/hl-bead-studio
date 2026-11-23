@@ -6,6 +6,7 @@ manual, the frontend and Blender. Everything here is read-only.
 """
 
 import json
+import re
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal
@@ -42,6 +43,35 @@ def finishes() -> dict[str, dict[str, Any]]:
 def materials() -> dict[str, dict[str, Any]]:
     """Base materials (borosilicate, zinc alloy) by id, with their densities."""
     return {m["id"]: m for m in _load(TEMPLATES_DIR / "materials.json")["materials"]}
+
+
+_RULE_HEADING = re.compile(r"^#{2,4} ((?:GB|CH|GEN)-\d{2})\b.*$", re.MULTILINE)
+
+
+def _github_anchor(heading: str) -> str:
+    """The anchor GitHub gives a Markdown heading: lowercase, punctuation dropped, spaces to
+    hyphens (letters with accents are kept)."""
+    text = re.sub(r"[^\w\- ]", "", heading.strip().lower())
+    return text.replace(" ", "-")
+
+
+@lru_cache
+def rule_anchors(language: str) -> dict[str, dict[str, str]]:
+    """Where each rule is in the manual: {"GB-01": {"file": "04-rules-glass-beads.md",
+    "anchor": "gb-01-hole-diameter-and-mandrel-sizes", "title": "Hole diameter ..."}}."""
+    found: dict[str, dict[str, str]] = {}
+    for path in sorted((MANUAL_DIR / language).glob("*.md")):
+        for match in _RULE_HEADING.finditer(path.read_text(encoding="utf-8")):
+            heading = match.group(0).lstrip("#").strip()
+            found.setdefault(
+                match.group(1),
+                {
+                    "file": path.name,
+                    "anchor": _github_anchor(heading),
+                    "title": heading[len(match.group(1)) :].strip(),
+                },
+            )
+    return found
 
 
 # --- the Q&A bank (decision 0022) ------------------------------------------------------------

@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils'
 import type { FamilyInfo } from '@/api/types'
 
 import { ActionCard } from './ActionCard'
+import { WithRuleLinks } from './RuleLink'
 import { type CardRequest, dimProps, goToCard, useFamilyInfo, useFocus, useOpenCard, useRenderJob, useStudio } from './context'
 import type { ChatItem, StudioState, ToolStep } from './state'
 
@@ -49,9 +50,11 @@ function AssistantText({ text }: { text: string }) {
         <p key={i}>
           {paragraph.split(/(\*\*[^*]+\*\*)/g).map((part, j) =>
             part.startsWith('**') && part.endsWith('**') ? (
-              <strong key={j}>{part.slice(2, -2)}</strong>
+              <strong key={j}>
+                <WithRuleLinks text={part.slice(2, -2)} />
+              </strong>
             ) : (
-              part
+              <WithRuleLinks key={j} text={part} />
             ),
           )}
         </p>
