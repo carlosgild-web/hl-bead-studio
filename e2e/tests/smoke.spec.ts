@@ -74,6 +74,21 @@ test.describe('Things to try', () => {
   })
 })
 
+test('a reservation while the design breaks a rule is allowed, and the card says so', async ({ page }) => {
+  await page.goto('/')
+  await send(page, 'A 25 mm round bead in cobalt for the Coastal Garden collection')
+  await expect(page.getByRole('alert', { name: 'Rule violations' })).toContainText('GB-03')
+  await page.getByRole('button', { name: 'Reserve SKU…' }).click()
+  const form = page.getByRole('form', { name: 'Reserve SKU…' })
+  // The chat's collection and the color as a first name come with the form.
+  await expect(form.getByLabel('Collection')).toHaveValue('Coastal Garden')
+  await form.getByLabel('Product name').fill('Deep Harbor Round')
+  await form.getByRole('button', { name: 'Review & confirm' }).click()
+  const card = page.getByRole('article', { name: 'Reserve SKU in SAP' })
+  await expect(card.getByRole('note')).toContainText('GB-03')
+  await card.getByRole('button', { name: 'Cancel' }).click()
+})
+
 test('at 1366×800 the chat input is on screen, and a chip sends its question', async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 800 })
   await page.goto('/')

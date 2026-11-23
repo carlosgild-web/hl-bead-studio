@@ -62,7 +62,7 @@
     "checkFailed": "No se pudo comprobar; ¿está el backend en marcha?",
     "actions": {
       "title": "Flujo de trabajo",
-      "hint": "Cada botón abre una tarjeta de confirmación en el chat, con las mismas comprobaciones que usa el asistente. Nada ocurre hasta que pulses Confirmar.",
+      "hint": "Cada botón abre un formulario corto; Revisar y confirmar abre después una tarjeta de confirmación en el chat, con las mismas comprobaciones que usa el asistente. Nada ocurre hasta que pulses Confirmar.",
       "reserve": "Reservar SKU…",
       "generate": "Generar archivos…",
       "render": "Renderizar…",
@@ -131,7 +131,7 @@
   "outputs": {
     "drawing": "Plano",
     "renders": "Renders",
-    "noDesign": "Todavía no hay archivos. Reserva primero un SKU y luego pide al asistente que genere los archivos: abrirá una tarjeta Generar diseño y el plano aparece aquí cuando la confirmes.",
+    "noDesign": "Todavía no hay archivos. Reserva primero un SKU y luego genera los archivos (Generar archivos… en el panel, o pídeselo al asistente); el plano aparece aquí cuando confirmes la tarjeta.",
     "drawingTitle": "Plano técnico {{sku}} rev {{rev}}",
     "scale": "Escala {{scale}}",
     "noRender": "No hay renders en cola en esta sesión. Los renders se hacen en local con Blender; abajo está la galería pregenerada.",
@@ -149,7 +149,8 @@
     "olderRevision": "Rev {{rev}}, revisión anterior",
     "showcase": "Diseño de muestra",
     "elapsed": "{{seconds}} s hasta ahora",
-    "renderUsually": "Un render suele tardar de 1 a 2 minutos."
+    "renderUsually": "Un render suele tardar de 1 a 2 minutos.",
+    "noDesignReserved": "{{sku}} está reservado. Genera sus archivos (Generar archivos… en el panel, o pídeselo al asistente); el plano aparece aquí cuando confirmes la tarjeta."
   },
   "renderStatus": {
     "queued": "en cola",
@@ -190,7 +191,8 @@
     "confirm": "Confirmar",
     "cancel": "Cancelar",
     "notNow": "Ahora no",
-    "expiredHelp": "Las tarjetas caducan a los 30 minutos; pídelo de nuevo al asistente."
+    "expiredHelp": "Las tarjetas caducan a los 30 minutos; pídelo de nuevo al asistente.",
+    "brokenRules": "El diseño del panel incumple ahora {{rules}}. El SKU se reserva igualmente (nombra el producto); los archivos solo se generan cuando el diseño cumpla."
   },
   "catalog": {
     "title": "Catálogo",

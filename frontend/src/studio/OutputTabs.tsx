@@ -75,7 +75,11 @@ function DrawingTab() {
     enabled: Boolean(state.design),
   })
   if (!state.design) {
-    return <p className="p-4 text-sm text-muted-foreground">{t('outputs.noDesign')}</p>
+    // After the reservation the next step is the files, not another SKU (QA item 11).
+    const text = state.reserved
+      ? t('outputs.noDesignReserved', { sku: state.reserved.sku })
+      : t('outputs.noDesign')
+    return <p className="p-4 text-sm text-muted-foreground">{text}</p>
   }
   if (!design.data) {
     return <Loader2 className="m-4 size-5 animate-spin text-muted-foreground" />

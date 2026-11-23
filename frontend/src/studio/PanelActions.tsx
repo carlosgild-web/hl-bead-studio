@@ -90,9 +90,31 @@ export function PanelActions({ family, validation }: { family: FamilyInfo; valid
       .filter((a) => a.kind === KIND[step] && a.status === 'pending' && !isExpired(a))
       .at(-1)?.id ?? null
 
+  /** The collection the designer named in the chat ("for the Amber Hollow collection"). */
+  function collectionFromChat(): string {
+    const said = state.items
+      .filter((i) => i.kind === 'user')
+      .map((i) => (i.kind === 'user' ? i.text.toLowerCase() : ''))
+      .reverse()
+    for (const text of said) {
+      const found = family.collections.find((c) => text.includes(c.toLowerCase()))
+      if (found) return found
+    }
+    return ''
+  }
+
   function show(step: StepId, existingSku = false) {
     clearError()
     setLocalError(null)
+    if (step === 'reserve') {
+      // Carry the chat's context into the form (QA 2026-11-23, item 12); GEN-03 still checks
+      // the name live, and nothing is sent before Review & confirm.
+      if (!collection) setCollection(collectionFromChat())
+      if (!name.trim()) {
+        const swatch = family.swatches.find((s) => s.id === option)?.name
+        if (swatch) setName(swatch)
+      }
+    }
     if (step === 'generate') {
       setSku(existingSku ? '' : (state.design?.sku ?? state.reserved?.sku ?? ''))
       setRev(state.design ? (design.nextRev ?? '') : 'A')

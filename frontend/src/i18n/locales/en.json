@@ -62,7 +62,7 @@
     "checkFailed": "The check could not run; is the backend up?",
     "actions": {
       "title": "Workflow",
-      "hint": "Each button opens a confirmation card in the chat, with the same checks the assistant uses. Nothing happens until you click Confirm.",
+      "hint": "Each button opens a short form; Review & confirm then opens a confirmation card in the chat, with the same checks the assistant uses. Nothing happens until you click Confirm.",
       "reserve": "Reserve SKU…",
       "generate": "Generate files…",
       "render": "Render…",
@@ -131,7 +131,7 @@
   "outputs": {
     "drawing": "Drawing",
     "renders": "Renders",
-    "noDesign": "No files yet. Reserve a SKU first, then ask the assistant to generate the files: it opens a Generate design card, and the drawing appears here after you confirm it.",
+    "noDesign": "No files yet. Reserve a SKU first, then generate the files (Generate files… in the panel, or ask the assistant); the drawing appears here after you confirm the card.",
     "drawingTitle": "Technical drawing {{sku}} rev {{rev}}",
     "scale": "Scale {{scale}}",
     "noRender": "No render queued in this session. Renders run locally with Blender; below is the pre-generated gallery.",
@@ -149,7 +149,8 @@
     "olderRevision": "Rev {{rev}}, older revision",
     "showcase": "Showcase design",
     "elapsed": "{{seconds}} s so far",
-    "renderUsually": "A render usually takes 1 to 2 minutes."
+    "renderUsually": "A render usually takes 1 to 2 minutes.",
+    "noDesignReserved": "{{sku}} is reserved. Generate its files (Generate files… in the panel, or ask the assistant); the drawing appears here after you confirm the card."
   },
   "renderStatus": {
     "queued": "queued",
@@ -190,7 +191,8 @@
     "confirm": "Confirm",
     "cancel": "Cancel",
     "notNow": "Not now",
-    "expiredHelp": "Cards expire after 30 minutes; ask the assistant again."
+    "expiredHelp": "Cards expire after 30 minutes; ask the assistant again.",
+    "brokenRules": "The panel's design breaks {{rules}} right now. The SKU is reserved anyway (it names the product); the files can only be generated once the design passes."
   },
   "catalog": {
     "title": "Catalog",

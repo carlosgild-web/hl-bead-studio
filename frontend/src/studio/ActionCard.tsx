@@ -1,12 +1,13 @@
-import { ArrowUp, Ban, Check, CheckCircle2, Clock, Loader2, ShieldCheck, XCircle } from 'lucide-react'
+import { ArrowUp, Ban, Check, CheckCircle2, Clock, Loader2, ShieldCheck, TriangleAlert, XCircle } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import type { PendingAction } from '@/api/types'
+import type { ParamValue, PendingAction } from '@/api/types'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-import { cardAnchor, goToCard, useRenderJob, useStudio, useSwatchName } from './context'
+import { cardAnchor, goToCard, useFamilyInfo, usePanelPreview, useRenderJob, useStudio, useSwatchName } from './context'
+import { displayValue } from './display'
 import { isExpired } from './state'
 
 /**
@@ -39,6 +40,14 @@ function RenderStatus({ jobId }: { jobId: number }) {
   return <>{t('card.done.render', { job_id: jobId, status: t(`renderStatus.${job?.status ?? 'queued'}`) })}</>
 }
 
+/** The parameters a Generate card lists, in this order, when the family has them. */
+const KEY_PARAMS = ['diameter_mm', 'height_mm', 'hole_mm', 'color', 'finish', 'letter', 'engraving_text', 'icon']
+
+function paramsOf(payload: Record<string, unknown>): Record<string, ParamValue> | null {
+  const params = payload.params
+  return params && typeof params === 'object' ? (params as Record<string, ParamValue>) : null
+}
+
 function Row({ label, value }: { label: string; value: unknown }) {
   if (value === undefined || value === null || value === '') return null
   return (
@@ -57,7 +66,15 @@ function Row({ label, value }: { label: string; value: unknown }) {
 export function ActionCard({ action, focused = false }: { action: PendingAction; focused?: boolean }) {
   const { t } = useTranslation()
   const swatchName = useSwatchName()
-  const { decide, dispatch } = useStudio()
+  const { state, decide, dispatch } = useStudio()
+  const familyInfo = useFamilyInfo(typeof action.payload.family === 'string' ? action.payload.family : null)
+  // The panel's own check (cached, no extra request): a reservation while the design breaks
+  // rules is allowed, but the card says so (QA 2026-11-23, item 13; decision 0025).
+  const panel = usePanelPreview(action.kind === 'reserve_sku' ? state.family : null, state.params)
+  const broken =
+    action.kind === 'reserve_sku' && panel.data && !panel.data.validation.valid
+      ? [...new Set(panel.data.validation.violations.map((v) => v.rule))]
+      : []
   const notNow = () => dispatch({ type: 'dismiss', actionId: action.id })
   const [working, setWorking] = useState<'confirm' | 'cancel' | null>(null)
   const p = action.payload
@@ -102,6 +119,12 @@ export function ActionCard({ action, focused = false }: { action: PendingAction;
             <Row label={t('card.name')} value={p.name} />
             <Row label={t('card.family')} value={p.family} />
             <Row label={t('card.collection')} value={p.collection} />
+            {open && broken.length > 0 && (
+              <p role="note" className="mt-1 flex items-start gap-1.5 rounded-md border border-brand-amber/50 bg-brand-amber/10 px-2 py-1 text-xs">
+                <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
+                {t('card.brokenRules', { rules: broken.join(', ') })}
+              </p>
+            )}
           </>
         )}
         {action.kind === 'generate_design' && (
@@ -110,6 +133,19 @@ export function ActionCard({ action, focused = false }: { action: PendingAction;
             <Row label={t('card.name')} value={p.name} />
             <Row label={t('card.family')} value={p.family} />
             <Row label={t('card.sapMaterial')} value={p.sap_material} />
+            {/* What will be built, so the click confirms a design, not only a SKU. */}
+            {familyInfo.data &&
+              KEY_PARAMS.filter((k) => k in (paramsOf(p) ?? {}) && familyInfo.data!.parameters[k]).map((k) => (
+                <Row
+                  key={k}
+                  label={familyInfo.data!.parameters[k].label}
+                  value={
+                    k === familyInfo.data!.option_parameter
+                      ? swatchName(String(paramsOf(p)![k]))
+                      : displayValue(familyInfo.data!.parameters[k], paramsOf(p)![k], t)
+                  }
+                />
+              ))}
           </>
         )}
         {action.kind === 'render' && (

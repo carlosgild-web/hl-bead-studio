@@ -28,3 +28,4 @@ Short records of the design decisions and of every deviation from `PLAN.md`.
 | [0022](0022-demo-mode-answers-from-a-qa-bank.md) | Demo-mode answers from a Q&A bank, and the `qa` eval suite | accepted (addition) |
 | [0023](0023-demo-mode-reads-values-from-the-message.md) | Demo mode reads the design values from the message, and answers in its language | accepted (change to 0022) |
 | [0024](0024-sap-revision-and-demo-reset.md) | SAP's revision follows the files, revisions never skip a letter, and `demo-reset` | accepted (addition) |
+| [0025](0025-reserve-while-the-design-breaks-rules.md) | A SKU can be reserved while the design breaks rules; the card says so | accepted (addition) |
