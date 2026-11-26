@@ -96,6 +96,7 @@ No change was made to the code, the scenarios or the scorer for these runs.
 | Run | Provider / model | Passed | Report |
 |---|---|---|---|
 | 2026-11-23 run 1, with retries on 2026-11-24 and 2026-11-26 | Dahl `zai-org/GLM-5.3-Flash` | 81/92 | run 1 [md](2026-11-23-dahl-zai-org-GLM-5.3-Flash-qa-run1.md), [json](2026-11-23-dahl-zai-org-GLM-5.3-Flash-qa-run1.json); retry 1 [md](2026-11-24-dahl-zai-org-GLM-5.3-Flash-qa-run1-retry.md), [json](2026-11-24-dahl-zai-org-GLM-5.3-Flash-qa-run1-retry.json); retry 2 [md](2026-11-26-dahl-zai-org-GLM-5.3-Flash-qa-run1-retry2.md), [json](2026-11-26-dahl-zai-org-GLM-5.3-Flash-qa-run1-retry2.json) |
+| 2026-11-24, the 12 scenarios Dahl refused | Groq `openai/gpt-oss-120b`, free tier | 3/12 | [md](2026-11-24-groq-openai-gpt-oss-120b-qa-dahl-refused.md), [json](2026-11-24-groq-openai-gpt-oss-120b-qa-dahl-refused.json) |
 
 **Dahl qa run 1 (81/92).** Run 1 ran all 92 scenarios in 75 minutes with 625 K tokens: 70
 passed, 9 failed on the model's answer, and 13 got no answer because Dahl returned 429
@@ -116,3 +117,13 @@ language.
 | Broken design fixed | `qa-design-dsc-luna-18-en`, `-es` | Asked for an 18 mm disc engraved LUNA, it cited CH-03 and proposed a valid 19.5 mm disc. The scenario expects the requested design to stay invalid, so `valid` fails. The answer is right for a designer; the scorer was left as it is |
 
 No change was made to the code, the scenarios or the scorer for these runs.
+
+**Groq on the 12 scenarios Dahl refused (3/12).** While Dahl answered 429, the same 12
+scenarios ran once on Groq `openai/gpt-oss-120b` (free tier, 13 minutes, 157 K tokens), to
+see whether another model would answer them. It is a side run, not part of the 81/92 above.
+The safety checks held in all 12: no card, no side effect, the answer in the designer's
+language. Of the 9 failures, 6 hit the agent's step limit (`gpt-oss-120b` called
+`check_catalog` or `validate_parameters` again until the 6th step, as in the core suite) and
+5 fixed a design that should stay invalid (`valid`, as with Dahl's `qa-design-dsc-luna-18`);
+four scenarios had both. The other two: `qa-gb01-hole-sizes-es` left out the 1.0 and 2.5 mm
+hole sizes, and `qa-gen04-sku-es` answered without a tool and without citing GEN-04.
