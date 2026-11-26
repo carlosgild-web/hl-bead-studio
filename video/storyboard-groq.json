@@ -10,7 +10,7 @@
     }
   },
   "mode": "flexible",
-  "hold": 0.7,
+  "hold": 0.55,
   "notes": [
     "The README video (decision 0027): a real model, so the rows are matched flexibly. Each row is shown at most once, on the first matching event; an unexpected tool call or a validator error gets a generic row; rows that never match are listed in out/groq/take.json.",
     "{name}: VIDEO_DESIGN_NAME (default 'Amber Lantern'; the app adds the family suffix 'Faceted'), a name not in the SAP seed, so the take shows no taken-name warning.",

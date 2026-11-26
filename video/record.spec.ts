@@ -160,9 +160,14 @@ function pick(value: any, path?: string) {
   return value
 }
 
+// A subtitle stays at least this long per character, whatever the storyboard's hold factor:
+// at 0.55 four rows of the published take went by at 21-27 characters per second.
+const READ_MS_PER_CHAR = 1000 / 17
+
 function holdMs(row: Row, factor = 1) {
   const chars = (row.subtitle || '').length
-  return Math.round((Math.min(Math.max(1400 + chars * 48, 2800), 8500) + (row.payload ? 1800 : 0)) * factor)
+  const paced = (Math.min(Math.max(1400 + chars * 48, 2800), 8500) + (row.payload ? 1800 : 0)) * factor
+  return Math.round(Math.max(paced, chars * READ_MS_PER_CHAR))
 }
 
 function introspect(...args: string[]) {
