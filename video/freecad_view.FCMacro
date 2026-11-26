@@ -76,14 +76,17 @@ def main():
     tidy_window(mw)
     view = show(doc)
     base = view.getCameraOrientation()
-    ticks = int(SECONDS * 1000 / TICK_MS)
-    state = {"n": 0}
+    # The turn follows the clock, not a tick count: while Blender renders on every core, a
+    # redraw can take longer than a tick, and the turn must still end on time.
+    clock = QtCore.QElapsedTimer()
 
     def step():
-        state["n"] += 1
-        turn = FreeCAD.Rotation(FreeCAD.Vector(0, 0, 1), 360.0 * state["n"] / ticks)
+        if not clock.isValid():
+            clock.start()
+        done = min(clock.elapsed() / 1000 / SECONDS, 1.0)
+        turn = FreeCAD.Rotation(FreeCAD.Vector(0, 0, 1), 360.0 * done)
         view.setCameraOrientation(base.multiply(turn))
-        if state["n"] >= ticks:
+        if done >= 1.0:
             timer.stop()
             QtCore.QTimer.singleShot(800, quit_app)
 

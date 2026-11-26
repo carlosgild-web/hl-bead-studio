@@ -259,8 +259,11 @@ function main() {
 
   // Subtitles on the final clock: the take's cues mapped, each clip's cues where it is.
   const map = mapper(pieces, lengths)
+  // A take cue ends where a desktop clip starts: the clip has its own subtitles.
+  const clipStarts = pieces.map((p, k) => (p.src === 'clip' ? lengths.slice(0, k).reduce((a, b) => a + b, 0) * 1000 : null)).filter((v) => v !== null)
   const final = cues
     .map((c) => ({ ...c, start_ms: map(c.start_ms), end_ms: map(c.end_ms) }))
+    .map((c) => ({ ...c, end_ms: Math.min(c.end_ms, ...clipStarts.filter((s) => s > c.start_ms)) }))
     .filter((c) => c.end_ms - c.start_ms > 300)
   for (const [k, p] of pieces.entries()) {
     if (p.src !== 'clip') continue

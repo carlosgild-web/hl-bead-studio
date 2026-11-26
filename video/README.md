@@ -58,6 +58,28 @@ product has no "Open in FreeCAD" button; the recorder opens it. FreeCAD's GUI is
 | `cues.mjs`, `compose.mjs` | Cues, checks, wait cuts, `.mp4`, `.srt`, the README copy (ffmpeg) |
 | `compose.test.mjs` | `npm run video:test` |
 
+## Dry run findings (phase 10, step V5, 2026-11-26)
+
+Five dry takes on demo mode (`start.cmd video fake`) before the first Groq take. Product code
+was not changed; every fix is in the tooling or the storyboard.
+
+| # | Finding | Kind | Fix |
+|---|---|---|---|
+| F1 | The panel checks a hand edit through `POST /api/preview` (validation and 3D preview together), not `/api/validate`: row 3.2 never matched | Tooling | The capture records `/api/preview` as `panel_check`; row 3.2 matches `validation.valid === false` |
+| F2 | Demo mode never opens a reserve card from the chat: "Reserve a SKU for it as …" gets the Q&A bank's answer on how to reserve (the README GIF's card comes from the e2e server's scripted model) | Expected (decision 0022) | The dry run reserves with the panel's Reserve SKU… form (row 4.1d, dry run only); the Groq take asks in the chat (4.1, 4.2) |
+| F3 | The panel's name field starts with a suggested first word; typing after it gave "AmberAmber Lantern", which GEN-03 refused live | Tooling | Clear the field first. The live GEN-03 check worked as designed |
+| F4 | Demo mode does not call `preview_geometry`: row 2.4 never matches in a dry run | Expected | None; Groq may call it |
+| F5 | A subtitle stayed on screen for 18-59 s: while the reserve form was typed, and while FreeCAD started and closed | Tooling | FreeCAD's start is a labelled wait; the take goes back to the app while FreeCAD closes; take cues end where the clip starts (`.srt`) |
+| F6 | Row 6.1 fell inside a cut: the wait started at the click, before the confirm response | Tooling | The wait starts once the card shows "Render job #" |
+| F7 | FreeCAD did not quit in time once: with Blender on every core a redraw took longer than a timer tick, so a fixed number of ticks ran long | Tooling | The turn follows the clock (`QElapsedTimer`); the time limit has more margin |
+| F8 | The render took 78-144 s in a take against 37-49 s alone (Blender shares the CPU with FreeCAD, Edge and the recorder) | Expected | Cut to 1 s with its real length in the label |
+| F9 | The title-block row was read after the zoom had ended | Tooling | The zoom starts first; the row is read while it is zoomed in |
+| F10 | The first SKU of every take is GB-1034, the gallery's showcase bead (decision 0026) | No clash on screen | The gallery labels that bead "Showcase", not by SKU |
+| F11 | Length: 3:29 at first, 2:47 after F5-F6 and a hold factor of 0.7 | Tooling | Generic rows for unforeseen tool calls capped at 3 (`VIDEO_MAX_GENERIC`); the others are listed in `take.json` |
+
+Checked in every dry take: the payloads on screen equal the capture (10 of 10), no local path
+in any payload, in the app's text or in FreeCAD's title, and `data/` untouched.
+
 Every take reserves a new SKU and writes a design. In `start.cmd video` mode that happens in
 `data-video/`, which the next start resets, so a take never shows the leftovers of an
 earlier one. The end card shows the repo, `VIDEO_AUTHOR` and `VIDEO_LINKEDIN`.

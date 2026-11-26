@@ -10,11 +10,11 @@
     }
   },
   "mode": "flexible",
-  "hold": 0.8,
+  "hold": 0.7,
   "notes": [
     "The README video (decision 0027): a real model, so the rows are matched flexibly. Each row is shown at most once, on the first matching event; an unexpected tool call or a validator error gets a generic row; rows that never match are listed in out/groq/take.json.",
     "{name}: VIDEO_DESIGN_NAME (default 'Amber Lantern'; the app adds the family suffix 'Faceted'), a name not in the SAP seed, so the take shows no taken-name warning.",
-    "Payloads come only from the take's capture: SSE events, the JSON of POST /api/actions, .../confirm and /api/validate, the run's trace, or introspect.py (read only). Callouts are [file, symbol], resolved by lines.mjs at take time.",
+    "Payloads come only from the take's capture: SSE events, the JSON of POST /api/actions, .../confirm and /api/preview (the panel's check), the run's trace, or introspect.py (read only). Callouts are [file, symbol], resolved by lines.mjs at take time.",
     "The FreeCAD rows (6.2-6.4) are in cues-freecad.json: the clip is recorded on the desktop and composed in where it ran."
   ],
   "sentences": {
@@ -53,14 +53,16 @@
 
     { "id": "3.1", "scene": 3, "on": { "step": "hand_edit" }, "layer": "Browser",
       "subtitle": "The designer types 32 facets per row by hand." },
-    { "id": "3.2", "scene": 3, "on": { "event": "validate", "ok": false }, "layer": "Validators",
+    { "id": "3.2", "scene": 3, "on": { "event": "panel_check", "ok": false }, "layer": "Validators",
       "subtitle": "The same validators answer: rule GB-05, and the nearest valid values. The model can explain a rule; it cannot overrule it.",
-      "callouts": [["backend/app/api/families.py", "validate"]], "payload": { "from": "validate", "pick": "violations" } },
+      "callouts": [["backend/app/api/families.py", "preview"]], "payload": { "from": "panel_check", "pick": "validation.violations" } },
     { "id": "3.3", "scene": 3, "on": { "step": "nearest" }, "layer": "Browser",
       "subtitle": "One click takes the nearest valid value." },
 
     { "id": "4.1", "scene": 4, "on": { "step": "typed:reserve" }, "layer": "Browser",
       "subtitle": "The designer asks for a SKU." },
+    { "id": "4.1d", "scene": 4, "on": { "step": "reserve_panel" }, "layer": "Browser",
+      "subtitle": "Without a model, the panel's Reserve SKU form opens the same card (dry run only)." },
     { "id": "4.2", "scene": 4, "on": { "event": "pending_action" }, "layer": "Browser",
       "subtitle": "The model can only open a card. Nothing reaches SAP until the designer clicks Confirm.",
       "callouts": [["backend/app/agent/tools.py", "_open_card"]], "payload": { "from": "event", "pick": "action.payload" } },

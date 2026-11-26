@@ -8,7 +8,8 @@
  *   npm run video:groq       the take on Groq (start.cmd video, answer Y to Groq)
  *
  * Capture: an init script wraps the app's fetch. Every SSE event of POST /api/chat, the chat
- * request itself, and the JSON of POST /api/actions, .../confirm and /api/validate go to Node
+ * request itself, and the JSON of POST /api/actions, .../confirm and /api/preview (the
+ * panel's live check: validation and 3D preview) go to Node
  * with their time, and are handed to the app only when Node returns: that is how a subtitle
  * stays on screen while the app shows that step. The app is not changed and the events are
  * not changed; only their delivery to the browser is paced.
@@ -28,6 +29,9 @@ const STAGE = { width: 1920, height: 1080 }
 const TYPE_DELAY_MS = 40
 const TURN_TIMEOUT_MS = 200_000
 const FREECAD_SECONDS = 16
+// Generic rows (tool calls the storyboard did not foresee) shown at most; the others are
+// listed in take.json as skipped, so the video stays near its length.
+const MAX_GENERIC = Number(process.env.VIDEO_MAX_GENERIC ?? 3)
 const PYTHON =
   process.env.VIDEO_PYTHON ||
   join(ROOT, 'backend', '.venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python')
@@ -124,11 +128,11 @@ const CAPTURE = String.raw`(() => {
       return new Response(body, { status: response.status, statusText: response.statusText, headers: response.headers })
     }
     const confirm = /^\/api\/actions\/[^/?]+\/confirm/.test(url)
-    const validate = url === '/api/validate'
-    if (method === 'POST' && (confirm || validate || url === '/api/actions')) {
+    const panel = url === '/api/preview'
+    if (method === 'POST' && (confirm || panel || url === '/api/actions')) {
       const response = await original(input, init)
       const data = await response.clone().json().catch(() => null)
-      await send({ type: confirm ? 'confirm' : validate ? 'validate' : 'action', data, status: response.status })
+      await send({ type: confirm ? 'confirm' : panel ? 'panel_check' : 'action', data, status: response.status })
       return response
     }
     return original(input, init)
@@ -177,6 +181,7 @@ class Conductor {
   cursor = 0
   shownIds = new Set<string>()
   generic = 0
+  skippedGeneric: string[] = []
   t0 = 0
   turn: string | null = null
   turnText = ''
@@ -280,7 +285,8 @@ class Conductor {
     const d = ev.data ?? {}
     if (row.on.name && d.name !== row.on.name) return false
     if (row.on.kind && (d.kind ?? d.action?.kind) !== row.on.kind) return false
-    if (row.on.ok !== undefined && !!d.ok !== row.on.ok) return false
+    // ok: a tool result's `ok`, or a panel check's `validation.valid`
+    if (row.on.ok !== undefined && !!(d.validation?.valid ?? d.ok) !== row.on.ok) return false
     return true
   }
 
@@ -299,7 +305,7 @@ class Conductor {
       if (!ev) this.fail(`row ${row.id}: payload from an event, but no event triggered it`)
       source = { from, index: ev.index, pick: path }
       value = pick(ev.data, path)
-    } else if (['request', 'confirm', 'action', 'validate'].includes(from)) {
+    } else if (['request', 'confirm', 'action', 'panel_check'].includes(from)) {
       // The event that triggered the row if it is of that type, else the last one captured.
       const captured = ev?.type === from ? ev : (this.last[from] ?? this.fail(`row ${row.id}: no ${from} captured yet`))
       source = { from, index: captured.index, pick: path }
@@ -324,7 +330,7 @@ class Conductor {
       : from === 'request' ? 'POST /api/chat (request body)'
       : from === 'confirm' ? `POST /api/actions/{id}/confirm → ${status(this.last.confirm)}`
       : from === 'action' ? `POST /api/actions → ${status(this.last.action)}`
-      : from === 'validate' ? `POST /api/validate → ${status(this.last.validate)}`
+      : from === 'panel_check' ? `POST /api/preview → ${status(this.last.panel_check)}`
       : from === 'trace' ? `GET /api/runs/${this.traces.at(-1)?.id}` : `video/introspect.py ${String(source.args[0])}`
     return { label, note: path ? `.${path}` : 'captured', value, source }
   }
@@ -414,7 +420,8 @@ class Conductor {
     let after = head('after') ? this.withFollows(head('after')!) : []
     if (!before.length && !after.length) {
       const generic = this.genericRow(ev)
-      if (generic) after = [generic]
+      if (generic && this.generic > MAX_GENERIC) this.skippedGeneric.push(`${ev.type} ${ev.data?.name ?? ''}`.trim())
+      else if (generic) after = [generic]
     }
     for (const row of before) await this.show(row, ev)
     if (ev.type === 'done') this.onDone(ev)
@@ -516,6 +523,7 @@ async function saveTake(conductor: Conductor, page: Page, context: import('@play
     provider: conductor.board.provider,
     models: conductor.traces.map((t) => t.model),
     missing: conductor.missing(),
+    generic_skipped: conductor.skippedGeneric,
     failure: conductor.failure?.message ?? null,
     ...extra,
   }
@@ -656,8 +664,19 @@ for (const [provider, tag] of [['groq', '@groq'], ['fake', '@demo-dry']] as cons
       await until(conductor.idle())
       await sleep(1200)
 
-      // Scene 4: the model opens the reservation card; the designer confirms
-      await ask('reserve')
+      // Scene 4: the model opens the reservation card; the designer confirms. Demo mode does
+      // not reserve from the chat (its Q&A bank explains how), so the dry run uses the panel's
+      // Reserve SKU… form, the path a designer has without a model.
+      if (provider === 'fake') {
+        await app.getByRole('button', { name: 'Reserve SKU…' }).click()
+        const name = app.getByLabel('Product name')
+        await name.fill('') // the form suggests a first word
+        await conductor.step('reserve_panel')
+        await name.pressSequentially(process.env.VIDEO_DESIGN_NAME || 'Amber Lantern', { delay: TYPE_DELAY_MS })
+        await reviewStep('Reserve SKU…')
+      } else {
+        await ask('reserve')
+      }
       const reserve = await confirmCard('Reserve SKU in SAP')
       await expect(reserve).toContainText(/Reserved (GB|CH)-\d{4}/)
       await until(conductor.idle())
@@ -679,8 +698,8 @@ for (const [provider, tag] of [['groq', '@groq'], ['fake', '@demo-dry']] as cons
       await drawing.scrollIntoViewIfNeeded()
       await sleep(3000) // the PDF viewer draws the sheet
       await assertNoPaths(page, 'Drawing tab')
-      await conductor.step('drawing')
-      // A zoom on the title block, in the app's frame only (the PDF is the generated one).
+      // A zoom on the title block, in the app's frame only (the PDF is the generated one); the
+      // row about the title block is read while it is zoomed in.
       await drawing.evaluate((el) => {
         const frame = el as HTMLIFrameElement
         frame.parentElement!.style.overflow = 'hidden'
@@ -688,25 +707,32 @@ for (const [provider, tag] of [['groq', '@groq'], ['fake', '@demo-dry']] as cons
         frame.style.transformOrigin = '100% 100%'
         frame.style.transform = 'scale(2.2)'
       })
-      await sleep(3500)
+      await sleep(1300)
+      await conductor.step('drawing')
       await drawing.evaluate((el) => ((el as HTMLIFrameElement).style.transform = ''))
+      await sleep(800)
 
       // Scene 6: queue the render, then FreeCAD while Blender works
       await app.getByRole('button', { name: 'Render…' }).click()
       await reviewStep('Render…')
-      await confirmCard('Queue catalog render')
+      const render = await confirmCard('Queue catalog render')
+      // The card's result is in: its row has been shown before the wait for FreeCAD starts.
+      await expect(render).toContainText(/Render job #\d+/)
       await until(conductor.idle())
+      const queued = conductor.now()
       const color = generated.payload?.params?.color ?? generated.result?.params?.color ?? 'amber'
       const families = await request.get('/api/families/FAC?lang=en').then((r) => r.json())
       const hex = families.swatches?.find((s: any) => s.id === color)?.hex ?? '#c9822b'
-      await until(captureFreecad({ sku, rev, color: hex, outDir, now: () => conductor.now(), seconds: FREECAD_SECONDS }), 180_000, 'FreeCAD')
+      const freecad = await until(captureFreecad({ sku, rev, color: hex, outDir, now: () => conductor.now(), seconds: FREECAD_SECONDS }), 180_000, 'FreeCAD')
+      // FreeCAD's start (the take shows the render job running meanwhile): a labelled cut.
+      conductor.waits.push({ from_ms: queued, to_ms: freecad.info.start_ms, what: 'FreeCAD starting (Blender rendering)' })
 
-      // Scene 7: back in the app, the finished render
+      // Scene 7: back in the app while FreeCAD closes, the finished render
       await app.getByRole('tab', { name: /Renders/ }).click()
-      const rendering = conductor.now()
       const image = app.getByRole('img', { name: new RegExp(`^Render of ${sku}`) })
       await expect(image).toBeVisible({ timeout: 600_000 })
-      conductor.wait(rendering, 'Blender rendering')
+      conductor.wait(freecad.info.end_ms, 'Blender rendering')
+      await until(freecad.exited, 60_000, 'FreeCAD closing')
       await image.scrollIntoViewIfNeeded()
       await sleep(800)
       posterMs = conductor.now()

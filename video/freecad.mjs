@@ -58,15 +58,17 @@ export function openStep({ step, sku, rev, color, seconds, gui = findFreecad() }
     windowsHide: false,
   })
   const exited = new Promise((resolveExit) => child.on('exit', (code) => resolveExit(code)))
-  // Bounded: FreeCAD's start (~5-10 s), the hold and the turn, plus a margin.
-  const limit = setTimeout(() => child.kill(), (seconds + 60) * 1000)
+  // Bounded: FreeCAD's start (5-30 s while Blender renders), the hold and the turn, plus a margin.
+  const limit = setTimeout(() => child.kill(), (seconds + 120) * 1000)
   exited.finally(() => clearTimeout(limit))
   return { child, exited }
 }
 
 /**
  * The clip: FreeCAD opens the take's STEP, desktop.mjs records `seconds` of the window,
- * then FreeCAD quits by itself. Writes freecad.mp4 and freecad.json in `outDir`.
+ * then FreeCAD quits by itself. Writes freecad.mp4 and freecad.json in `outDir`. Returns the
+ * clip's info at once, and `exited`, which resolves when FreeCAD has quit (code 0, else it
+ * rejects): the take goes back to the app while FreeCAD closes.
  */
 export async function captureFreecad({ sku, rev, color, outDir, now, seconds = 16 }) {
   const step = stepPath(sku, rev)
@@ -82,9 +84,11 @@ export async function captureFreecad({ sku, rev, color, outDir, now, seconds = 1
       ready: new RegExp(`^\\W*${sku} rev ${rev} - FreeCAD`),
       name: 'FreeCAD',
     })
-    const code = await exited
-    if (code !== 0) throw new Error(`FreeCAD ended with code ${code}`)
-    return info
+    const done = exited.then((code) => {
+      if (code !== 0) throw new Error(`FreeCAD ended with code ${code}`)
+    })
+    done.catch(() => {}) // observed by the caller
+    return { info, exited: done }
   } catch (err) {
     child.kill()
     throw err

@@ -73,7 +73,7 @@ function verify(dir, storyboard, shown, mode) {
     if (!s.source) continue
     const { from } = s.source
     let truth
-    if (['event', 'request', 'confirm', 'action', 'validate'].includes(from)) {
+    if (['event', 'request', 'confirm', 'action', 'panel_check'].includes(from)) {
       const ev = events[s.source.index]
       if (!ev || (from !== 'event' && ev.type !== from)) problems.push(`${s.id}: captured ${from} #${s.source.index} is missing`)
       truth = pick(ev?.data, s.source.pick)
