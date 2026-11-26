@@ -1,6 +1,6 @@
 [project]
 name = "hl-bead-studio-backend"
-version = "0.1.0"
+version = "1.0.0"
 description = "Bead Studio backend: parametric glass beads and charms with an AI guide (FastAPI)"
 requires-python = ">=3.12"
 

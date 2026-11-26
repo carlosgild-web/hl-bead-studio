@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-26
+
+The first release: Phases 0 to 9 of [`PLAN.md`](PLAN.md).
+
 ### Added
 
 - Phase 0 skeleton: backend and sap-mock FastAPI packages with health endpoints, Vite React
@@ -118,8 +122,25 @@ All notable changes to this project are documented here. The format follows
   stay saved), with an inline confirmation.
 - Focus mode: while a confirmation card or the Start-over question waits for the designer, the
   rest of the studio is grayed, slightly blurred and inert, and the card gets the keyboard
-  focus. "Not now" (or Esc) sets a card aside; "Go to the card" in the stepper, now shown for
-  any waiting card, brings it back.
+  focus. "Use the chat" (or Esc) sets a card or a workflow step aside and puts the cursor in
+  the chat; "Go to the card" in the stepper, now shown for any waiting card, brings it back.
+- After a confirmed reserve or generate, the workflow opens the next step and the studio
+  waits there; the chat's next-step chip opens the same step.
+- The studio session (conversation, panel, view) survives a reload, and file downloads stay
+  on the page.
+- SAP's current revision follows the generated files, and revisions never skip a letter
+  (decision 0024).
+- `python -m app.cli demo-reset` returns the demo to the seed catalog: test SKUs, designs,
+  renders and conversations are removed (decision 0024).
+- A SKU can be reserved while the design breaks rules; the card warns and lists them
+  (decision 0025). A generate card lists the design it will write.
+- Rule ids link to the manual; rule messages sit under their field and name it as the panel
+  does. The catalog search also filters the gallery and can be cleared.
+- A render shows the elapsed time instead of a progress bar that looked stuck.
+- Phase 9 showcase: the README with a GIF, screenshots, the drawing, renders, the
+  architecture and an eval summary; `npm run showcase` in `e2e/` makes the images again
+  (`e2e/tests/showcase.spec.ts`, not part of `npm test`); the Dahl `qa` suite results
+  (81/92) in `docs/eval/`.
 
 ### Changed
 
@@ -128,6 +149,11 @@ All notable changes to this project are documented here. The format follows
 - The chat shows the backend's reason when a turn is refused (rate limit, token cap).
 - Demo mode no longer gives the same English notice to every message (decision 0022).
 - The Spanish UI says "dije" for charm, as the manual does.
+- Demo mode proposes the values in the designer's message, in the designer's language
+  (decision 0023), and recognizes a question without a question mark.
+- The studio fits the screen; the chat header wraps, and phones get a compact header.
+  Choices read as words everywhere (no internal keys).
+- Charm height reads as the body height, and initials are capitals.
 
 - Manual and schemas after measuring the fonts (decision 0010): CH-07 minimum heights
   (Pacifico 10.5 mm, Y 18.5 mm; Cinzel Bold 16.5 mm, no K), CH-06 engraved letters at least
@@ -136,6 +162,12 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- The 3D viewer shows charms with the loop up; rhodium shows against a slate backdrop, and
+  glass keeps its color in the lower facets.
+- An initial hangs from its center of mass.
+- The drawing says "Mass" for glass beads; "before plating" only for charms.
+- The panel's live check is not retried after a refusal and is cancelled when stale.
+- Metal renders get a soft gradient instead of a black band (the gallery was re-rendered).
 - Opening a card that was already open (the stepper twice, or the next-step chip and the
   stepper) showed it twice in the chat; the server returns the same card, so the chat now
   shows it once and scrolls to it.
@@ -152,3 +184,6 @@ All notable changes to this project are documented here. The format follows
   tool (HTTP 400).
 - The 3D viewer: clearer glass, fully metallic plating, and a flat metal face that is never
   black.
+
+[Unreleased]: https://github.com/carlosgild-web/hl-bead-studio/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/carlosgild-web/hl-bead-studio/releases/tag/v1.0.0
