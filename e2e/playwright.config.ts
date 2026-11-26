@@ -21,6 +21,8 @@ const python = process.env.E2E_PYTHON ?? (existsSync(venvPython) ? venvPython : 
 
 export default defineConfig({
   testDir: './tests',
+  // The README images run only through `npm run showcase` (tests/showcase.spec.ts).
+  testIgnore: process.env.npm_lifecycle_event === 'showcase' ? [] : ['**/showcase.spec.ts'],
   timeout: 120_000,
   expect: { timeout: 30_000 },
   fullyParallel: false,

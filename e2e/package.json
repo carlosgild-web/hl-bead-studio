@@ -1,10 +1,11 @@
 {
   "name": "hl-bead-studio-e2e",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "test": "playwright test",
+    "showcase": "playwright test showcase",
     "install-browser": "playwright install chromium"
   },
   "devDependencies": {
