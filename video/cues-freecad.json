@@ -1,0 +1,32 @@
+{
+  "notes": [
+    "The FreeCAD ending (decision 0027): a desktop recording of FreeCAD 1.1 opening the take's STEP file (freecad.mjs, freecad_view.FCMacro), put in where it was recorded, while Blender renders the catalog image queued just before.",
+    "Times are seconds from the start of the clip (16 s). The macro holds the still model for 1.5 s, then turns it once around its axis.",
+    "No zoom: the solid fills the 3D view. A clip spec may add a zoom (start, factor, cx, cy, label), as hl-create-design's KiCad clips do."
+  ],
+  "label": "FreeCAD 1.1 on the desktop (screen recording)",
+  "clips": {
+    "freecad": {
+      "cues": [
+        {
+          "id": "6.2",
+          "start": 0.0,
+          "end": 5.5,
+          "subtitle": "While Blender works, the STEP file opens in FreeCAD: real CAD geometry, not a picture."
+        },
+        {
+          "id": "6.3",
+          "start": 5.5,
+          "end": 11.0,
+          "subtitle": "The same solid CadQuery built from the validated numbers, ready for the mold maker."
+        },
+        {
+          "id": "6.4",
+          "start": 11.0,
+          "end": 16.0,
+          "subtitle": "FreeCAD is only a viewer here: the files were written after the designer's click."
+        }
+      ]
+    }
+  }
+}
