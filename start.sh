@@ -3,10 +3,22 @@
 #   ./start.sh                checks Dahl, Groq, Ollama, then the demo model, and asks which one
 #                             (LLM_PROVIDER=fake or anthropic in .env skips the check)
 #   ./start.sh groq           or: dahl, anthropic, ollama, fake: that one, without the check
+#   ./start.sh video [groq]   the same on fresh seed data in data-video/ (re-seeded at every
+#                             start, faster renders): for the video takes; data/ is not touched
 # Runs the mock SAP (:8100), the backend (:8000) and the UI (:5173), opens the browser,
 # and stops all three on Ctrl+C. Setup: see "Quick start" in README.md.
 set -euo pipefail
 cd "$(dirname "$0")"
+
+# Video mode (decision 0026): environment variables win over .env, so both services and the
+# designs move to data-video/. The reset below empties it at every start.
+video=0
+if [[ "${1:-}" == video ]]; then
+  video=1
+  shift
+  export DATA_DIR="$PWD/data-video" DESIGNS_ROOT="$PWD/data-video/designs"
+  export RENDER_SAMPLES="${RENDER_SAMPLES:-16}"
+fi
 
 if [[ $# -gt 0 ]]; then
   case "$1" in
@@ -47,6 +59,16 @@ fi
 if ! (cd backend && .venv/bin/python -m app.cli free-ports); then
   echo "Nothing was started." >&2
   exit 1
+fi
+
+# Video mode: back to the seed catalog in data-video/ (the same code as demo-reset, decision 0024).
+# The ports are free now, so no SQLite file is open.
+if [[ $video -eq 1 ]]; then
+  if ! (cd backend && .venv/bin/python -m app.cli demo-reset --yes >/dev/null); then
+    echo "The video data in data-video/ could not be reset; nothing was started." >&2
+    exit 1
+  fi
+  echo "Video mode: fresh seed data in data-video/ (your data/ folder is not touched), $RENDER_SAMPLES render samples."
 fi
 
 # No provider named: check them and let the designer choose (decisions 0019 and 0021). The questions

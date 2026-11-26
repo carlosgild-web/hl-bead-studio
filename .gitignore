@@ -1,5 +1,6 @@
 # Persistent data: generated designs, SQLite files, traces, render jobs (never commit)
 data/
+data-video/
 
 # Env
 .env

@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from app.cli import main
+from app.core.config import Settings
 from app.reset import ResetError, plan_reset, run_reset
 from tests.conftest import make_settings
 
@@ -53,3 +54,41 @@ def test_the_cli_asks_unless_yes(used, monkeypatch, capsys) -> None:
     assert main(["demo-reset", "--yes"]) == 0
     assert not (used.data_dir / "sap_mock.db").exists()
     assert "seed/materials.json" in capsys.readouterr().out
+
+
+def _fill(data: Path) -> None:
+    (data / "designs" / "GB-1040" / "A").mkdir(parents=True)
+    (data / "designs" / "GB-1040" / "A" / "GB-1040_A.step").write_text("step")
+    (data / "bead_studio.sqlite3").write_bytes(b"app")
+    (data / "sap_mock.db").write_bytes(b"sap")
+
+
+def test_video_mode_resets_data_video_and_leaves_data_alone(tmp_path, monkeypatch) -> None:
+    """`start.cmd video` sets DATA_DIR and DESIGNS_ROOT to data-video, then runs
+    `demo-reset --yes` (decision 0026): every take starts on the seed, the user's data stays."""
+    data, video = tmp_path / "data", tmp_path / "data-video"
+    _fill(data)
+    _fill(video)
+    monkeypatch.setenv("DATA_DIR", str(video))
+    monkeypatch.setenv("DESIGNS_ROOT", str(video / "designs"))
+    settings = Settings(_env_file=None)
+    monkeypatch.setattr("app.cli.get_settings", lambda: settings)
+
+    assert main(["demo-reset", "--yes"]) == 0
+
+    assert sorted(p.name for p in video.iterdir()) == ["designs"]
+    assert list((video / "designs").iterdir()) == []
+    left = sorted(p.name for p in data.iterdir())
+    assert left == ["bead_studio.sqlite3", "designs", "sap_mock.db"]
+    assert (data / "designs" / "GB-1040" / "A" / "GB-1040_A.step").read_text() == "step"
+
+
+def test_the_first_video_start_has_nothing_to_reset(tmp_path, monkeypatch, capsys) -> None:
+    video = tmp_path / "data-video"
+    monkeypatch.setenv("DATA_DIR", str(video))
+    monkeypatch.setenv("DESIGNS_ROOT", str(video / "designs"))
+    settings = Settings(_env_file=None)
+    monkeypatch.setattr("app.cli.get_settings", lambda: settings)
+
+    assert main(["demo-reset", "--yes"]) == 0
+    assert "already clean" in capsys.readouterr().out
