@@ -1,0 +1,1251 @@
+{
+  "provider": "dahl",
+  "model": "zai-org/GLM-5.3-Flash",
+  "started": "2026-11-24T16:57:20+00:00",
+  "passed": 1,
+  "total": 13,
+  "planned": 13,
+  "complete": true,
+  "stopped": "",
+  "checks": {
+    "completed": {
+      "passed": 1,
+      "scored": 13
+    },
+    "confirmed_only": {
+      "passed": 13,
+      "scored": 13
+    },
+    "effects": {
+      "passed": 13,
+      "scored": 13
+    },
+    "cards": {
+      "passed": 13,
+      "scored": 13
+    },
+    "family": {
+      "passed": 2,
+      "scored": 10
+    },
+    "params": {
+      "passed": 1,
+      "scored": 5
+    },
+    "valid": {
+      "passed": 1,
+      "scored": 10
+    },
+    "rules_cited": {
+      "passed": 0,
+      "scored": 8
+    },
+    "mentions": {
+      "passed": 0,
+      "scored": 8
+    },
+    "tools": {
+      "passed": 2,
+      "scored": 13
+    },
+    "no_false_card_claim": {
+      "passed": 13,
+      "scored": 13
+    },
+    "language": {
+      "passed": 13,
+      "scored": 13
+    }
+  },
+  "scenarios": [
+    {
+      "id": "qa-design-fac-amber-en",
+      "title": "Q&A (design): design-fac-amber",
+      "language": "en",
+      "tags": [
+        "qa",
+        "design"
+      ],
+      "passed": true,
+      "checks": [
+        {
+          "name": "completed",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "confirmed_only",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "effects",
+          "ok": true,
+          "detail": "reserved 0, designs 0, renders 0"
+        },
+        {
+          "name": "cards",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "family",
+          "ok": true,
+          "detail": "FAC (expected FAC)"
+        },
+        {
+          "name": "params",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "valid",
+          "ok": true,
+          "detail": "valid=True"
+        },
+        {
+          "name": "tools",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "no_false_card_claim",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "language",
+          "ok": true,
+          "detail": "en 8 vs es 0 marker words"
+        }
+      ],
+      "model_calls": 3,
+      "tokens": 8730,
+      "seconds": 67.3,
+      "turns": [
+        {
+          "text": "A 10 mm faceted amber bead for the Amber Hollow collection",
+          "answer": "Your faceted bead is in the parameter panel — everything validates (GEN rules, Edition 1 2026-11):\n\n- **Diameter:** 10.0 mm\n- **Facets:** 16 per row, 2 rows\n- **Hole:** 1.5 mm\n- **Glass color:** Amber\n\nFeel free to tweak any value in the panel. When you're happy, I can check a product name against the catalog (e.g. \"Amber Glow Faceted\") or build a preview — just say the word.",
+          "status": "answered",
+          "error": null,
+          "seconds": 66.5,
+          "tools": [
+            {
+              "name": "describe_family",
+              "arguments": {
+                "code": "FAC"
+              },
+              "ok": true
+            },
+            {
+              "name": "propose_parameters",
+              "arguments": {
+                "family": "FAC",
+                "params": {
+                  "color": "amber",
+                  "diameter_mm": 10.0,
+                  "facet_count": 16,
+                  "facet_rows": 2,
+                  "hole_mm": 1.5
+                }
+              },
+              "ok": true
+            }
+          ],
+          "checks": []
+        }
+      ],
+      "clicks": [],
+      "cards": [],
+      "effects": {
+        "reserved": 0,
+        "designs": 0,
+        "renders": 0
+      }
+    },
+    {
+      "id": "qa-design-crs-gold-en",
+      "title": "Q&A (design): design-crs-gold",
+      "language": "en",
+      "tags": [
+        "qa",
+        "design"
+      ],
+      "passed": false,
+      "checks": [
+        {
+          "name": "completed",
+          "ok": false,
+          "detail": "turn 1: error (The Dahl API is busy or rate limited (This model is at concurrency capacity. Paid accounts are admitted first. Top up at https://inference.dahl.global/account — $0.01 per 1M tokens (in + out + cached) on any model, promo until 30 Nov 21:00 UTC. Retry after Retry-After, or switch model. Other models available now: MiniMaxAI/MiniMax-M2.7, deepseek-ai/DeepSeek-V4-Flash-0731. You can switch to one of them.); try again shortly.)"
+        },
+        {
+          "name": "confirmed_only",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "effects",
+          "ok": true,
+          "detail": "reserved 0, designs 0, renders 0"
+        },
+        {
+          "name": "cards",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "family",
+          "ok": false,
+          "detail": "None (expected CRS)"
+        },
+        {
+          "name": "params",
+          "ok": false,
+          "detail": "no parameters checked by a tool"
+        },
+        {
+          "name": "valid",
+          "ok": false,
+          "detail": "valid=None"
+        },
+        {
+          "name": "tools",
+          "ok": false,
+          "detail": "missing: propose_parameters|validate_parameters"
+        },
+        {
+          "name": "no_false_card_claim",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "language",
+          "ok": true,
+          "detail": "en 0 vs es 0 marker words"
+        }
+      ],
+      "model_calls": 1,
+      "tokens": 2399,
+      "seconds": 115.1,
+      "turns": [
+        {
+          "text": "A gold-plated crescent moon charm with a star, 16 mm tall",
+          "answer": "",
+          "status": "error",
+          "error": "The Dahl API is busy or rate limited (This model is at concurrency capacity. Paid accounts are admitted first. Top up at https://inference.dahl.global/account — $0.01 per 1M tokens (in + out + cached) on any model, promo until 30 Nov 21:00 UTC. Retry after Retry-After, or switch model. Other models available now: MiniMaxAI/MiniMax-M2.7, deepseek-ai/DeepSeek-V4-Flash-0731. You can switch to one of them.); try again shortly.",
+          "seconds": 114.6,
+          "tools": [
+            {
+              "name": "list_families",
+              "arguments": {},
+              "ok": true
+            },
+            {
+              "name": "describe_family",
+              "arguments": {
+                "code": "CRS"
+              },
+              "ok": true
+            }
+          ],
+          "checks": []
+        }
+      ],
+      "clicks": [],
+      "cards": [],
+      "effects": {
+        "reserved": 0,
+        "designs": 0,
+        "renders": 0
+      }
+    },
+    {
+      "id": "qa-design-crs-gold-es",
+      "title": "Q&A (design): design-crs-gold",
+      "language": "es",
+      "tags": [
+        "qa",
+        "design"
+      ],
+      "passed": false,
+      "checks": [
+        {
+          "name": "completed",
+          "ok": false,
+          "detail": "turn 1: error (The Dahl API is busy or rate limited (This model is at concurrency capacity. Paid accounts are admitted first. Top up at https://inference.dahl.global/account — $0.01 per 1M tokens (in + out + cached) on any model, promo until 30 Nov 21:00 UTC. Retry after Retry-After, or switch model. Other models available now: MiniMaxAI/MiniMax-M2.7, deepseek-ai/DeepSeek-V4-Flash-0731. You can switch to one of them.); try again shortly.)"
+        },
+        {
+          "name": "confirmed_only",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "effects",
+          "ok": true,
+          "detail": "reserved 0, designs 0, renders 0"
+        },
+        {
+          "name": "cards",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "family",
+          "ok": false,
+          "detail": "None (expected CRS)"
+        },
+        {
+          "name": "params",
+          "ok": false,
+          "detail": "no parameters checked by a tool"
+        },
+        {
+          "name": "valid",
+          "ok": false,
+          "detail": "valid=None"
+        },
+        {
+          "name": "tools",
+          "ok": false,
+          "detail": "missing: propose_parameters|validate_parameters"
+        },
+        {
+          "name": "no_false_card_claim",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "language",
+          "ok": true,
+          "detail": "es 0 vs en 0 marker words"
+        }
+      ],
+      "model_calls": 1,
+      "tokens": 2536,
+      "seconds": 42.1,
+      "turns": [
+        {
+          "text": "Un dije de luna creciente con estrella, baño de oro, 16 mm de alto",
+          "answer": "",
+          "status": "error",
+          "error": "The Dahl API is busy or rate limited (This model is at concurrency capacity. Paid accounts are admitted first. Top up at https://inference.dahl.global/account — $0.01 per 1M tokens (in + out + cached) on any model, promo until 30 Nov 21:00 UTC. Retry after Retry-After, or switch model. Other models available now: MiniMaxAI/MiniMax-M2.7, deepseek-ai/DeepSeek-V4-Flash-0731. You can switch to one of them.); try again shortly.",
+          "seconds": 41.6,
+          "tools": [
+            {
+              "name": "list_families",
+              "arguments": {},
+              "ok": true
+            },
+            {
+              "name": "describe_family",
+              "arguments": {
+                "code": "CRS"
+              },
+              "ok": true
+            }
+          ],
+          "checks": []
+        }
+      ],
+      "clicks": [],
+      "cards": [],
+      "effects": {
+        "reserved": 0,
+        "designs": 0,
+        "renders": 0
+      }
+    },
+    {
+      "id": "qa-design-rnd-cobalt-en",
+      "title": "Q&A (design): design-rnd-cobalt",
+      "language": "en",
+      "tags": [
+        "qa",
+        "design"
+      ],
+      "passed": false,
+      "checks": [
+        {
+          "name": "completed",
+          "ok": false,
+          "detail": "turn 1: error (The Dahl API is busy or rate limited (This model is at concurrency capacity. Paid accounts are admitted first. Top up at https://inference.dahl.global/account — $0.01 per 1M tokens (in + out + cached) on any model, promo until 30 Nov 21:00 UTC. Retry after Retry-After, or switch model. Other models available now: MiniMaxAI/MiniMax-M2.7, deepseek-ai/DeepSeek-V4-Flash-0731. You can switch to one of them.); try again shortly.)"
+        },
+        {
+          "name": "confirmed_only",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "effects",
+          "ok": true,
+          "detail": "reserved 0, designs 0, renders 0"
+        },
+        {
+          "name": "cards",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "family",
+          "ok": false,
+          "detail": "None (expected RND)"
+        },
+        {
+          "name": "params",
+          "ok": false,
+          "detail": "no parameters checked by a tool"
+        },
+        {
+          "name": "valid",
+          "ok": false,
+          "detail": "valid=None"
+        },
+        {
+          "name": "tools",
+          "ok": false,
+          "detail": "missing: propose_parameters|validate_parameters"
+        },
+        {
+          "name": "no_false_card_claim",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "language",
+          "ok": true,
+          "detail": "en 0 vs es 0 marker words"
+        }
+      ],
+      "model_calls": 0,
+      "tokens": 0,
+      "seconds": 21.4,
+      "turns": [
+        {
+          "text": "An 8 mm round cobalt bead with a 1.5 mm hole",
+          "answer": "",
+          "status": "error",
+          "error": "The Dahl API is busy or rate limited (This model is at concurrency capacity. Paid accounts are admitted first. Top up at https://inference.dahl.global/account — $0.01 per 1M tokens (in + out + cached) on any model, promo until 30 Nov 21:00 UTC. Retry after Retry-After, or switch model. Other models available now: MiniMaxAI/MiniMax-M2.7, deepseek-ai/DeepSeek-V4-Flash-0731. You can switch to one of them.); try again shortly.",
+          "seconds": 21.0,
+          "tools": [],
+          "checks": []
+        }
+      ],
+      "clicks": [],
+      "cards": [],
+      "effects": {
+        "reserved": 0,
+        "designs": 0,
+        "renders": 0
+      }
+    },
+    {
+      "id": "qa-design-ini-m-es",
+      "title": "Q&A (design): design-ini-m",
+      "language": "es",
+      "tags": [
+        "qa",
+        "design"
+      ],
+      "passed": false,
+      "checks": [
+        {
+          "name": "completed",
+          "ok": false,
+          "detail": "turn 1: error (The Dahl API is busy or rate limited (This model is at concurrency capacity. Paid accounts are admitted first. Top up at https://inference.dahl.global/account — $0.01 per 1M tokens (in + out + cached) on any model, promo until 30 Nov 21:00 UTC. Retry after Retry-After, or switch model. Other models available now: MiniMaxAI/MiniMax-M2.7, deepseek-ai/DeepSeek-V4-Flash-0731. You can switch to one of them.); try again shortly.)"
+        },
+        {
+          "name": "confirmed_only",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "effects",
+          "ok": true,
+          "detail": "reserved 0, designs 0, renders 0"
+        },
+        {
+          "name": "cards",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "family",
+          "ok": false,
+          "detail": "None (expected INI)"
+        },
+        {
+          "name": "params",
+          "ok": false,
+          "detail": "no parameters checked by a tool"
+        },
+        {
+          "name": "valid",
+          "ok": false,
+          "detail": "valid=None"
+        },
+        {
+          "name": "tools",
+          "ok": false,
+          "detail": "missing: propose_parameters|validate_parameters"
+        },
+        {
+          "name": "no_false_card_claim",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "language",
+          "ok": true,
+          "detail": "es 0 vs en 0 marker words"
+        }
+      ],
+      "model_calls": 0,
+      "tokens": 0,
+      "seconds": 22.3,
+      "turns": [
+        {
+          "text": "Un dije de inicial, la letra M en Montserrat ExtraBold, de 12 mm, en rodio",
+          "answer": "",
+          "status": "error",
+          "error": "The Dahl API is busy or rate limited (This model is at concurrency capacity. Paid accounts are admitted first. Top up at https://inference.dahl.global/account — $0.01 per 1M tokens (in + out + cached) on any model, promo until 30 Nov 21:00 UTC. Retry after Retry-After, or switch model. Other models available now: MiniMaxAI/MiniMax-M2.7, deepseek-ai/DeepSeek-V4-Flash-0731. You can switch to one of them.); try again shortly.",
+          "seconds": 21.8,
+          "tools": [],
+          "checks": []
+        }
+      ],
+      "clicks": [],
+      "cards": [],
+      "effects": {
+        "reserved": 0,
+        "designs": 0,
+        "renders": 0
+      }
+    },
+    {
+      "id": "qa-design-rnd-wall-broken-es",
+      "title": "Q&A (design): design-rnd-wall-broken",
+      "language": "es",
+      "tags": [
+        "qa",
+        "design"
+      ],
+      "passed": false,
+      "checks": [
+        {
+          "name": "completed",
+          "ok": false,
+          "detail": "turn 1: error (The Dahl API is busy or rate limited (This model is at concurrency capacity. Paid accounts are admitted first. Top up at https://inference.dahl.global/account — $0.01 per 1M tokens (in + out + cached) on any model, promo until 30 Nov 21:00 UTC. Retry after Retry-After, or switch model. Other models available now: MiniMaxAI/MiniMax-M2.7, deepseek-ai/DeepSeek-V4-Flash-0731. You can switch to one of them.); try again shortly.)"
+        },
+        {
+          "name": "confirmed_only",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "effects",
+          "ok": true,
+          "detail": "reserved 0, designs 0, renders 0"
+        },
+        {
+          "name": "cards",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "family",
+          "ok": true,
+          "detail": "RND (expected RND)"
+        },
+        {
+          "name": "valid",
+          "ok": false,
+          "detail": "valid=True"
+        },
+        {
+          "name": "rules_cited",
+          "ok": false,
+          "detail": "missing: GB-02"
+        },
+        {
+          "name": "mentions",
+          "ok": false,
+          "detail": "missing: 1[.,]0 ?mm|4[.,]5 ?mm"
+        },
+        {
+          "name": "tools",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "no_false_card_claim",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "language",
+          "ok": true,
+          "detail": "es 0 vs en 0 marker words"
+        }
+      ],
+      "model_calls": 3,
+      "tokens": 8764,
+      "seconds": 76.9,
+      "turns": [
+        {
+          "text": "Una cuenta redonda de 4 mm con agujero de 1,5 mm",
+          "answer": "",
+          "status": "error",
+          "error": "The Dahl API is busy or rate limited (This model is at concurrency capacity. Paid accounts are admitted first. Top up at https://inference.dahl.global/account — $0.01 per 1M tokens (in + out + cached) on any model, promo until 30 Nov 21:00 UTC. Retry after Retry-After, or switch model. Other models available now: MiniMaxAI/MiniMax-M2.7, deepseek-ai/DeepSeek-V4-Flash-0731. You can switch to one of them.); try again shortly.",
+          "seconds": 76.4,
+          "tools": [
+            {
+              "name": "describe_family",
+              "arguments": {
+                "code": "RND"
+              },
+              "ok": true
+            },
+            {
+              "name": "validate_parameters",
+              "arguments": {
+                "family": "RND",
+                "params": {
+                  "color": "amber",
+                  "diameter_mm": 4.0,
+                  "hole_mm": 1.5
+                }
+              },
+              "ok": true
+            },
+            {
+              "name": "validate_parameters",
+              "arguments": {
+                "family": "RND",
+                "params": {
+                  "color": "amber",
+                  "diameter_mm": 4,
+                  "hole_mm": 1
+                }
+              },
+              "ok": true
+            },
+            {
+              "name": "validate_parameters",
+              "arguments": {
+                "family": "RND",
+                "params": {
+                  "color": "amber",
+                  "diameter_mm": 4.5,
+                  "hole_mm": 1.5
+                }
+              },
+              "ok": true
+            }
+          ],
+          "checks": []
+        }
+      ],
+      "clicks": [],
+      "cards": [],
+      "effects": {
+        "reserved": 0,
+        "designs": 0,
+        "renders": 0
+      }
+    },
+    {
+      "id": "qa-design-fac-small-facets-en",
+      "title": "Q&A (design): design-fac-small-facets",
+      "language": "en",
+      "tags": [
+        "qa",
+        "design"
+      ],
+      "passed": false,
+      "checks": [
+        {
+          "name": "completed",
+          "ok": false,
+          "detail": "turn 1: error (The Dahl API is busy or rate limited (This model is at concurrency capacity. Paid accounts are admitted first. Top up at https://inference.dahl.global/account — $0.01 per 1M tokens (in + out + cached) on any model, promo until 30 Nov 21:00 UTC. Retry after Retry-After, or switch model. Other models available now: MiniMaxAI/MiniMax-M2.7, deepseek-ai/DeepSeek-V4-Flash-0731. You can switch to one of them.); try again shortly.)"
+        },
+        {
+          "name": "confirmed_only",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "effects",
+          "ok": true,
+          "detail": "reserved 0, designs 0, renders 0"
+        },
+        {
+          "name": "cards",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "family",
+          "ok": false,
+          "detail": "None (expected FAC)"
+        },
+        {
+          "name": "valid",
+          "ok": false,
+          "detail": "valid=None"
+        },
+        {
+          "name": "rules_cited",
+          "ok": false,
+          "detail": "missing: GB-05"
+        },
+        {
+          "name": "mentions",
+          "ok": false,
+          "detail": "missing: 12"
+        },
+        {
+          "name": "tools",
+          "ok": false,
+          "detail": "missing: propose_parameters|validate_parameters"
+        },
+        {
+          "name": "no_false_card_claim",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "language",
+          "ok": true,
+          "detail": "en 0 vs es 0 marker words"
+        }
+      ],
+      "model_calls": 1,
+      "tokens": 2277,
+      "seconds": 22.8,
+      "turns": [
+        {
+          "text": "A 6 mm faceted bead with 16 facets",
+          "answer": "",
+          "status": "error",
+          "error": "The Dahl API is busy or rate limited (This model is at concurrency capacity. Paid accounts are admitted first. Top up at https://inference.dahl.global/account — $0.01 per 1M tokens (in + out + cached) on any model, promo until 30 Nov 21:00 UTC. Retry after Retry-After, or switch model. Other models available now: MiniMaxAI/MiniMax-M2.7, deepseek-ai/DeepSeek-V4-Flash-0731. You can switch to one of them.); try again shortly.",
+          "seconds": 22.3,
+          "tools": [
+            {
+              "name": "describe_family",
+              "arguments": {
+                "code": "FAC"
+              },
+              "ok": true
+            }
+          ],
+          "checks": []
+        }
+      ],
+      "clicks": [],
+      "cards": [],
+      "effects": {
+        "reserved": 0,
+        "designs": 0,
+        "renders": 0
+      }
+    },
+    {
+      "id": "qa-design-fac-small-facets-es",
+      "title": "Q&A (design): design-fac-small-facets",
+      "language": "es",
+      "tags": [
+        "qa",
+        "design"
+      ],
+      "passed": false,
+      "checks": [
+        {
+          "name": "completed",
+          "ok": false,
+          "detail": "turn 1: error (The Dahl API is busy or rate limited (This model is at concurrency capacity. Paid accounts are admitted first. Top up at https://inference.dahl.global/account — $0.01 per 1M tokens (in + out + cached) on any model, promo until 30 Nov 21:00 UTC. Retry after Retry-After, or switch model. Other models available now: MiniMaxAI/MiniMax-M2.7, deepseek-ai/DeepSeek-V4-Flash-0731. You can switch to one of them.); try again shortly.)"
+        },
+        {
+          "name": "confirmed_only",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "effects",
+          "ok": true,
+          "detail": "reserved 0, designs 0, renders 0"
+        },
+        {
+          "name": "cards",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "family",
+          "ok": false,
+          "detail": "None (expected FAC)"
+        },
+        {
+          "name": "valid",
+          "ok": false,
+          "detail": "valid=None"
+        },
+        {
+          "name": "rules_cited",
+          "ok": false,
+          "detail": "missing: GB-05"
+        },
+        {
+          "name": "mentions",
+          "ok": false,
+          "detail": "missing: 12"
+        },
+        {
+          "name": "tools",
+          "ok": false,
+          "detail": "missing: propose_parameters|validate_parameters"
+        },
+        {
+          "name": "no_false_card_claim",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "language",
+          "ok": true,
+          "detail": "es 0 vs en 0 marker words"
+        }
+      ],
+      "model_calls": 0,
+      "tokens": 0,
+      "seconds": 21.5,
+      "turns": [
+        {
+          "text": "Una cuenta facetada de 6 mm con 16 facetas",
+          "answer": "",
+          "status": "error",
+          "error": "The Dahl API is busy or rate limited (This model is at concurrency capacity. Paid accounts are admitted first. Top up at https://inference.dahl.global/account — $0.01 per 1M tokens (in + out + cached) on any model, promo until 30 Nov 21:00 UTC. Retry after Retry-After, or switch model. Other models available now: MiniMaxAI/MiniMax-M2.7, deepseek-ai/DeepSeek-V4-Flash-0731. You can switch to one of them.); try again shortly.",
+          "seconds": 21.0,
+          "tools": [],
+          "checks": []
+        }
+      ],
+      "clicks": [],
+      "cards": [],
+      "effects": {
+        "reserved": 0,
+        "designs": 0,
+        "renders": 0
+      }
+    },
+    {
+      "id": "qa-design-dsc-luna-18-en",
+      "title": "Q&A (design): design-dsc-luna-18",
+      "language": "en",
+      "tags": [
+        "qa",
+        "design"
+      ],
+      "passed": false,
+      "checks": [
+        {
+          "name": "completed",
+          "ok": false,
+          "detail": "turn 1: error (The Dahl API is busy or rate limited (This model is at concurrency capacity. Paid accounts are admitted first. Top up at https://inference.dahl.global/account — $0.01 per 1M tokens (in + out + cached) on any model, promo until 30 Nov 21:00 UTC. Retry after Retry-After, or switch model. Other models available now: MiniMaxAI/MiniMax-M2.7, deepseek-ai/DeepSeek-V4-Flash-0731. You can switch to one of them.); try again shortly.)"
+        },
+        {
+          "name": "confirmed_only",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "effects",
+          "ok": true,
+          "detail": "reserved 0, designs 0, renders 0"
+        },
+        {
+          "name": "cards",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "family",
+          "ok": false,
+          "detail": "None (expected DSC)"
+        },
+        {
+          "name": "valid",
+          "ok": false,
+          "detail": "valid=None"
+        },
+        {
+          "name": "rules_cited",
+          "ok": false,
+          "detail": "missing: CH-03"
+        },
+        {
+          "name": "mentions",
+          "ok": false,
+          "detail": "missing: 19[.,]5"
+        },
+        {
+          "name": "tools",
+          "ok": false,
+          "detail": "missing: propose_parameters|validate_parameters"
+        },
+        {
+          "name": "no_false_card_claim",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "language",
+          "ok": true,
+          "detail": "en 0 vs es 0 marker words"
+        }
+      ],
+      "model_calls": 0,
+      "tokens": 0,
+      "seconds": 22.2,
+      "turns": [
+        {
+          "text": "An 18 mm disc charm engraved with LUNA",
+          "answer": "",
+          "status": "error",
+          "error": "The Dahl API is busy or rate limited (This model is at concurrency capacity. Paid accounts are admitted first. Top up at https://inference.dahl.global/account — $0.01 per 1M tokens (in + out + cached) on any model, promo until 30 Nov 21:00 UTC. Retry after Retry-After, or switch model. Other models available now: MiniMaxAI/MiniMax-M2.7, deepseek-ai/DeepSeek-V4-Flash-0731. You can switch to one of them.); try again shortly.",
+          "seconds": 21.6,
+          "tools": [],
+          "checks": []
+        }
+      ],
+      "clicks": [],
+      "cards": [],
+      "effects": {
+        "reserved": 0,
+        "designs": 0,
+        "renders": 0
+      }
+    },
+    {
+      "id": "qa-design-dsc-luna-18-es",
+      "title": "Q&A (design): design-dsc-luna-18",
+      "language": "es",
+      "tags": [
+        "qa",
+        "design"
+      ],
+      "passed": false,
+      "checks": [
+        {
+          "name": "completed",
+          "ok": false,
+          "detail": "turn 1: error (The Dahl API is busy or rate limited (This model is at concurrency capacity. Paid accounts are admitted first. Top up at https://inference.dahl.global/account — $0.01 per 1M tokens (in + out + cached) on any model, promo until 30 Nov 21:00 UTC. Retry after Retry-After, or switch model. Other models available now: MiniMaxAI/MiniMax-M2.7, deepseek-ai/DeepSeek-V4-Flash-0731. You can switch to one of them.); try again shortly.)"
+        },
+        {
+          "name": "confirmed_only",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "effects",
+          "ok": true,
+          "detail": "reserved 0, designs 0, renders 0"
+        },
+        {
+          "name": "cards",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "family",
+          "ok": false,
+          "detail": "None (expected DSC)"
+        },
+        {
+          "name": "valid",
+          "ok": false,
+          "detail": "valid=None"
+        },
+        {
+          "name": "rules_cited",
+          "ok": false,
+          "detail": "missing: CH-03"
+        },
+        {
+          "name": "mentions",
+          "ok": false,
+          "detail": "missing: 19[.,]5"
+        },
+        {
+          "name": "tools",
+          "ok": false,
+          "detail": "missing: propose_parameters|validate_parameters"
+        },
+        {
+          "name": "no_false_card_claim",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "language",
+          "ok": true,
+          "detail": "es 0 vs en 0 marker words"
+        }
+      ],
+      "model_calls": 0,
+      "tokens": 0,
+      "seconds": 21.6,
+      "turns": [
+        {
+          "text": "Un dije de disco de 18 mm con LUNA grabado",
+          "answer": "",
+          "status": "error",
+          "error": "The Dahl API is busy or rate limited (This model is at concurrency capacity. Paid accounts are admitted first. Top up at https://inference.dahl.global/account — $0.01 per 1M tokens (in + out + cached) on any model, promo until 30 Nov 21:00 UTC. Retry after Retry-After, or switch model. Other models available now: MiniMaxAI/MiniMax-M2.7, deepseek-ai/DeepSeek-V4-Flash-0731. You can switch to one of them.); try again shortly.",
+          "seconds": 21.2,
+          "tools": [],
+          "checks": []
+        }
+      ],
+      "clicks": [],
+      "cards": [],
+      "effects": {
+        "reserved": 0,
+        "designs": 0,
+        "renders": 0
+      }
+    },
+    {
+      "id": "qa-gb01-hole-sizes-es",
+      "title": "Q&A (knowledge): gb01-hole-sizes",
+      "language": "es",
+      "tags": [
+        "qa",
+        "knowledge"
+      ],
+      "passed": false,
+      "checks": [
+        {
+          "name": "completed",
+          "ok": false,
+          "detail": "turn 1: error (The Dahl API is busy or rate limited (This model is at concurrency capacity. Paid accounts are admitted first. Top up at https://inference.dahl.global/account — $0.01 per 1M tokens (in + out + cached) on any model, promo until 30 Nov 21:00 UTC. Retry after Retry-After, or switch model. Other models available now: MiniMaxAI/MiniMax-M2.7, deepseek-ai/DeepSeek-V4-Flash-0731. You can switch to one of them.); try again shortly.)"
+        },
+        {
+          "name": "confirmed_only",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "effects",
+          "ok": true,
+          "detail": "reserved 0, designs 0, renders 0"
+        },
+        {
+          "name": "cards",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "rules_cited",
+          "ok": false,
+          "detail": "missing: GB-01"
+        },
+        {
+          "name": "mentions",
+          "ok": false,
+          "detail": "missing: 1[.,]0 ?mm, 2[.,]5 ?mm"
+        },
+        {
+          "name": "tools",
+          "ok": false,
+          "detail": "missing: search_design_manual|describe_family|list_families|validate_parameters"
+        },
+        {
+          "name": "no_false_card_claim",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "language",
+          "ok": true,
+          "detail": "es 0 vs en 0 marker words"
+        }
+      ],
+      "model_calls": 0,
+      "tokens": 0,
+      "seconds": 21.6,
+      "turns": [
+        {
+          "text": "¿Cuál es el agujero más chico que puede llevar una cuenta?",
+          "answer": "",
+          "status": "error",
+          "error": "The Dahl API is busy or rate limited (This model is at concurrency capacity. Paid accounts are admitted first. Top up at https://inference.dahl.global/account — $0.01 per 1M tokens (in + out + cached) on any model, promo until 30 Nov 21:00 UTC. Retry after Retry-After, or switch model. Other models available now: MiniMaxAI/MiniMax-M2.7, deepseek-ai/DeepSeek-V4-Flash-0731. You can switch to one of them.); try again shortly.",
+          "seconds": 21.1,
+          "tools": [],
+          "checks": []
+        }
+      ],
+      "clicks": [],
+      "cards": [],
+      "effects": {
+        "reserved": 0,
+        "designs": 0,
+        "renders": 0
+      }
+    },
+    {
+      "id": "qa-gen01-units-en",
+      "title": "Q&A (knowledge): gen01-units",
+      "language": "en",
+      "tags": [
+        "qa",
+        "knowledge"
+      ],
+      "passed": false,
+      "checks": [
+        {
+          "name": "completed",
+          "ok": false,
+          "detail": "turn 1: error (The Dahl API is busy or rate limited (This model is at concurrency capacity. Paid accounts are admitted first. Top up at https://inference.dahl.global/account — $0.01 per 1M tokens (in + out + cached) on any model, promo until 30 Nov 21:00 UTC. Retry after Retry-After, or switch model. Other models available now: MiniMaxAI/MiniMax-M2.7, deepseek-ai/DeepSeek-V4-Flash-0731. You can switch to one of them.); try again shortly.)"
+        },
+        {
+          "name": "confirmed_only",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "effects",
+          "ok": true,
+          "detail": "reserved 0, designs 0, renders 0"
+        },
+        {
+          "name": "cards",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "rules_cited",
+          "ok": false,
+          "detail": "missing: GEN-01"
+        },
+        {
+          "name": "mentions",
+          "ok": false,
+          "detail": "missing: 0[.,]1, 9[.,]5"
+        },
+        {
+          "name": "tools",
+          "ok": false,
+          "detail": "missing: search_design_manual|describe_family|list_families|validate_parameters"
+        },
+        {
+          "name": "no_false_card_claim",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "language",
+          "ok": true,
+          "detail": "en 0 vs es 0 marker words"
+        }
+      ],
+      "model_calls": 0,
+      "tokens": 0,
+      "seconds": 21.8,
+      "turns": [
+        {
+          "text": "Can I give the sizes in inches?",
+          "answer": "",
+          "status": "error",
+          "error": "The Dahl API is busy or rate limited (This model is at concurrency capacity. Paid accounts are admitted first. Top up at https://inference.dahl.global/account — $0.01 per 1M tokens (in + out + cached) on any model, promo until 30 Nov 21:00 UTC. Retry after Retry-After, or switch model. Other models available now: MiniMaxAI/MiniMax-M2.7, deepseek-ai/DeepSeek-V4-Flash-0731. You can switch to one of them.); try again shortly.",
+          "seconds": 21.3,
+          "tools": [],
+          "checks": []
+        }
+      ],
+      "clicks": [],
+      "cards": [],
+      "effects": {
+        "reserved": 0,
+        "designs": 0,
+        "renders": 0
+      }
+    },
+    {
+      "id": "qa-gen04-sku-es",
+      "title": "Q&A (knowledge): gen04-sku",
+      "language": "es",
+      "tags": [
+        "qa",
+        "knowledge"
+      ],
+      "passed": false,
+      "checks": [
+        {
+          "name": "completed",
+          "ok": false,
+          "detail": "turn 1: error (The Dahl API is busy or rate limited (This model is at concurrency capacity. Paid accounts are admitted first. Top up at https://inference.dahl.global/account — $0.01 per 1M tokens (in + out + cached) on any model, promo until 30 Nov 21:00 UTC. Retry after Retry-After, or switch model. Other models available now: MiniMaxAI/MiniMax-M2.7, deepseek-ai/DeepSeek-V4-Flash-0731. You can switch to one of them.); try again shortly.)"
+        },
+        {
+          "name": "confirmed_only",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "effects",
+          "ok": true,
+          "detail": "reserved 0, designs 0, renders 0"
+        },
+        {
+          "name": "cards",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "rules_cited",
+          "ok": false,
+          "detail": "missing: GEN-04"
+        },
+        {
+          "name": "mentions",
+          "ok": false,
+          "detail": "missing: GB-1NNN|CH-2NNN"
+        },
+        {
+          "name": "tools",
+          "ok": false,
+          "detail": "missing: search_design_manual|describe_family|list_families|validate_parameters"
+        },
+        {
+          "name": "no_false_card_claim",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "language",
+          "ok": true,
+          "detail": "es 0 vs en 0 marker words"
+        }
+      ],
+      "model_calls": 0,
+      "tokens": 0,
+      "seconds": 21.6,
+      "turns": [
+        {
+          "text": "¿Puedo escribir yo el SKU o reusar un número viejo?",
+          "answer": "",
+          "status": "error",
+          "error": "The Dahl API is busy or rate limited (This model is at concurrency capacity. Paid accounts are admitted first. Top up at https://inference.dahl.global/account — $0.01 per 1M tokens (in + out + cached) on any model, promo until 30 Nov 21:00 UTC. Retry after Retry-After, or switch model. Other models available now: MiniMaxAI/MiniMax-M2.7, deepseek-ai/DeepSeek-V4-Flash-0731. You can switch to one of them.); try again shortly.",
+          "seconds": 21.1,
+          "tools": [],
+          "checks": []
+        }
+      ],
+      "clicks": [],
+      "cards": [],
+      "effects": {
+        "reserved": 0,
+        "designs": 0,
+        "renders": 0
+      }
+    }
+  ]
+}

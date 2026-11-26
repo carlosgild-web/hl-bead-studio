@@ -1,0 +1,1465 @@
+{
+  "provider": "dahl",
+  "model": "zai-org/GLM-5.3-Flash",
+  "started": "2026-11-26T18:23:06+00:00",
+  "passed": 10,
+  "total": 12,
+  "planned": 12,
+  "complete": true,
+  "stopped": "",
+  "checks": {
+    "completed": {
+      "passed": 12,
+      "scored": 12
+    },
+    "confirmed_only": {
+      "passed": 12,
+      "scored": 12
+    },
+    "effects": {
+      "passed": 12,
+      "scored": 12
+    },
+    "cards": {
+      "passed": 12,
+      "scored": 12
+    },
+    "family": {
+      "passed": 9,
+      "scored": 9
+    },
+    "params": {
+      "passed": 4,
+      "scored": 4
+    },
+    "valid": {
+      "passed": 7,
+      "scored": 9
+    },
+    "rules_cited": {
+      "passed": 8,
+      "scored": 8
+    },
+    "mentions": {
+      "passed": 8,
+      "scored": 8
+    },
+    "tools": {
+      "passed": 12,
+      "scored": 12
+    },
+    "no_false_card_claim": {
+      "passed": 12,
+      "scored": 12
+    },
+    "language": {
+      "passed": 12,
+      "scored": 12
+    }
+  },
+  "scenarios": [
+    {
+      "id": "qa-design-crs-gold-en",
+      "title": "Q&A (design): design-crs-gold",
+      "language": "en",
+      "tags": [
+        "qa",
+        "design"
+      ],
+      "passed": true,
+      "checks": [
+        {
+          "name": "completed",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "confirmed_only",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "effects",
+          "ok": true,
+          "detail": "reserved 0, designs 0, renders 0"
+        },
+        {
+          "name": "cards",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "family",
+          "ok": true,
+          "detail": "CRS (expected CRS)"
+        },
+        {
+          "name": "params",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "valid",
+          "ok": true,
+          "detail": "valid=True"
+        },
+        {
+          "name": "tools",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "no_false_card_claim",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "language",
+          "ok": true,
+          "detail": "en 15 vs es 0 marker words"
+        }
+      ],
+      "model_calls": 3,
+      "tokens": 9980,
+      "seconds": 53.9,
+      "turns": [
+        {
+          "text": "A gold-plated crescent moon charm with a star, 16 mm tall",
+          "answer": "The parameter panel is filled and validated (valid: true):\n\n| Parameter | Value |\n|---|---|\n| Body height (without loop) | 16.0 mm |\n| Crescent width | 5.0 mm |\n| Star | yes, 5.0 mm diameter |\n| Thickness | 1.5 mm |\n| Loop inner diameter / wall | 2.0 mm / 1.0 mm |\n| Finish | Gold plate |\n\nTweak anything you like in the panel — when you're happy, I can build a preview of the geometry, and when you have a name for it I'll check it against the catalog (GEN-03) before reserving the SKU.",
+          "status": "answered",
+          "error": null,
+          "seconds": 53.2,
+          "tools": [
+            {
+              "name": "list_families",
+              "arguments": {},
+              "ok": true
+            },
+            {
+              "name": "describe_family",
+              "arguments": {
+                "code": "CRS"
+              },
+              "ok": true
+            },
+            {
+              "name": "propose_parameters",
+              "arguments": {
+                "family": "CRS",
+                "params": {
+                  "crescent_width_mm": 5.0,
+                  "finish": "gold_plate",
+                  "has_star": true,
+                  "height_mm": 16.0,
+                  "loop_inner_mm": 2.0,
+                  "loop_wall_mm": 1.0,
+                  "star_diameter_mm": 5.0,
+                  "thickness_mm": 1.5
+                }
+              },
+              "ok": true
+            }
+          ],
+          "checks": []
+        }
+      ],
+      "clicks": [],
+      "cards": [],
+      "effects": {
+        "reserved": 0,
+        "designs": 0,
+        "renders": 0
+      }
+    },
+    {
+      "id": "qa-design-crs-gold-es",
+      "title": "Q&A (design): design-crs-gold",
+      "language": "es",
+      "tags": [
+        "qa",
+        "design"
+      ],
+      "passed": true,
+      "checks": [
+        {
+          "name": "completed",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "confirmed_only",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "effects",
+          "ok": true,
+          "detail": "reserved 0, designs 0, renders 0"
+        },
+        {
+          "name": "cards",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "family",
+          "ok": true,
+          "detail": "CRS (expected CRS)"
+        },
+        {
+          "name": "params",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "valid",
+          "ok": true,
+          "detail": "valid=True"
+        },
+        {
+          "name": "tools",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "no_false_card_claim",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "language",
+          "ok": true,
+          "detail": "es 25 vs en 0 marker words"
+        }
+      ],
+      "model_calls": 3,
+      "tokens": 12546,
+      "seconds": 85.4,
+      "turns": [
+        {
+          "text": "Un dije de luna creciente con estrella, baño de oro, 16 mm de alto",
+          "answer": "Listo, la propuesta está cargada en el panel de parámetros:\n\n**CRS – Media luna (Family Crescent)**\n- Altura del cuerpo (sin argolla): 16.0 mm\n- Ancho de la media luna: 5.0 mm\n- Estrella: sí, 5.0 mm de diámetro\n- Espesor: 1.5 mm\n- Argolla: Ø interior 2.0 mm, pared 1.0 mm\n- Acabado: gold_plate (baño de oro)\n\nLos parámetros validan sin violaciones (Edition 1, 2026-11). Como dato: existe un \"Little Star Crescent\" (CH-2007) pero está descatalogado, no choca con nada.\n\n**Nombre propuesto:** \"Luna Serena Crescent\" — libre en el catálogo y cumple GEN-03.\n\n¿Quieres que abra la tarjeta para reservar el SKU con ese nombre, o prefieres otro nombre y/o ajustar alguna medida del panel primero?",
+          "status": "answered",
+          "error": null,
+          "seconds": 84.9,
+          "tools": [
+            {
+              "name": "list_families",
+              "arguments": {},
+              "ok": true
+            },
+            {
+              "name": "describe_family",
+              "arguments": {
+                "code": "CRS"
+              },
+              "ok": true
+            },
+            {
+              "name": "describe_family",
+              "arguments": {
+                "code": "DSC"
+              },
+              "ok": true
+            },
+            {
+              "name": "propose_parameters",
+              "arguments": {
+                "family": "CRS",
+                "params": {
+                  "crescent_width_mm": 5,
+                  "finish": "gold_plate",
+                  "has_star": true,
+                  "height_mm": 16,
+                  "loop_inner_mm": 2,
+                  "loop_wall_mm": 1,
+                  "star_diameter_mm": 5,
+                  "thickness_mm": 1.5
+                }
+              },
+              "ok": true
+            },
+            {
+              "name": "check_catalog",
+              "arguments": {
+                "family": "CRS",
+                "name": "Luna Serena Crescent"
+              },
+              "ok": true
+            }
+          ],
+          "checks": []
+        }
+      ],
+      "clicks": [],
+      "cards": [],
+      "effects": {
+        "reserved": 0,
+        "designs": 0,
+        "renders": 0
+      }
+    },
+    {
+      "id": "qa-design-rnd-cobalt-en",
+      "title": "Q&A (design): design-rnd-cobalt",
+      "language": "en",
+      "tags": [
+        "qa",
+        "design"
+      ],
+      "passed": true,
+      "checks": [
+        {
+          "name": "completed",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "confirmed_only",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "effects",
+          "ok": true,
+          "detail": "reserved 0, designs 0, renders 0"
+        },
+        {
+          "name": "cards",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "family",
+          "ok": true,
+          "detail": "RND (expected RND)"
+        },
+        {
+          "name": "params",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "valid",
+          "ok": true,
+          "detail": "valid=True"
+        },
+        {
+          "name": "tools",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "no_false_card_claim",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "language",
+          "ok": true,
+          "detail": "en 6 vs es 0 marker words"
+        }
+      ],
+      "model_calls": 3,
+      "tokens": 8521,
+      "seconds": 164.3,
+      "turns": [
+        {
+          "text": "An 8 mm round cobalt bead with a 1.5 mm hole",
+          "answer": "Panel is filled and validated (Edition 1, 2026-11):\n\n| Parameter | Value |\n|---|---|\n| Family | Round (RND) |\n| Diameter | 8.0 mm |\n| Hole | 1.5 mm |\n| Color | Cobalt |\n\nEverything checks out. From here you can:\n- Preview the geometry (volume, mass, bounding box)\n- Pick a name (GEN-03 pattern) and reserve a SKU\n- Generate STEP/STL/GLB + drawing\n\nTell me which step you'd like next.",
+          "status": "answered",
+          "error": null,
+          "seconds": 163.5,
+          "tools": [
+            {
+              "name": "describe_family",
+              "arguments": {
+                "code": "RND"
+              },
+              "ok": true
+            },
+            {
+              "name": "propose_parameters",
+              "arguments": {
+                "family": "RND",
+                "params": {
+                  "color": "cobalt",
+                  "diameter_mm": 8.0,
+                  "hole_mm": 1.5
+                }
+              },
+              "ok": true
+            }
+          ],
+          "checks": []
+        }
+      ],
+      "clicks": [],
+      "cards": [],
+      "effects": {
+        "reserved": 0,
+        "designs": 0,
+        "renders": 0
+      }
+    },
+    {
+      "id": "qa-design-ini-m-es",
+      "title": "Q&A (design): design-ini-m",
+      "language": "es",
+      "tags": [
+        "qa",
+        "design"
+      ],
+      "passed": true,
+      "checks": [
+        {
+          "name": "completed",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "confirmed_only",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "effects",
+          "ok": true,
+          "detail": "reserved 0, designs 0, renders 0"
+        },
+        {
+          "name": "cards",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "family",
+          "ok": true,
+          "detail": "INI (expected INI)"
+        },
+        {
+          "name": "params",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "valid",
+          "ok": true,
+          "detail": "valid=True"
+        },
+        {
+          "name": "tools",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "no_false_card_claim",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "language",
+          "ok": true,
+          "detail": "es 12 vs en 0 marker words"
+        }
+      ],
+      "model_calls": 3,
+      "tokens": 8877,
+      "seconds": 43.2,
+      "turns": [
+        {
+          "text": "Un dije de inicial, la letra M en Montserrat ExtraBold, de 12 mm, en rodio",
+          "answer": "Parámetros cargados en el panel y validados por la herramienta (sin violaciones):\n\n- **Familia:** Inicial (INI), Zamak 3\n- **Letra:** M — **Tipografía:** Montserrat ExtraBold\n- **Altura del cuerpo:** 12.0 mm (sin argolla)\n- **Espesor:** 1.5 mm (por defecto)\n- **Argolla:** 2.0 mm interior × 1.0 mm de pared (por defecto)\n- **Acabado:** Rodio\n\nSi quieres, ajusto algún valor, o pasamos al siguiente paso: proponer un nombre (GEN-03) y reservar el SKU en SAP.",
+          "status": "answered",
+          "error": null,
+          "seconds": 42.7,
+          "tools": [
+            {
+              "name": "describe_family",
+              "arguments": {
+                "code": "INI"
+              },
+              "ok": true
+            },
+            {
+              "name": "propose_parameters",
+              "arguments": {
+                "family": "INI",
+                "params": {
+                  "finish": "rhodium",
+                  "font": "montserrat_extrabold",
+                  "height_mm": 12,
+                  "letter": "M",
+                  "loop_inner_mm": 2,
+                  "loop_wall_mm": 1,
+                  "thickness_mm": 1.5
+                }
+              },
+              "ok": true
+            }
+          ],
+          "checks": []
+        }
+      ],
+      "clicks": [],
+      "cards": [],
+      "effects": {
+        "reserved": 0,
+        "designs": 0,
+        "renders": 0
+      }
+    },
+    {
+      "id": "qa-design-rnd-wall-broken-es",
+      "title": "Q&A (design): design-rnd-wall-broken",
+      "language": "es",
+      "tags": [
+        "qa",
+        "design"
+      ],
+      "passed": true,
+      "checks": [
+        {
+          "name": "completed",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "confirmed_only",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "effects",
+          "ok": true,
+          "detail": "reserved 0, designs 0, renders 0"
+        },
+        {
+          "name": "cards",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "family",
+          "ok": true,
+          "detail": "RND (expected RND)"
+        },
+        {
+          "name": "valid",
+          "ok": true,
+          "detail": "valid=False"
+        },
+        {
+          "name": "rules_cited",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "mentions",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "tools",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "no_false_card_claim",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "language",
+          "ok": true,
+          "detail": "es 32 vs en 0 marker words"
+        }
+      ],
+      "model_calls": 4,
+      "tokens": 12169,
+      "seconds": 91.9,
+      "turns": [
+        {
+          "text": "Una cuenta redonda de 4 mm con agujero de 1,5 mm",
+          "answer": "La combinación exacta que pides no pasa la validación. Esto devolvió la herramienta (Edición 1, 2026-11):\n\n- **GB-02**: con agujero de 1,5 mm y diámetro de 4,0 mm, la pared de vidrio queda en **1,25 mm** y el mínimo es **1,5 mm**.\n\nDos opciones válidas más cercanas, según la herramienta:\n1. **Diámetro 4,5 mm** con agujero de **1,5 mm** (pared de 1,5 mm).\n2. **Diámetro 4,0 mm** con agujero de **1,0 mm** (pared de 1,5 mm).\n\nDime cuál prefieres (y el color de vidrio si quieres uno distinto del ámbar, que es el predeterminado) y te relleno el panel de parámetros.",
+          "status": "answered",
+          "error": null,
+          "seconds": 91.2,
+          "tools": [
+            {
+              "name": "describe_family",
+              "arguments": {
+                "code": "RND"
+              },
+              "ok": true
+            },
+            {
+              "name": "validate_parameters",
+              "arguments": {
+                "family": "RND",
+                "params": {
+                  "diameter_mm": 4.0,
+                  "hole_mm": 1.5
+                }
+              },
+              "ok": true
+            },
+            {
+              "name": "validate_parameters",
+              "arguments": {
+                "family": "RND",
+                "params": {
+                  "color": "amber",
+                  "diameter_mm": 4,
+                  "hole_mm": 1.5
+                }
+              },
+              "ok": true
+            }
+          ],
+          "checks": []
+        }
+      ],
+      "clicks": [],
+      "cards": [],
+      "effects": {
+        "reserved": 0,
+        "designs": 0,
+        "renders": 0
+      }
+    },
+    {
+      "id": "qa-design-fac-small-facets-en",
+      "title": "Q&A (design): design-fac-small-facets",
+      "language": "en",
+      "tags": [
+        "qa",
+        "design"
+      ],
+      "passed": true,
+      "checks": [
+        {
+          "name": "completed",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "confirmed_only",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "effects",
+          "ok": true,
+          "detail": "reserved 0, designs 0, renders 0"
+        },
+        {
+          "name": "cards",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "family",
+          "ok": true,
+          "detail": "FAC (expected FAC)"
+        },
+        {
+          "name": "valid",
+          "ok": true,
+          "detail": "valid=False"
+        },
+        {
+          "name": "rules_cited",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "mentions",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "tools",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "no_false_card_claim",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "language",
+          "ok": true,
+          "detail": "en 14 vs es 0 marker words"
+        }
+      ],
+      "model_calls": 3,
+      "tokens": 9657,
+      "seconds": 142.2,
+      "turns": [
+        {
+          "text": "A 6 mm faceted bead with 16 facets",
+          "answer": "6 mm with 16 facets hits a rule: with those values each facet is only **1.18 mm** wide at the equator, and the minimum is 1.5 mm (**GB-05**). The validator offers two nearest fixes:\n\n- **Keep 6 mm diameter** → reduce facets to **12** (1.57 mm per facet)\n- **Keep 16 facets** → increase diameter to **7.7 mm** (1.51 mm per facet)\n\nFor reference, the other FAC values I'd use: 2 facet rows, 1.5 mm hole, amber glass (all defaults — tell me if you want different ones).\n\nWhich version should I load into the panel?",
+          "status": "answered",
+          "error": null,
+          "seconds": 141.7,
+          "tools": [
+            {
+              "name": "describe_family",
+              "arguments": {
+                "code": "FAC"
+              },
+              "ok": true
+            },
+            {
+              "name": "validate_parameters",
+              "arguments": {
+                "family": "FAC",
+                "params": {
+                  "color": "amber",
+                  "diameter_mm": 6,
+                  "facet_count": 16,
+                  "facet_rows": 2,
+                  "hole_mm": 1.5
+                }
+              },
+              "ok": true
+            }
+          ],
+          "checks": []
+        }
+      ],
+      "clicks": [],
+      "cards": [],
+      "effects": {
+        "reserved": 0,
+        "designs": 0,
+        "renders": 0
+      }
+    },
+    {
+      "id": "qa-design-fac-small-facets-es",
+      "title": "Q&A (design): design-fac-small-facets",
+      "language": "es",
+      "tags": [
+        "qa",
+        "design"
+      ],
+      "passed": true,
+      "checks": [
+        {
+          "name": "completed",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "confirmed_only",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "effects",
+          "ok": true,
+          "detail": "reserved 0, designs 0, renders 0"
+        },
+        {
+          "name": "cards",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "family",
+          "ok": true,
+          "detail": "FAC (expected FAC)"
+        },
+        {
+          "name": "valid",
+          "ok": true,
+          "detail": "valid=False"
+        },
+        {
+          "name": "rules_cited",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "mentions",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "tools",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "no_false_card_claim",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "language",
+          "ok": true,
+          "detail": "es 20 vs en 0 marker words"
+        }
+      ],
+      "model_calls": 3,
+      "tokens": 9234,
+      "seconds": 95.6,
+      "turns": [
+        {
+          "text": "Una cuenta facetada de 6 mm con 16 facetas",
+          "answer": "El panel ya está cargado con tu propuesta, pero la validación (GB-05) marca una violación:\n\n- **GB-05**: con 16 facetas y 6,0 mm de diámetro, cada faceta mide 1,18 mm en el ecuador; el mínimo es 1,5 mm.\n\nOpciones válidas más cercanas (según la herramienta):\n\n1. Mantener 6,0 mm de diámetro → **12 facetas**\n2. Mantener 16 facetas → **diámetro de 7,7 mm**\n\nEl resto queda igual: 2 filas de facetas, orificio de 1,5 mm, color ámbar (editable). ¿Cuál prefieres?",
+          "status": "answered",
+          "error": null,
+          "seconds": 95.0,
+          "tools": [
+            {
+              "name": "describe_family",
+              "arguments": {
+                "code": "FAC"
+              },
+              "ok": true
+            },
+            {
+              "name": "propose_parameters",
+              "arguments": {
+                "family": "FAC",
+                "params": {
+                  "color": "amber",
+                  "diameter_mm": 6.0,
+                  "facet_count": 16,
+                  "facet_rows": 2,
+                  "hole_mm": 1.5
+                }
+              },
+              "ok": true
+            }
+          ],
+          "checks": []
+        }
+      ],
+      "clicks": [],
+      "cards": [],
+      "effects": {
+        "reserved": 0,
+        "designs": 0,
+        "renders": 0
+      }
+    },
+    {
+      "id": "qa-design-dsc-luna-18-en",
+      "title": "Q&A (design): design-dsc-luna-18",
+      "language": "en",
+      "tags": [
+        "qa",
+        "design"
+      ],
+      "passed": false,
+      "checks": [
+        {
+          "name": "completed",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "confirmed_only",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "effects",
+          "ok": true,
+          "detail": "reserved 0, designs 0, renders 0"
+        },
+        {
+          "name": "cards",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "family",
+          "ok": true,
+          "detail": "DSC (expected DSC)"
+        },
+        {
+          "name": "valid",
+          "ok": false,
+          "detail": "valid=True"
+        },
+        {
+          "name": "rules_cited",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "mentions",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "tools",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "no_false_card_claim",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "language",
+          "ok": true,
+          "detail": "en 8 vs es 0 marker words"
+        }
+      ],
+      "model_calls": 5,
+      "tokens": 22390,
+      "seconds": 236.9,
+      "turns": [
+        {
+          "text": "An 18 mm disc charm engraved with LUNA",
+          "answer": "The panel now shows the validated proposal:\n\n- **Diameter:** 19.5 mm (raised from 18.0 to satisfy CH-03)\n- **Engraving:** text \"LUNA\", depth 0.3 mm\n- **Thickness:** 1.5 mm · **Loop:** inner ⌀2.0 mm, wall 1.0 mm\n- **Finish:** gold plate\n\nEverything checks out (valid: true). Edit anything in the panel, or tell me the next step — e.g. pick a name like \"*Luna Disc*\" and I'll check it in the catalog (GEN-03) before reserving a SKU.",
+          "status": "answered",
+          "error": null,
+          "seconds": 236.4,
+          "tools": [
+            {
+              "name": "describe_family",
+              "arguments": {
+                "code": "DSC"
+              },
+              "ok": true
+            },
+            {
+              "name": "search_design_manual",
+              "arguments": {
+                "language": "en",
+                "query": "engraving text disc charm"
+              },
+              "ok": true
+            },
+            {
+              "name": "validate_parameters",
+              "arguments": {
+                "family": "DSC",
+                "params": {
+                  "diameter_mm": 18.0,
+                  "engraving": "text",
+                  "engraving_text": "LUNA"
+                }
+              },
+              "ok": true
+            },
+            {
+              "name": "validate_parameters",
+              "arguments": {
+                "family": "DSC",
+                "params": {
+                  "diameter_mm": 18,
+                  "engraving": "text",
+                  "engraving_depth_mm": 0.3,
+                  "engraving_text": "LUNA",
+                  "finish": "gold_plate",
+                  "loop_inner_mm": 2,
+                  "loop_wall_mm": 1,
+                  "thickness_mm": 1.5
+                }
+              },
+              "ok": true
+            },
+            {
+              "name": "propose_parameters",
+              "arguments": {
+                "family": "DSC",
+                "params": {
+                  "diameter_mm": 19.5,
+                  "engraving": "text",
+                  "engraving_depth_mm": 0.3,
+                  "engraving_text": "LUNA",
+                  "finish": "gold_plate",
+                  "loop_inner_mm": 2,
+                  "loop_wall_mm": 1,
+                  "thickness_mm": 1.5
+                }
+              },
+              "ok": true
+            }
+          ],
+          "checks": []
+        }
+      ],
+      "clicks": [],
+      "cards": [],
+      "effects": {
+        "reserved": 0,
+        "designs": 0,
+        "renders": 0
+      }
+    },
+    {
+      "id": "qa-design-dsc-luna-18-es",
+      "title": "Q&A (design): design-dsc-luna-18",
+      "language": "es",
+      "tags": [
+        "qa",
+        "design"
+      ],
+      "passed": false,
+      "checks": [
+        {
+          "name": "completed",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "confirmed_only",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "effects",
+          "ok": true,
+          "detail": "reserved 0, designs 0, renders 0"
+        },
+        {
+          "name": "cards",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "family",
+          "ok": true,
+          "detail": "DSC (expected DSC)"
+        },
+        {
+          "name": "valid",
+          "ok": false,
+          "detail": "valid=True"
+        },
+        {
+          "name": "rules_cited",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "mentions",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "tools",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "no_false_card_claim",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "language",
+          "ok": true,
+          "detail": "es 42 vs en 0 marker words"
+        }
+      ],
+      "model_calls": 5,
+      "tokens": 25135,
+      "seconds": 247.4,
+      "turns": [
+        {
+          "text": "Un dije de disco de 18 mm con LUNA grabado",
+          "answer": "Tu disco de 18 mm con \"LUNA\" no pasa la validación:\n\n- **CH-03 (detalle mínimo):** con 18.0 mm de diámetro, \"LUNA\" sale con letras de ~3.2 mm y los trazos/separaciones de la A y la N quedan por debajo de los 0.6 mm que exige el molde de hule. El valor válido más cercano que devuelve la herramienta es **19.5 mm** (letras de 3.6 mm). Con 18 mm la alternativa sería un icono (p. ej. moon) en vez de texto, o reducir el texto.\n\nCargué en el panel la propuesta con **19.5 mm** (validada, la puedes editar):\n\n| Parámetro | Valor |\n|---|---|\n| Diámetro | 19.5 mm |\n| Grabado | Texto \"LUNA\" |\n| Profundidad de grabado | 0.3 mm |\n| Espesor | 1.5 mm |\n| Argolla | Ø int. 2.0 mm, pared 1.0 mm |\n| Acabado | Baño de oro |\n\n¿Seguimos con 19.5 mm, prefieres el disco de 18 mm con icono (luna), o ajustamos otra cosa?",
+          "status": "answered",
+          "error": null,
+          "seconds": 246.9,
+          "tools": [
+            {
+              "name": "describe_family",
+              "arguments": {
+                "code": "DSC"
+              },
+              "ok": true
+            },
+            {
+              "name": "search_design_manual",
+              "arguments": {
+                "language": "es",
+                "query": "grabado dije"
+              },
+              "ok": true
+            },
+            {
+              "name": "validate_parameters",
+              "arguments": {
+                "family": "DSC",
+                "params": {
+                  "diameter_mm": 18.0,
+                  "engraving": "text",
+                  "engraving_text": "LUNA"
+                }
+              },
+              "ok": true
+            },
+            {
+              "name": "validate_parameters",
+              "arguments": {
+                "family": "DSC",
+                "params": {
+                  "diameter_mm": 19.5,
+                  "engraving": "text",
+                  "engraving_text": "LUNA"
+                }
+              },
+              "ok": true
+            },
+            {
+              "name": "validate_parameters",
+              "arguments": {
+                "family": "DSC",
+                "params": {
+                  "diameter_mm": 18,
+                  "engraving": "text",
+                  "engraving_depth_mm": 0.3,
+                  "engraving_text": "LUNA",
+                  "finish": "gold_plate",
+                  "loop_inner_mm": 2,
+                  "loop_wall_mm": 1,
+                  "thickness_mm": 1.5
+                }
+              },
+              "ok": true
+            },
+            {
+              "name": "validate_parameters",
+              "arguments": {
+                "family": "DSC",
+                "params": {
+                  "diameter_mm": 19.5,
+                  "engraving": "text",
+                  "engraving_depth_mm": 0.3,
+                  "engraving_text": "LUNA",
+                  "finish": "gold_plate",
+                  "loop_inner_mm": 2,
+                  "loop_wall_mm": 1,
+                  "thickness_mm": 1.5
+                }
+              },
+              "ok": true
+            },
+            {
+              "name": "propose_parameters",
+              "arguments": {
+                "family": "DSC",
+                "params": {
+                  "diameter_mm": 19.5,
+                  "engraving": "text",
+                  "engraving_depth_mm": 0.3,
+                  "engraving_text": "LUNA",
+                  "finish": "gold_plate",
+                  "loop_inner_mm": 2,
+                  "loop_wall_mm": 1,
+                  "thickness_mm": 1.5
+                }
+              },
+              "ok": true
+            }
+          ],
+          "checks": []
+        }
+      ],
+      "clicks": [],
+      "cards": [],
+      "effects": {
+        "reserved": 0,
+        "designs": 0,
+        "renders": 0
+      }
+    },
+    {
+      "id": "qa-gb01-hole-sizes-es",
+      "title": "Q&A (knowledge): gb01-hole-sizes",
+      "language": "es",
+      "tags": [
+        "qa",
+        "knowledge"
+      ],
+      "passed": true,
+      "checks": [
+        {
+          "name": "completed",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "confirmed_only",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "effects",
+          "ok": true,
+          "detail": "reserved 0, designs 0, renders 0"
+        },
+        {
+          "name": "cards",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "rules_cited",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "mentions",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "tools",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "no_false_card_claim",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "language",
+          "ok": true,
+          "detail": "es 35 vs en 0 marker words"
+        }
+      ],
+      "model_calls": 3,
+      "tokens": 11417,
+      "seconds": 87.9,
+      "turns": [
+        {
+          "text": "¿Cuál es el agujero más chico que puede llevar una cuenta?",
+          "answer": "El agujero (orificio) más chico que puede llevar una cuenta es **1.0 mm**.\n\nSegún la regla **GB-01**, el orificio solo puede medir 1.0, 1.5, 2.0 o 2.5 mm — son las cuatro medidas de mandril que tienen los vidrieros, y cualquier otro valor se redondea a la medida más cercana. El orificio *es* el mandril, así que una medida que no tienen no se puede fabricar.\n\nEl valor por defecto en todas las familias de cuentas (redonda, facetada, lenteja, rondel) es 1.5 mm. Si quieres una cuenta con orificio de 1.0 mm, dime los detalles y te armo la propuesta.",
+          "status": "answered",
+          "error": null,
+          "seconds": 86.6,
+          "tools": [
+            {
+              "name": "describe_family",
+              "arguments": {
+                "code": "RND"
+              },
+              "ok": true
+            },
+            {
+              "name": "search_design_manual",
+              "arguments": {
+                "language": "es",
+                "query": "hole diameter minimum agujero"
+              },
+              "ok": true
+            },
+            {
+              "name": "search_design_manual",
+              "arguments": {
+                "language": "es",
+                "query": "GB-01"
+              },
+              "ok": true
+            }
+          ],
+          "checks": []
+        }
+      ],
+      "clicks": [],
+      "cards": [],
+      "effects": {
+        "reserved": 0,
+        "designs": 0,
+        "renders": 0
+      }
+    },
+    {
+      "id": "qa-gen01-units-en",
+      "title": "Q&A (knowledge): gen01-units",
+      "language": "en",
+      "tags": [
+        "qa",
+        "knowledge"
+      ],
+      "passed": true,
+      "checks": [
+        {
+          "name": "completed",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "confirmed_only",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "effects",
+          "ok": true,
+          "detail": "reserved 0, designs 0, renders 0"
+        },
+        {
+          "name": "cards",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "rules_cited",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "mentions",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "tools",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "no_false_card_claim",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "language",
+          "ok": true,
+          "detail": "en 15 vs es 0 marker words"
+        }
+      ],
+      "model_calls": 2,
+      "tokens": 5556,
+      "seconds": 33.3,
+      "turns": [
+        {
+          "text": "Can I give the sizes in inches?",
+          "answer": "Yes — tell me the inches and I'll convert them. The panel itself only takes millimetres: per **GEN-01**, all dimensions are in mm with 0.1 mm resolution (1 inch = 25.4 mm). The manual's own example: a 3/8″ bead is entered as 9.5 mm.\n\nSo, for example, \"1/2 inch diameter\" → 12.7 mm. Send me your sizes in inches (and the family), and I'll fill in the parameter panel with the converted values.",
+          "status": "answered",
+          "error": null,
+          "seconds": 32.2,
+          "tools": [
+            {
+              "name": "search_design_manual",
+              "arguments": {
+                "language": "en",
+                "query": "inches units of measurement"
+              },
+              "ok": true
+            }
+          ],
+          "checks": []
+        }
+      ],
+      "clicks": [],
+      "cards": [],
+      "effects": {
+        "reserved": 0,
+        "designs": 0,
+        "renders": 0
+      }
+    },
+    {
+      "id": "qa-gen04-sku-es",
+      "title": "Q&A (knowledge): gen04-sku",
+      "language": "es",
+      "tags": [
+        "qa",
+        "knowledge"
+      ],
+      "passed": true,
+      "checks": [
+        {
+          "name": "completed",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "confirmed_only",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "effects",
+          "ok": true,
+          "detail": "reserved 0, designs 0, renders 0"
+        },
+        {
+          "name": "cards",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "rules_cited",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "mentions",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "tools",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "no_false_card_claim",
+          "ok": true,
+          "detail": ""
+        },
+        {
+          "name": "language",
+          "ok": true,
+          "detail": "es 44 vs en 0 marker words"
+        }
+      ],
+      "model_calls": 2,
+      "tokens": 6933,
+      "seconds": 239.0,
+      "turns": [
+        {
+          "text": "¿Puedo escribir yo el SKU o reusar un número viejo?",
+          "answer": "No, según **GEN-04**:\n\n- El SKU y el número de material SAP los **emite SAP** cuando reservas el producto en Bead Studio (tarjeta de confirmación). Nadie los escribe a mano.\n- Los números **nunca se reutilizan**, ni siquiera los huecos de productos retirados antes de SAP. SAP emite el número siguiente al más alto emitido para el tipo (`GB-1NNN` para cuentas, `CH-2NNN` para dijes).\n- Un SKU descontinuado nunca se reactiva para otro producto.\n\nLa razón del manual: los SKU escritos a mano causaban duplicados y diferencias entre el plano, el pedido al proveedor y el catálogo.\n\nSi quieres dar de alta un producto nuevo, dime el nombre y la familia y reviso el nombre con check_catalog antes de abrirte la tarjeta de reserva.",
+          "status": "answered",
+          "error": null,
+          "seconds": 238.4,
+          "tools": [
+            {
+              "name": "search_design_manual",
+              "arguments": {
+                "language": "es",
+                "query": "SKU reserva SAP nuevo producto"
+              },
+              "ok": true
+            },
+            {
+              "name": "search_design_manual",
+              "arguments": {
+                "language": "es",
+                "query": "reutilizar número SKU existente"
+              },
+              "ok": true
+            }
+          ],
+          "checks": []
+        }
+      ],
+      "clicks": [],
+      "cards": [],
+      "effects": {
+        "reserved": 0,
+        "designs": 0,
+        "renders": 0
+      }
+    }
+  ]
+}
