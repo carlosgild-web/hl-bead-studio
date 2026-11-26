@@ -1,7 +1,7 @@
 # docker compose up             the studio at http://localhost:8000 (LLM from .env, or demo mode)
 # docker compose --profile ollama up    also a local Ollama (pull the model once, see README)
 #
-# The LLM: LLM_PROVIDER and its key come from .env (auto by default: Groq if it answers, else
+# The LLM: LLM_PROVIDER and its key come from .env (auto by default: Dahl or Groq if it answers, else
 # Ollama if ready, else demo mode, checked once at startup, decision 0019). After Groq's daily
 # limit the studio uses Ollama when it answers, else demo mode (decision 0018).
 

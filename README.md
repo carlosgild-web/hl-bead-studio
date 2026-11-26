@@ -3,27 +3,125 @@
 [![CI](https://github.com/carlosgild-web/hl-bead-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/carlosgild-web/hl-bead-studio/actions/workflows/ci.yml)
 
 An AI-assisted internal tool for the Product Design team of the fictional company
-**Hilda & Luna Beadworks**. A designer describes a glass bead or charm; the assistant proposes
-parameters and explains the manufacturability rules from the Product Design Manual; after the
-designer confirms, the tool reserves a SKU in a mock SAP, builds the 3D model (CadQuery: STEP,
-STL, GLB), produces a technical drawing with the H&L title block and queues a catalog render
-in Blender.
+**Hilda & Luna Beadworks**. A designer describes a glass bead or charm. The assistant proposes
+parameters and explains the manufacturability rules from the company's Product Design Manual.
+After the designer clicks **Confirm**, the tool reserves a SKU in a mock SAP, builds the 3D
+model (CadQuery: STEP, STL, GLB), produces a technical drawing with the H&L title block and
+queues a catalog render in Blender.
 
-> **Status:** work in progress (Phase 8 of 9). The studio works end to end, locally or in
-> Docker: describe a product, review the proposed parameters with live validation, see the 3D
-> model, and confirm the cards that reserve the SKU, generate the files and drawing, and
-> queue the render. The assistant runs on Dahl, Groq, Ollama or Anthropic, and answers from a
-> curated Q&A bank in demo mode; its evaluation runs are in [`docs/eval/`](docs/eval/). The
-> roadmap is in [`PLAN.md`](PLAN.md) and the design decisions in
-> [`docs/decisions/`](docs/decisions/).
+![A designer types "A 10 mm faceted amber bead"; the panel fills with checked parameters and the 3D model appears](docs/showcase/description-to-model.gif)
 
-## Principle: the AI guides, the code decides
+*Demo mode, no language model needed: the panel, the validators and the 3D model are the real
+ones.*
 
-The model turns a description into parameters, cites rule ids and drafts catalog text.
-Whether a design can be made is decided by deterministic validators; reserving a SKU and
-generating files happen only after the designer clicks **Confirm**.
+## The problem
 
-## Quick start with Docker
+A new bead starts as a sentence ("a 10 mm faceted amber bead") and ends as files a workshop
+can use: exact dimensions, a hole that fits the mandrels, a drawing, a SKU in the ERP and a
+catalog image. In between, a designer checks the idea against a manual of rules (the hole
+sizes, wall thickness, facet widths, engraving detail, naming) and fills the same data into
+several tools.
+
+A language model is good at the first step: it turns a sentence into a first set of
+parameters and explains the rules in plain words. It must not be the one who decides that a
+design can be made, invent a dimension, or reserve a number in SAP. Bead Studio splits the
+work that way.
+
+## The AI guides, the code decides
+
+| Principle | How the code holds it |
+|---|---|
+| The model proposes, the validators decide | Every parameter set goes through `standards/validators.py`, which checks the manual's rules. A violation shows its rule id and the nearest valid values, whatever the model said |
+| Nothing happens without a click | Reserving a SKU, writing design files and queuing a render run only in `POST /api/actions/{id}/confirm`, which only the designer's **Confirm** calls. The model can only open a card (decision 0005) |
+| Numbers come from tools | Dimensions, volume, mass and rule limits in an answer come from tool results; the eval checks that the cited rule ids and values are there |
+| Free text is data | Product names, descriptions and engraved text never become instructions; three eval scenarios inject instructions through them |
+| Bounded and traced | The agent loop has a step limit; every run stores a trace; every reserved SKU, design and render writes an audit row |
+| No model, still a tool | The parameter panel and the workflow steps open the same cards with the same checks, so the studio works in demo mode and when a provider is down (decision 0014) |
+
+## What it does
+
+| | |
+|---|---|
+| ![The reserve card waits in focus while the rest of the studio is dimmed](docs/showcase/confirm-card.png) | ![The workflow after Generate: SKU reserved, files written, render next](docs/showcase/workflow.png) |
+| **A confirmation card.** The assistant asked to reserve a SKU; nothing happens until the designer clicks Confirm. | **The workflow.** Reserve, generate, render: each step is a card with the same checks, from the chat or from the panel. |
+
+![Technical drawing of GB-1034 rev A with the H&L title block](docs/showcase/drawing-GB-1034.png)
+
+**The technical drawing**: OpenCascade hidden-line views with dimensions and the H&L title block,
+written as SVG and PDF in Python (decision 0009). The notes cite the rules the design meets.
+
+<p>
+<img src="docs/gallery/GB-1034_A_honey.webp" width="19%" alt="Render of GB-1034, faceted bead in honey glass">
+<img src="docs/gallery/GB-1001_A_midnight_blue.webp" width="19%" alt="Render of GB-1001 in midnight blue glass">
+<img src="docs/gallery/GB-1020_A_aqua.webp" width="19%" alt="Render of GB-1020 in aqua glass">
+<img src="docs/gallery/CH-2004_A_gold_plate.webp" width="19%" alt="Render of CH-2004, a gold-plated charm">
+<img src="docs/gallery/CH-2028_A_antique_bronze.webp" width="19%" alt="Render of CH-2028, an antique bronze charm">
+</p>
+
+**Catalog renders** from Blender (Cycles on the CPU), queued by a confirmed card and followed
+live in the UI. The [gallery](docs/gallery/) is pre-rendered for the online image.
+
+<img src="docs/showcase/studio-es.png" width="60%" alt="The studio in Spanish">
+
+**Spanish and English**: the UI, the manual and the assistant's answers follow the designer's
+language.
+
+## Architecture
+
+```mermaid
+flowchart LR
+  UI["React studio<br/>chat · panel · 3D · drawing"] -->|SSE chat, REST| API["FastAPI backend"]
+  API --> Agent["Agent loop<br/>(bounded, traced)"]
+  Agent --> LLM["LLMClient<br/>Dahl · Groq · Ollama · Anthropic · demo"]
+  Agent -->|tools| Tools["Tools: manual search (FTS5),<br/>validators, catalog, cards"]
+  UI -->|Confirm| Gate["POST /actions/{id}/confirm"]
+  Gate --> SAP["Mock SAP<br/>(OData v2, own service)"]
+  Gate --> CAD["CadQuery<br/>STEP · STL · GLB"]
+  CAD --> DRW["Drawing<br/>OCC views + title block → PDF"]
+  Gate --> Queue["Render queue (SQLite)"] --> Blender["Blender headless"]
+  API --> DB[("SQLite<br/>traces · audit · designs")]
+```
+
+The model only reaches the left side: it reads the manual, calls the validators and opens
+cards. Everything with a side effect sits behind the confirmation gate.
+
+| Layer | Choice |
+|---|---|
+| Geometry | CadQuery, one builder per family; GLB via trimesh |
+| Drawing | OpenCascade hidden-line views + SVG title block → PDF (svglib, reportlab) |
+| Render | Blender headless, Cycles CPU, SQLite job queue, one worker |
+| LLM | Own `LLMClient` for Ollama, Anthropic and OpenAI-compatible APIs (Dahl, Groq), a demo client, a fake client for tests; a startup check and a fallback chain |
+| Agent | Own bounded tool loop, no agent framework |
+| Manual search | SQLite FTS5 over [`docs/manual/`](docs/manual/) (Spanish and English) |
+| Mock SAP | Separate FastAPI service, OData v2 payloads, basic auth + CSRF |
+| Backend | Python 3.12+, FastAPI, SQLAlchemy, pydantic-settings, httpx |
+| Frontend | React, Vite, TypeScript, Tailwind, shadcn/ui, TanStack Query, react-three-fiber |
+| Packaging | Docker (app + mock SAP); Blender only locally |
+
+## Evaluation
+
+`agent-eval` runs designer scenarios through the real agent, tools and confirmation gate, and
+scores the traces, the cards and the side effects rather than the model's own words. The
+core suite has 30 scenarios (valid designs, one per broken rule, the full flow, bad names, SAP
+down, prompt injection); the `qa` suite has 92 questions from the [Q&A bank](docs/qa/).
+
+| Suite | Provider / model | Passed |
+|---|---|---|
+| core | Anthropic `claude-sonnet-5-5` (run 2) | 30/30 |
+| core | Dahl `zai-org/GLM-5.3-Flash` | 23/30 |
+| core | Ollama `qwen3:4b-instruct-2507` on a laptop CPU | 16/30 |
+| core | Groq `openai/gpt-oss-120b`, free tier | 7/22 (quota ran out) |
+| qa | Dahl `zai-org/GLM-5.3-Flash` | 81/92 |
+| core + qa, every phrasing | demo mode and ideal scripts (CI, required) | 183/183 |
+
+In every run, on every model, nothing was reserved, written or queued without a click and no
+injected text reached a card. The failures are about capability (a rule not named, a step
+limit reached), and each is written up with what changed afterwards in
+[`docs/eval/`](docs/eval/).
+
+## Try it
+
+### With Docker
 
 Only Docker is needed. The studio, the mock SAP and the built UI run from one image
 (decision 0018):
@@ -33,9 +131,11 @@ docker compose up --build        # then open http://localhost:8000
 ```
 
 Without a key the assistant is in demo mode (the panel, the checks and the cards still
-work). For the assistant, put a free Groq key in `.env` (`GROQ_API_KEY=...`, see
-`.env.example`); `LLM_PROVIDER` defaults to `groq` in compose. When Groq's free daily quota
-is used up, the studio uses a local Ollama model if one answers, else demo mode:
+work). For the assistant, put a key in `.env` (a free `GROQ_API_KEY=...` works, see
+`.env.example`). `LLM_PROVIDER` defaults to `auto` in compose: at startup the studio takes
+the first of Dahl, Groq and a local Ollama that answers, else demo mode (decisions 0019 and
+0021). When a cloud provider's daily quota is used up, the studio uses a local Ollama model
+if one answers, else demo mode:
 
 ```bash
 docker compose --profile ollama up -d
@@ -46,7 +146,7 @@ docker compose exec ollama ollama pull qwen3:4b-instruct-2507
 Renders need Blender, so they run in the local setup below; the Docker studio shows the
 pre-generated gallery. Designs and the SQLite files live in the `studio-data` volume.
 
-## Quick start (development)
+### For development
 
 Requirements: Python 3.12+ (developed on 3.14), Node 22+ (tested on 24).
 
@@ -124,7 +224,7 @@ python -m app.cli validate --family FAC --params examples/fac_10mm.json
 python -m app.cli generate --family FAC --params examples/fac_10mm.json     --sku GB-1034 --rev A --name "Honey Glow Faceted" --sap-material 50000134
 ```
 
-Example drawings: [faceted bead](docs/showcase/GB-1034_A_drawing.pdf) and
+Example drawings (PDF): [faceted bead](docs/showcase/GB-1034_A_drawing.pdf) and
 [crescent charm](docs/showcase/CH-2034_A_drawing.pdf).
 
 Render a catalog image (1024 px PNG, Cycles on the CPU, in
@@ -235,6 +335,7 @@ cd e2e
 npm ci && npx playwright install chromium
 npx playwright test            # E2E_SCREENSHOTS=<folder> saves a screenshot per step
                                # E2E_API_PORT / E2E_UI_PORT move it off taken ports
+npm run showcase               # the README's screenshots and GIF in docs/showcase/ (GIF: ffmpeg)
 ```
 
 ### Evaluation
@@ -288,11 +389,51 @@ For a public demo, `.env` turns on three limits. Each is off when set to 0:
 
 Without Blender, the render card says that renders run on a designer's computer.
 
+## Decisions
+
+The design decisions, with the alternatives considered, are in
+[`docs/decisions/`](docs/decisions/). The roadmap is [`PLAN.md`](PLAN.md) and the history
+[`CHANGELOG.md`](CHANGELOG.md).
+
+| # | Decision |
+|---|---|
+| [0001](docs/decisions/0001-cadquery-for-geometry.md) | CadQuery for the 3D geometry |
+| [0002](docs/decisions/0002-freecad-techdraw-for-drawings.md) | FreeCAD TechDraw for the technical drawings |
+| [0003](docs/decisions/0003-blender-renders-in-a-job-queue.md) | Blender headless renders in a job queue |
+| [0004](docs/decisions/0004-provider-agnostic-llm.md) | Provider-agnostic LLM layer (Ollama, Anthropic, Fake) |
+| [0005](docs/decisions/0005-confirmation-gate.md) | Confirmation gate for side effects |
+| [0006](docs/decisions/0006-pregenerated-renders-online.md) | Pre-generated renders for the online demo |
+| [0007](docs/decisions/0007-python-3-14-locally.md) | Develop on Python 3.14, support 3.12+ |
+| [0008](docs/decisions/0008-company-content-choices.md) | Company content choices (Phase 1) |
+| [0009](docs/decisions/0009-drawings-in-python.md) | Technical drawings in Python (TechDraw spike result) |
+| [0010](docs/decisions/0010-phase-3-rules-and-geometry.md) | Phase 3 rule measurements and geometry choices |
+| [0011](docs/decisions/0011-phase-4-render-choices.md) | Phase 4 render choices |
+| [0012](docs/decisions/0012-phase-5-agent-choices.md) | Phase 5 agent choices |
+| [0013](docs/decisions/0013-phase-6-ui-choices.md) | Phase 6 UI choices |
+| [0014](docs/decisions/0014-cards-from-the-panel.md) | Confirmation cards opened from the parameter panel |
+| [0015](docs/decisions/0015-phase-7-eval-and-safety.md) | Phase 7 evaluation and online safety |
+| [0016](docs/decisions/0016-dahl-provider.md) | Dahl as a cloud provider, through an OpenAI-compatible client |
+| [0017](docs/decisions/0017-groq-free-tier.md) | Groq's free tier as the no-cost cloud provider |
+| [0018](docs/decisions/0018-phase-8-packaging-and-fallback.md) | Phase 8 packaging, the public provider and its fallback |
+| [0019](docs/decisions/0019-startup-llm-check.md) | The startup model check, `LLM_PROVIDER=auto` and a switch that stays |
+| [0020](docs/decisions/0020-free-ports-at-launch.md) | The launcher shows what holds its ports and offers to stop it |
+| [0021](docs/decisions/0021-dahl-first-in-startup-check.md) | Dahl first in the startup model check; GLM-5.3-Flash as Dahl's default model |
+| [0022](docs/decisions/0022-demo-mode-answers-from-a-qa-bank.md) | Demo-mode answers from a Q&A bank, and the `qa` eval suite |
+| [0023](docs/decisions/0023-demo-mode-reads-values-from-the-message.md) | Demo mode reads the design values from the message |
+| [0024](docs/decisions/0024-sap-revision-and-demo-reset.md) | SAP's revision follows the files, revisions never skip a letter, and `demo-reset` |
+| [0025](docs/decisions/0025-reserve-while-the-design-breaks-rules.md) | A SKU can be reserved while the design breaks rules; the card says so |
+
 ## Related projects
 
-- `luna-hybrid-agent`: the Hilda & Luna catalog, sales and inventory assistant.
-- `hl-create-design`: machine-part design with KiCad and an AI guide.
+Other projects in the same portfolio, around the same fictional company:
+
+- [`local-rag-ollama`](https://github.com/carlosgild-web/local-rag-ollama): fully local RAG
+  with Ollama, with cited answers over versioned documents.
+- [`luna-hybrid-agent`](https://github.com/carlosgild-web/luna-hybrid-agent): a local-first
+  agent that picks between document search, read-only business SQL and an FX API.
+- [`hl-create-design`](https://github.com/carlosgild-web/hl-create-design): an AI-assisted
+  KiCad project generator with the company title block; the AI guides, the code decides.
 
 ## License
 
-MIT. See [`LICENSE`](LICENSE).
+MIT. See [`LICENSE`](LICENSE). Fonts are open-license (OFL) and the logo is original.
