@@ -20,7 +20,7 @@
   "sentences": {
     "question": "Why are 32 facets per row too many for a 10 mm bead?",
     "design": "A 10 mm faceted amber bead for the Amber Hollow collection",
-    "reserve": "Reserve a SKU for it as {name}",
+    "reserve": "Reserve a SKU for it as {name} Faceted",
     "facets": "32"
   },
   "rows": [
