@@ -58,7 +58,7 @@ product has no "Open in FreeCAD" button; the recorder opens it. FreeCAD's GUI is
 | `cues.mjs`, `compose.mjs` | Cues, checks, wait cuts, `.mp4`, `.srt`, the README copy (ffmpeg) |
 | `compose.test.mjs` | `npm run video:test` |
 
-## Dry run findings (phase 10, step V5, 2026-11-26)
+## Findings (phase 10, steps V5-V6, 2026-11-26)
 
 Five dry takes on demo mode (`start.cmd video fake`) before the first Groq take. Product code
 was not changed; every fix is in the tooling or the storyboard.
@@ -76,6 +76,8 @@ was not changed; every fix is in the tooling or the storyboard.
 | F9 | The title-block row was read after the zoom had ended | Tooling | The zoom starts first; the row is read while it is zoomed in |
 | F10 | The first SKU of every take is GB-1034, the gallery's showcase bead (decision 0026) | No clash on screen | The gallery labels that bead "Showcase", not by SKU |
 | F11 | Length: 3:29 at first, 2:47 after F5-F6 and a hold factor of 0.7 | Tooling | Generic rows for unforeseen tool calls capped at 3 (`VIDEO_MAX_GENERIC`); the others are listed in `take.json` |
+| F12 | Groq takes (V6): the first asked for "Amber Lantern", which breaks GEN-03 (the panel adds "Faceted", the chat does not), and the model asked back instead of opening a card; the second ran 3:16 | Storyboard | The sentence names the full name; the published take uses a hold factor of 0.55 and one generic row (2:46) |
+| F13 | In the published take the model wrote its arithmetic in LaTeX, which the chat shows as plain text; four subtitles read at 21-27 characters per second | Product (not changed); tooling | Math in the chat would be a product change. A hold now never goes under 17 characters per second |
 
 Checked in every dry take: the payloads on screen equal the capture (10 of 10), no local path
 in any payload, in the app's text or in FreeCAD's title, and `data/` untouched.

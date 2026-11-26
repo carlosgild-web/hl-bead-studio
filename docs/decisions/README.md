@@ -30,3 +30,4 @@ Short records of the design decisions and of every deviation from `PLAN.md`.
 | [0024](0024-sap-revision-and-demo-reset.md) | SAP's revision follows the files, revisions never skip a letter, and `demo-reset` | accepted (addition) |
 | [0025](0025-reserve-while-the-design-breaks-rules.md) | A SKU can be reserved while the design breaks rules; the card says so | accepted (addition) |
 | [0026](0026-video-mode.md) | `start.cmd video`: every take on fresh seed data in `data-video/`, 16 render samples | accepted (addition) |
+| [0027](0027-readme-video.md) | The README video: a real model under the hood, ported from hl-create-design, with a FreeCAD ending | accepted (addition) |
