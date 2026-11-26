@@ -47,3 +47,7 @@ Thumbs.db
 
 # Logs
 *.log
+
+# The README GIF run writes its video here before the GIF
+docs/showcase/.gif-video/
+docs/showcase/*.webm

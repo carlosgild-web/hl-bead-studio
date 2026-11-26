@@ -9,10 +9,9 @@ After the designer clicks **Confirm**, the tool reserves a SKU in a mock SAP, bu
 model (CadQuery: STEP, STL, GLB), produces a technical drawing with the H&L title block and
 queues a catalog render in Blender.
 
-![A designer types "A 10 mm faceted amber bead"; the panel fills with checked parameters and the 3D model appears](docs/showcase/description-to-model.gif)
+![A designer types one sentence; the panel fills with checked parameters, a click reserves GB-1034 in SAP, a second click writes the files, and the drawing with the H&L title block and the Blender render gallery follow](docs/showcase/demo.gif)
 
-*Demo mode, no language model needed: the panel, the validators and the 3D model are the real
-ones.*
+<sub>Recorded in demo mode. The checks, the geometry and the drawing are real.</sub>
 
 ## The problem
 
