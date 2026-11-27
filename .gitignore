@@ -1,5 +1,6 @@
 # Persistent data: generated designs, SQLite files, traces, render jobs (never commit)
 data/
+data-video/
 
 # Env
 .env
@@ -46,3 +47,11 @@ Thumbs.db
 
 # Logs
 *.log
+
+# The README GIF run writes its video here before the GIF
+docs/showcase/.gif-video/
+docs/showcase/*.webm
+
+# Video takes (phase 10): recordings and the recorder's dependencies
+video/out/
+video/node_modules/

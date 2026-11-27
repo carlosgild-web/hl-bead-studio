@@ -262,6 +262,18 @@ invalid params fail with the right rule id, STEP opens in FreeCAD, drawing PDF h
 
 **Done when:** README reviewed; release published.
 
+### Phase 10 — Video and README standard
+- `start.cmd video` / `./start.sh video`: fresh seed data in `data-video/` for every take (decision 0026).
+- README GIF of the full flow (`docs/showcase/demo.gif`, 960 px, 10 fps, ≤ 6 MB) from
+  `e2e/tests/showcase.spec.ts`.
+- `video/`: the "real model, under the hood" tooling ported from hl-create-design; a Groq
+  `openai/gpt-oss-120b` take that ends with the STEP in FreeCAD and the Blender render (decision 0027).
+- README cut to ~270 lines in the portfolio's standard order; long sections move to `docs/`
+  (`assistant.md`, `studio-ui.md`, `development.md`, `online-safety.md`, `video.md`, `decisions/README.md`).
+- Repo topics, social preview, release v1.1.0.
+
+**Done when:** README and video checked on github.com (desktop and phone); release published.
+
 ---
 
 ## 7. Prerequisites (Windows)

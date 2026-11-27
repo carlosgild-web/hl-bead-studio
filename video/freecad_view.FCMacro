@@ -1,0 +1,104 @@
+# The FreeCAD ending of the video (decision 0027). video/freecad.mjs starts the FreeCAD GUI
+# with the take's STEP file and this macro: FreeCAD opens the file, then runs the macro, which
+# shows the solid (isometric, fitted, shaded, in the design's glass colour), turns it once
+# around its axis, and quits without saving. Nothing is written.
+#
+# Input from the environment, checked here as well as in freecad.mjs:
+#   BEAD_VIEW_LABEL    "GB-1034 rev A": the document and object name (the title shows it)
+#   BEAD_VIEW_COLOR    "#c9822b": the swatch colour from /api/families
+#   BEAD_VIEW_SECONDS  length of the turn, 4 to 40
+import os
+import re
+import traceback
+
+import FreeCAD
+import FreeCADGui
+from PySide import QtCore, QtGui
+
+TICK_MS = 33
+LABEL = os.environ.get("BEAD_VIEW_LABEL", "")
+COLOR = os.environ.get("BEAD_VIEW_COLOR", "#c9822b")
+SECONDS = float(os.environ.get("BEAD_VIEW_SECONDS", "16"))
+
+
+def quit_app():
+    for name in list(FreeCAD.listDocuments()):
+        FreeCAD.closeDocument(name)  # unsaved: closed without a question
+    QtGui.QApplication.instance().quit()
+
+
+HIDDEN = {"Tasks", "Report view", "Python console", "Selection view"}
+
+
+def hide_docks(mw):
+    for dock in mw.findChildren(QtGui.QDockWidget):
+        if dock.objectName() in HIDDEN or dock.windowTitle() in HIDDEN:
+            dock.hide()
+
+
+def tidy_window(mw):
+    """The 3D view only: no start page, no task panel (Part workbench has no start task)."""
+    FreeCADGui.activateWorkbench("PartWorkbench")
+    hide_docks(mw)
+    area = mw.findChild(QtGui.QMdiArea)
+    if area is not None:
+        for sub in area.subWindowList():
+            if "Start" in sub.windowTitle():
+                sub.close()
+
+
+def show(doc):
+    r, g, b = (int(COLOR[i : i + 2], 16) / 255 for i in (1, 3, 5))
+    for obj in doc.Objects:
+        obj.Label = LABEL
+        view_obj = obj.ViewObject
+        if view_obj is None:
+            continue
+        view_obj.DisplayMode = "Shaded"
+        view_obj.ShapeColor = (r, g, b)
+        view_obj.Transparency = 15
+    view = FreeCADGui.ActiveDocument.ActiveView
+    view.viewIsometric()
+    FreeCADGui.SendMsgToActiveView("ViewFit")
+    return view
+
+
+def main():
+    if not re.fullmatch(r"(GB-1|CH-2)\d{3} rev [A-Z]{1,2}", LABEL):
+        raise ValueError(f"BEAD_VIEW_LABEL {LABEL!r} is not '<SKU> rev <letter>'")
+    if not re.fullmatch(r"#[0-9a-fA-F]{6}", COLOR) or not 4 <= SECONDS <= 40:
+        raise ValueError("BEAD_VIEW_COLOR or BEAD_VIEW_SECONDS out of range")
+    doc = FreeCAD.ActiveDocument
+    if doc is None or not doc.Objects:
+        raise RuntimeError("FreeCAD opened no STEP file")
+    doc.Label = LABEL  # the window title: "<SKU> rev <letter> - FreeCAD 1.1.x"
+    mw = FreeCADGui.getMainWindow()
+    tidy_window(mw)
+    view = show(doc)
+    base = view.getCameraOrientation()
+    # The turn follows the clock, not a tick count: while Blender renders on every core, a
+    # redraw can take longer than a tick, and the turn must still end on time.
+    clock = QtCore.QElapsedTimer()
+
+    def step():
+        if not clock.isValid():
+            clock.start()
+        done = min(clock.elapsed() / 1000 / SECONDS, 1.0)
+        turn = FreeCAD.Rotation(FreeCAD.Vector(0, 0, 1), 360.0 * done)
+        view.setCameraOrientation(base.multiply(turn))
+        if done >= 1.0:
+            timer.stop()
+            QtCore.QTimer.singleShot(800, quit_app)
+
+    timer = QtCore.QTimer(mw)
+    timer.timeout.connect(step)
+    # A short hold on the still model, then the turn. The docks are hidden again first:
+    # after the workbench switch, FreeCAD 1.x shows its overlay task panel a moment later.
+    QtCore.QTimer.singleShot(1500, lambda: (hide_docks(mw), timer.start(TICK_MS)))
+
+
+try:
+    main()
+except Exception:
+    FreeCAD.Console.PrintError(traceback.format_exc())
+    quit_app()

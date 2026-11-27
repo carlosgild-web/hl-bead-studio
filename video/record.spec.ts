@@ -1,0 +1,755 @@
+/**
+ * The README video take (decision 0027, ported from hl-create-design). Drives the running
+ * app (`start.cmd video`) inside the 1920x1080 stage and shows each storyboard row when its
+ * captured event arrives.
+ *
+ *   npm run video:smoke      10-second clip: the stage layout at 1920x1080
+ *   npm run video:demo-dry   the whole take on demo mode (start.cmd video fake): a dry run
+ *   npm run video:groq       the take on Groq (start.cmd video, answer Y to Groq)
+ *
+ * Capture: an init script wraps the app's fetch. Every SSE event of POST /api/chat, the chat
+ * request itself, and the JSON of POST /api/actions, .../confirm and /api/preview (the
+ * panel's live check: validation and 3D preview) go to Node
+ * with their time, and are handed to the app only when Node returns: that is how a subtitle
+ * stays on screen while the app shows that step. The app is not changed and the events are
+ * not changed; only their delivery to the browser is paced.
+ */
+import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+import { expect, test, type APIRequestContext, type FrameLocator, type Page } from '@playwright/test'
+
+import { captureFreecad } from './freecad.mjs'
+import { resolve as resolveLine, ROOT } from './lines.mjs'
+
+const HERE = dirname(fileURLToPath(import.meta.url))
+const STAGE = { width: 1920, height: 1080 }
+const TYPE_DELAY_MS = 40
+const TURN_TIMEOUT_MS = 200_000
+const FREECAD_SECONDS = 16
+// Generic rows (tool calls the storyboard did not foresee) shown at most; the others are
+// listed in take.json as skipped, so the video stays near its length.
+const MAX_GENERIC = Number(process.env.VIDEO_MAX_GENERIC ?? 3)
+const PYTHON =
+  process.env.VIDEO_PYTHON ||
+  join(ROOT, 'backend', '.venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python')
+// A Windows or home path on screen fails the take (acceptance check: no C:\MyData in frames).
+// Checked on string values, not JSON text: there a newline after "directory:" reads "y:\n".
+const PATH_RE = /(?<![A-Za-z])[A-Za-z]:\\[^\s\\]|\\Users\\|\/home\/|MyData/
+const hasLocalPath = (value: unknown): boolean =>
+  typeof value === 'string'
+    ? PATH_RE.test(value)
+    : value !== null && typeof value === 'object'
+      ? Object.values(value).some(hasLocalPath)
+      : false
+
+type Storyboard = {
+  video: string
+  provider: string
+  /** The models the run may use, id -> banner name; null: any (the demo dry run). */
+  models?: Record<string, string> | null
+  banner: string
+  /** Per provider: the banner and the models it may show. */
+  providers?: Record<string, { banner: string; models: Record<string, string> | null }>
+  mode?: 'strict' | 'flexible'
+  hold?: number
+  sentences: Record<string, string>
+  rows: Row[]
+}
+type Row = {
+  id: string
+  scene: number
+  subtitle: string
+  turn?: string
+  on: { step?: string; event?: string; name?: string; kind?: string; phase?: string; ok?: boolean; follow?: boolean }
+  payload?: { from: string; pick?: string }
+  callouts?: string[][]
+  slide?: string
+  layer?: string
+}
+type Captured = { type: string; data: any; status?: number; t_ms: number; turn: string | null; index: number }
+type Wait = { from_ms: number; to_ms: number; what: string }
+
+const loadBoard = (name: string): Storyboard => JSON.parse(readFileSync(join(HERE, name), 'utf8'))
+const BOARD_FILE = 'storyboard-groq.json'
+const CHAT_TYPES = new Set([
+  'request', 'conversation', 'thinking', 'tool_call', 'tool_result', 'parameter_proposal', 'preview',
+  'pending_action', 'message', 'error', 'done',
+])
+
+// ---------------------------------------------------------------- capture (all frames)
+
+const CAPTURE = String.raw`(() => {
+  if (location.pathname.startsWith('/__video')) return
+  try { localStorage.setItem('hl-bead-studio-demo-guide', 'pill') } catch {}
+  const send = (event) => window.__videoEvent(event)
+  const parse = (block) => {
+    let type = 'message'; const data = []
+    for (const line of block.split('\n')) {
+      if (line.startsWith('event:')) type = line.slice(6).trim()
+      else if (line.startsWith('data:')) data.push(line.slice(5).trimStart())
+    }
+    if (!data.length) return null
+    try { return { type, data: JSON.parse(data.join('\n')) } } catch { return null }
+  }
+  const original = window.fetch.bind(window)
+  window.fetch = async (input, init = {}) => {
+    const url = typeof input === 'string' ? input : input.url
+    const method = (init.method || 'GET').toUpperCase()
+    if (method === 'POST' && url.startsWith('/api/chat')) {
+      await send({ type: 'request', data: JSON.parse(init.body) })
+      const response = await original(input, init)
+      if (!response.body) return response
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder(), encoder = new TextEncoder()
+      const body = new ReadableStream({
+        async start(controller) {
+          let buffer = ''
+          for (;;) {
+            const { value, done } = await reader.read()
+            buffer += decoder.decode(value || new Uint8Array(), { stream: !done }).replace(/\r\n/g, '\n')
+            let end
+            while ((end = buffer.indexOf('\n\n')) !== -1) {
+              const block = buffer.slice(0, end)
+              buffer = buffer.slice(end + 2)
+              const event = parse(block)
+              if (event) await send(event)
+              controller.enqueue(encoder.encode(block + '\n\n'))
+            }
+            if (done) break
+          }
+          const rest = parse(buffer.trim())
+          if (rest) { await send(rest); controller.enqueue(encoder.encode(buffer.trim() + '\n\n')) }
+          controller.close()
+        },
+      })
+      return new Response(body, { status: response.status, statusText: response.statusText, headers: response.headers })
+    }
+    const confirm = /^\/api\/actions\/[^/?]+\/confirm/.test(url)
+    const panel = url === '/api/preview'
+    if (method === 'POST' && (confirm || panel || url === '/api/actions')) {
+      const response = await original(input, init)
+      const data = await response.clone().json().catch(() => null)
+      await send({ type: confirm ? 'confirm' : panel ? 'panel_check' : 'action', data, status: response.status })
+      return response
+    }
+    return original(input, init)
+  }
+  // The "Demo guide" pill (the portfolio's banner, hidden by the designer) stays out of the video.
+  const hide = () => {
+    for (const b of document.querySelectorAll('button')) {
+      if (b.textContent.trim() === 'Demo guide' && b.style.display !== 'none') b.style.display = 'none'
+    }
+  }
+  new MutationObserver(hide).observe(document, { childList: true, subtree: true })
+})()`
+
+// ---------------------------------------------------------------- the conductor
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+function pick(value: any, path?: string) {
+  if (!path) return value
+  for (const part of path.split('.')) {
+    if (value == null) throw new Error(`payload path "${path}" not found`)
+    value = value[/^\d+$/.test(part) ? Number(part) : part]
+  }
+  if (value === undefined) throw new Error(`payload path "${path}" not found`)
+  return value
+}
+
+// A subtitle stays at least this long per character, whatever the storyboard's hold factor:
+// at 0.55 four rows of the published take went by at 21-27 characters per second.
+const READ_MS_PER_CHAR = 1000 / 17
+
+function holdMs(row: Row, factor = 1) {
+  const chars = (row.subtitle || '').length
+  const paced = (Math.min(Math.max(1400 + chars * 48, 2800), 8500) + (row.payload ? 1800 : 0)) * factor
+  return Math.round(Math.max(paced, chars * READ_MS_PER_CHAR))
+}
+
+function introspect(...args: string[]) {
+  const out = execFileSync(PYTHON, [join(HERE, 'introspect.py'), ...args], { encoding: 'utf8' })
+  return JSON.parse(out)
+}
+
+/**
+ * Flexible mode (a real model): each row is shown at most once, on the first event that
+ * matches it; an unexpected tool call or a failed tool result gets a generic row built from
+ * the event; a row that never matched is reported, not failed. Strict mode walks the rows in
+ * order and fails on a row out of order (kept from hl-create-design; this video is flexible).
+ */
+class Conductor {
+  rows: Row[]
+  cursor = 0
+  shownIds = new Set<string>()
+  generic = 0
+  skippedGeneric: string[] = []
+  t0 = 0
+  turn: string | null = null
+  turnText = ''
+  events: Captured[] = []
+  shown: Array<{ id: string; t_ms: number; hold_ms: number; subtitle: string; payload?: unknown; source?: unknown }> = []
+  waits: Wait[] = []
+  traces: any[] = []
+  failure: Error | null = null
+  /** Rejects on the first failure: races every wait of the spec. */
+  readonly failed: Promise<never>
+  private reject: (err: Error) => void = () => {}
+  private chain: Promise<void> = Promise.resolve()
+  private turnDone: Promise<void> = Promise.resolve()
+  private finishTurn: () => void = () => {}
+  private pendingTrace: Promise<void> = Promise.resolve()
+  private last: Record<string, Captured> = {}
+
+  constructor(
+    private page: Page,
+    private api: APIRequestContext,
+    private outDir: string,
+    readonly board: Storyboard,
+  ) {
+    this.failed = new Promise<never>((_, reject) => (this.reject = reject))
+    this.failed.catch(() => {}) // observed through until()
+    let turn: string | undefined
+    this.rows = board.rows.map((row) => {
+      const typed = row.on.step?.startsWith('typed:') ? row.on.step.slice(6) : undefined
+      turn = typed ?? turn
+      return { ...row, turn: row.turn ?? (row.on.event && CHAT_TYPES.has(row.on.event) ? turn : undefined) }
+    })
+  }
+
+  setFailure(err: Error) {
+    if (!this.failure) {
+      this.failure = err
+      this.reject(err)
+    }
+  }
+
+  private fail(message: string): never {
+    this.setFailure(new Error(message))
+    throw this.failure
+  }
+
+  /** `p`, or the take's first failure, or a timeout. */
+  async until<T>(p: Promise<T>, ms = TURN_TIMEOUT_MS, what = 'the app'): Promise<T> {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`${what}: nothing after ${ms / 1000} s`)), ms)
+    })
+    try {
+      return await Promise.race([p, this.failed, timeout])
+    } finally {
+      clearTimeout(timer)
+    }
+  }
+
+  check() {
+    if (this.failure) throw this.failure
+  }
+
+  now() {
+    return Date.now() - this.t0
+  }
+
+  /** A wait with nothing new on screen (a generation, the end of a render): compose.mjs
+   * shortens it to 1 s with a label that says what it was and how long it took. */
+  wait(from_ms: number, what: string) {
+    this.waits.push({ from_ms, to_ms: this.now(), what })
+  }
+
+  beginTurn(key: string, text: string) {
+    this.turn = key
+    this.turnText = text
+    this.turnDone = new Promise((r) => (this.finishTurn = r))
+  }
+
+  /** The turn's done event has been handled, its trace saved, and its rows shown. */
+  async waitTurn() {
+    await this.turnDone
+    await this.pendingTrace
+    await this.chain
+    this.check()
+  }
+
+  /** The result of the last confirmed card of `kind`, as the app received it. */
+  lastConfirm(kind: string): any {
+    const ev = [...this.events].reverse().find((e) => e.type === 'confirm' && e.data?.kind === kind)
+    return ev?.data ?? this.fail(`no confirmed ${kind} card in the take`)
+  }
+
+  async idle() {
+    await this.chain
+    this.check()
+  }
+
+  private matches(row: Row | undefined, ev: Captured) {
+    if (!row || !row.on.event || row.on.event !== ev.type) return false
+    if (row.turn && row.turn !== ev.turn) return false
+    const d = ev.data ?? {}
+    if (row.on.name && d.name !== row.on.name) return false
+    if (row.on.kind && (d.kind ?? d.action?.kind) !== row.on.kind) return false
+    // ok: a tool result's `ok`, or a panel check's `validation.valid`
+    if (row.on.ok !== undefined && !!(d.validation?.valid ?? d.ok) !== row.on.ok) return false
+    return true
+  }
+
+  private take(): Row[] {
+    const group = [this.rows[this.cursor++]]
+    while (this.rows[this.cursor]?.on.follow) group.push(this.rows[this.cursor++])
+    return group
+  }
+
+  private payloadFor(row: Row, ev?: Captured) {
+    if (!row.payload) return undefined
+    const { from, pick: path } = row.payload
+    let source: any
+    let value: any
+    if (from === 'event') {
+      if (!ev) this.fail(`row ${row.id}: payload from an event, but no event triggered it`)
+      source = { from, index: ev.index, pick: path }
+      value = pick(ev.data, path)
+    } else if (['request', 'confirm', 'action', 'panel_check'].includes(from)) {
+      // The event that triggered the row if it is of that type, else the last one captured.
+      const captured = ev?.type === from ? ev : (this.last[from] ?? this.fail(`row ${row.id}: no ${from} captured yet`))
+      source = { from, index: captured.index, pick: path }
+      value = pick(captured.data, path)
+    } else if (from === 'trace') {
+      const trace = this.traces.at(-1) ?? this.fail(`row ${row.id}: no trace saved yet`)
+      source = { from, turn: this.traces.length, pick: path }
+      value = pick(trace, path)
+    } else if (from === 'introspect:fts') {
+      // The tool result's own call: its query and language.
+      const call = [...this.events].reverse().find((e) => e.type === 'tool_call' && e.data?.id === ev?.data?.id)
+      const query = call?.data?.arguments?.query ?? this.fail(`row ${row.id}: no search query`)
+      const args = ['fts', query, '--lang', call.data.arguments.language || 'en']
+      value = introspect(...args)
+      source = { from, index: ev!.index, args }
+    } else {
+      this.fail(`row ${row.id}: unknown payload source "${from}"`)
+    }
+    if (hasLocalPath(value)) this.fail(`row ${row.id}: the payload shows a local path`)
+    const status = (c?: Captured) => c?.status ?? ''
+    const label = from === 'event' ? `SSE event: ${ev!.type}`
+      : from === 'request' ? 'POST /api/chat (request body)'
+      : from === 'confirm' ? `POST /api/actions/{id}/confirm → ${status(this.last.confirm)}`
+      : from === 'action' ? `POST /api/actions → ${status(this.last.action)}`
+      : from === 'panel_check' ? `POST /api/preview → ${status(this.last.panel_check)}`
+      : from === 'trace' ? `GET /api/runs/${this.traces.at(-1)?.id}` : `video/introspect.py ${String(source.args[0])}`
+    return { label, note: path ? `.${path}` : 'captured', value, source }
+  }
+
+  get flexible() {
+    return this.board.mode === 'flexible'
+  }
+
+  private async show(row: Row, ev?: Captured) {
+    this.shownIds.add(row.id)
+    const callouts = (row.callouts ?? []).map(([file, symbol]) => resolveLine(file, symbol))
+    const payload = this.payloadFor(row, ev)
+    const slideData = row.slide ? this.slideData(row.slide) : undefined
+    const cue = { id: row.id, subtitle: row.subtitle, layer: row.layer, callouts, payload, slide: row.slide, slideData }
+    await this.page.evaluate((c) => (window as any).stage.show(c), cue)
+    const hold = holdMs(row, this.board.hold)
+    this.shown.push({ id: row.id, t_ms: this.now(), hold_ms: hold, subtitle: row.subtitle, payload: payload?.value, source: payload?.source })
+    await sleep(hold)
+  }
+
+  private slideData(name: string) {
+    if (name === 'end') return {
+      repo: process.env.VIDEO_REPO_URL || 'github.com/carlosgild-web/hl-bead-studio',
+      author: process.env.VIDEO_AUTHOR ?? 'Carlos Velazquez',
+      linkedin: process.env.VIDEO_LINKEDIN ?? 'linkedin.com/in/carlos-v-90b99149',
+    }
+    return {}
+  }
+
+  /** Called by the page (exposeBinding) for every captured event; returning releases it. */
+  async onEvent(raw: { type: string; data: any; status?: number }) {
+    const ev: Captured = { ...raw, t_ms: this.now(), turn: CHAT_TYPES.has(raw.type) ? this.turn : null, index: this.events.length }
+    this.events.push(ev)
+    this.last[ev.type] = ev
+    try {
+      await this.chain
+      if (this.failure) return
+      if (this.flexible) return await this.onEventFlexible(ev)
+      const before: Row[] = []
+      const after: Row[] = []
+      while (this.matches(this.rows[this.cursor], ev)) {
+        const head = this.rows[this.cursor]
+        ;(head.on.phase === 'before' ? before : after).push(...this.take())
+      }
+      for (const row of before) await this.show(row, ev)
+      if (ev.type === 'done') this.onDone(ev)
+      this.chain = (async () => {
+        await sleep(250) // the app renders the event first
+        for (const row of after) await this.show(row, ev)
+      })().catch((err) => this.setFailure(err))
+    } catch (err) {
+      this.setFailure(err as Error)
+    }
+  }
+
+  private withFollows(row: Row): Row[] {
+    const i = this.rows.indexOf(row)
+    const group = [row]
+    for (let j = i + 1; this.rows[j]?.on.follow; j++) group.push(this.rows[j])
+    return group
+  }
+
+  /** A row for what the storyboard did not foresee: the event says what happened. */
+  private genericRow(ev: Captured): Row | null {
+    const d = ev.data ?? {}
+    const id = () => `g${++this.generic}`
+    if (ev.type === 'tool_call') {
+      const known = this.rows.some((r) => r.turn === ev.turn && r.on.event === 'tool_call' && r.on.name === d.name)
+      if (known) return null
+      return { id: id(), scene: 0, subtitle: `The model called ${d.name}. The tool, not the model, does the work.`, layer: 'Tools', on: { event: 'tool_call' }, payload: { from: 'event', pick: 'arguments' } }
+    }
+    if (ev.type === 'tool_result' && d.ok === false) {
+      const r = d.result ?? {}
+      const what = r.error?.code ?? (r.violations ?? []).map((v: any) => v.rule).join(', ') ?? 'an error'
+      return { id: id(), scene: 0, subtitle: `The tool answered ${what || 'with an error'}. The model can only explain it.`, layer: 'Validators', on: { event: 'tool_result' }, payload: { from: 'event', pick: 'result' } }
+    }
+    if (ev.type === 'error') {
+      return { id: id(), scene: 0, subtitle: `The turn ended with an error: ${String(d.message ?? '').slice(0, 70)}`, layer: 'Agent', on: { event: 'error' }, payload: { from: 'event' } }
+    }
+    return null
+  }
+
+  private async onEventFlexible(ev: Captured) {
+    const unshown = this.rows.filter((r) => !this.shownIds.has(r.id) && this.matches(r, ev))
+    const head = (phase: 'before' | 'after') => unshown.find((r) => (phase === 'before') === (r.on.phase === 'before'))
+    const before = head('before') ? this.withFollows(head('before')!) : []
+    let after = head('after') ? this.withFollows(head('after')!) : []
+    if (!before.length && !after.length) {
+      const generic = this.genericRow(ev)
+      if (generic && this.generic > MAX_GENERIC) this.skippedGeneric.push(`${ev.type} ${ev.data?.name ?? ''}`.trim())
+      else if (generic) after = [generic]
+    }
+    for (const row of before) await this.show(row, ev)
+    if (ev.type === 'done') this.onDone(ev)
+    this.chain = (async () => {
+      await sleep(250)
+      for (const row of after) await this.show(row, ev)
+    })().catch((err) => this.setFailure(err))
+  }
+
+  private onDone(ev: Captured) {
+    const runId = ev.data.run_id
+    const n = this.traces.length + 1
+    this.pendingTrace = (async () => {
+      const response = await this.api.get(`/api/runs/${runId}`)
+      expect(response.ok(), `GET /api/runs/${runId}`).toBe(true)
+      const run = await response.json()
+      this.traces.push(run)
+      writeFileSync(join(this.outDir, `trace-turn-${n}.json`), JSON.stringify(run, null, 2))
+      this.finishTurn()
+    })()
+  }
+
+  /** The spec reached `name`: show its row (and follows), if the storyboard has one. */
+  async step(name: string) {
+    await this.idle()
+    if (this.flexible) {
+      const row = this.rows.find((r) => r.on.step === name && !this.shownIds.has(r.id))
+      if (row) for (const r of this.withFollows(row)) await this.show(r)
+      return
+    }
+    const row = this.rows[this.cursor]
+    if (row?.on.step === name) for (const r of this.take()) await this.show(r)
+  }
+
+  /** Rows that never matched (flexible mode): reported in take.json, not failed. */
+  missing() {
+    return this.rows.filter((r) => !this.shownIds.has(r.id)).map((r) => r.id)
+  }
+
+  finish() {
+    this.check()
+  }
+}
+
+// ---------------------------------------------------------------- shared setup
+
+async function guard(api: APIRequestContext, provider: string) {
+  const hint =
+    provider === 'groq'
+      ? 'Start the app with `start.cmd video`, answer n to Dahl and Y to Groq (or `start.cmd video groq`), then run this again.'
+      : 'Start the app with `start.cmd video fake`, then run this again.'
+  let health: any
+  try {
+    const response = await api.get('/api/health', { timeout: 5_000 })
+    health = await response.json()
+  } catch {
+    throw new Error(`The app is not running at ${test.info().project.use.baseURL}. ${hint}`)
+  }
+  if (health.llm_provider !== provider)
+    throw new Error(`The app runs provider "${health.llm_provider}", this take needs "${provider}". ${hint}`)
+  return health
+}
+
+async function openStage(browser: import('@playwright/test').Browser, baseURL: string, outDir: string, onEvent?: (e: any) => Promise<void>) {
+  const context = await browser.newContext({ baseURL, viewport: STAGE, recordVideo: { dir: join(outDir, 'raw'), size: STAGE } })
+  await context.route('**/__video/*', (route) => {
+    const name = new URL(route.request().url()).pathname.split('/').pop()!
+    if (!['stage.html', 'stage.js'].includes(name)) return route.fulfill({ status: 404 })
+    return route.fulfill({ path: join(HERE, name), contentType: name.endsWith('.js') ? 'text/javascript' : 'text/html' })
+  })
+  await context.addInitScript(CAPTURE)
+  await context.exposeBinding('__videoEvent', async (_source, event) => (onEvent ? onEvent(event) : undefined))
+  const t0 = Date.now()
+  const page = await context.newPage()
+  await page.goto('/__video/stage.html')
+  const app = page.frameLocator('#app')
+  return { context, page, app, t0 }
+}
+
+async function loadApp(page: Page) {
+  await page.evaluate(() => (window as any).stage.loadApp())
+  await expect(page.frameLocator('#app').getByRole('heading', { name: 'Bead Studio' })).toBeVisible()
+}
+
+async function assertNoPaths(page: Page, where: string) {
+  const text: string = await page.evaluate(() => (window as any).stage.appText())
+  const hit = text.match(PATH_RE)
+  if (hit) throw new Error(`${where}: a local path is visible in the app ("${hit[0]}")`)
+}
+
+/** What cues.mjs and compose.mjs read: the capture, the rows shown, the waits, the video. */
+async function saveTake(conductor: Conductor, page: Page, context: import('@playwright/test').BrowserContext, outDir: string, extra: Record<string, unknown>) {
+  writeFileSync(join(outDir, 'events.json'), JSON.stringify(conductor.events, null, 2))
+  writeFileSync(join(outDir, 'shown.json'), JSON.stringify(conductor.shown, null, 2))
+  writeFileSync(join(outDir, 'waits.json'), JSON.stringify(conductor.waits, null, 2))
+  const take = {
+    storyboard: BOARD_FILE,
+    mode: conductor.board.mode ?? 'strict',
+    provider: conductor.board.provider,
+    models: conductor.traces.map((t) => t.model),
+    missing: conductor.missing(),
+    generic_skipped: conductor.skippedGeneric,
+    failure: conductor.failure?.message ?? null,
+    ...extra,
+  }
+  writeFileSync(join(outDir, 'take.json'), JSON.stringify(take, null, 2))
+  const video = page.video()
+  await context.close()
+  if (video) {
+    await video.saveAs(join(outDir, 'take.webm.part'))
+    renameSync(join(outDir, 'take.webm.part'), join(outDir, 'take.webm'))
+  }
+}
+
+// ---------------------------------------------------------------- the takes
+
+test('smoke: the stage at 1920x1080 @smoke', async ({ browser, baseURL, request }) => {
+  const outDir = join(HERE, 'out', 'smoke')
+  mkdirSync(outDir, { recursive: true })
+  const board = loadBoard(BOARD_FILE)
+  const health = await request.get('/api/health').then((r) => r.json())
+  const { context, page } = await openStage(browser, baseURL!, outDir)
+  await page.evaluate((b) => (window as any).stage.init(b), { banner: 'Smoke test: the stage layout', provider: `/api/health: ${health.llm_provider}` })
+  await loadApp(page)
+  const row = board.rows.find((r) => r.id === '1.3')!
+  const callouts = row.callouts!.map(([f, s]) => resolveLine(f, s))
+  await page.evaluate((c) => (window as any).stage.show(c), {
+    id: row.id, subtitle: row.subtitle, layer: row.layer, callouts,
+    payload: { label: 'GET /api/health', note: 'captured', value: health },
+  })
+  const box = async (sel: string) => page.locator(sel).boundingBox()
+  expect(await box('#app')).toEqual({ x: 0, y: 0, width: 1280, height: 960 })
+  expect(await box('#panel')).toEqual({ x: 1280, y: 0, width: 640, height: 960 })
+  expect(await box('#subs')).toEqual({ x: 0, y: 960, width: 1920, height: 120 })
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth > 1920 || document.documentElement.scrollHeight > 1080)
+  expect(overflow, 'the stage scrolls').toBe(false)
+  const pipelineFits = await page.evaluate(() => {
+    const p = document.getElementById('pipeline')!
+    return p.scrollWidth <= p.clientWidth
+  })
+  expect(pipelineFits, 'the pipeline fits the panel').toBe(true)
+  await sleep(5_000)
+  await page.evaluate(() => (window as any).stage.slide('hook'))
+  await sleep(4_000)
+  await page.screenshot({ path: join(outDir, 'stage.png') })
+  const video = page.video()
+  await context.close()
+  await video?.saveAs(join(outDir, 'smoke.webm'))
+})
+
+/**
+ * The take, on Groq (the published video) or on demo mode (`fake`, a dry run of the same
+ * steps; decision 0027). Three chat turns, three confirmed cards, the FreeCAD ending.
+ */
+for (const [provider, tag] of [['groq', '@groq'], ['fake', '@demo-dry']] as const)
+  test(`${provider} take ${tag}`, async ({ browser, baseURL, request }) => {
+    test.setTimeout(30 * 60_000)
+    const base = loadBoard(BOARD_FILE)
+    const board: Storyboard = { ...base, provider, ...(provider === 'groq' ? {} : base.providers?.[provider] ?? {}) }
+    const outDir = join(HERE, 'out', provider === 'groq' ? 'groq' : 'demo-dry')
+    mkdirSync(outDir, { recursive: true })
+    const health = await guard(request, provider)
+    const name = process.env.VIDEO_DESIGN_NAME || 'Amber Lantern'
+    const S = Object.fromEntries(Object.entries(board.sentences).map(([k, v]) => [k, v.replace('{name}', name)]))
+
+    let conductor!: Conductor
+    const { context, page, app, t0 } = await openStage(browser, baseURL!, outDir, (e) => conductor.onEvent(e))
+    conductor = new Conductor(page, context.request, outDir, board)
+    conductor.t0 = t0
+    const until = <T>(p: Promise<T>, ms?: number, what?: string) => conductor.until(p, ms, what)
+    let posterMs: number | null = null
+
+    // The banner names the model in use; checked against every run's trace.
+    const bannerFor = (model: string) => board.banner.replace('{model}', board.models?.[model] ?? model)
+    const ask = async (key: string) => {
+      const input = app.getByLabel('Describe the bead or charm…')
+      await input.click()
+      conductor.beginTurn(key, S[key])
+      await input.pressSequentially(S[key], { delay: TYPE_DELAY_MS })
+      await conductor.step(`typed:${key}`)
+      await app.getByRole('button', { name: 'Send' }).click()
+      await until(conductor.waitTurn(), TURN_TIMEOUT_MS, `turn "${key}"`)
+      const model = conductor.traces.at(-1)?.model
+      if (board.models && !(model in board.models)) throw new Error(`the run used model "${model}", not one of the storyboard's models`)
+    }
+    const confirmCard = async (title: string) => {
+      const card = app.getByRole('article', { name: title }).last()
+      await expect(card, `no "${title}" card: record the take again`).toBeVisible({ timeout: 15_000 })
+      await until(conductor.idle())
+      const button = card.getByRole('button', { name: 'Confirm' })
+      await button.scrollIntoViewIfNeeded()
+      await button.hover()
+      await sleep(700)
+      await button.click()
+      return card
+    }
+    const reviewStep = async (form: string) => {
+      const step = app.getByRole('form', { name: form })
+      await expect(step).toBeVisible()
+      const review = step.getByRole('button', { name: 'Review & confirm' })
+      await review.hover()
+      await sleep(500)
+      await review.click()
+    }
+
+    try {
+      const firstModel = Object.keys(board.models ?? {})[0]
+      await page.evaluate((b) => (window as any).stage.init(b), {
+        banner: board.models ? bannerFor(firstModel) : board.banner,
+        provider: `GET /api/health: ${health.llm_provider}`,
+      })
+      await conductor.step('hook')
+
+      // Scene 1: a rule question
+      await loadApp(page)
+      await page.evaluate(() => (window as any).stage.hideSlide())
+      await ask('question')
+      await sleep(1500)
+
+      // Scene 2: one sentence fills the panel
+      await ask('design')
+      await expect(app.getByRole('img', { name: /3D model of the/ })).toBeVisible()
+      await expect(app.getByText(/Meets the Product Design Manual/)).toBeVisible()
+      await sleep(1500)
+
+      // Scene 3: a rule broken by hand, then the nearest valid value
+      await conductor.step('hand_edit')
+      const facets = app.getByLabel('Facets per row')
+      await facets.scrollIntoViewIfNeeded()
+      await facets.fill(S.facets)
+      await expect(app.getByText(/GB-05/).first()).toBeVisible()
+      await until(conductor.idle())
+      await sleep(800)
+      await conductor.step('nearest')
+      const nearest = app.getByRole('button', { name: /^Facets per row \d+/ }).first()
+      await nearest.hover()
+      await sleep(500)
+      await nearest.click()
+      await expect(app.getByText(/Meets the Product Design Manual/)).toBeVisible()
+      await until(conductor.idle())
+      await sleep(1200)
+
+      // Scene 4: the model opens the reservation card; the designer confirms. Demo mode does
+      // not reserve from the chat (its Q&A bank explains how), so the dry run uses the panel's
+      // Reserve SKU… form, the path a designer has without a model.
+      if (provider === 'fake') {
+        await app.getByRole('button', { name: 'Reserve SKU…' }).click()
+        const name = app.getByLabel('Product name')
+        await name.fill('') // the form suggests a first word
+        await conductor.step('reserve_panel')
+        await name.pressSequentially(process.env.VIDEO_DESIGN_NAME || 'Amber Lantern', { delay: TYPE_DELAY_MS })
+        await reviewStep('Reserve SKU…')
+      } else {
+        await ask('reserve')
+      }
+      const reserve = await confirmCard('Reserve SKU in SAP')
+      await expect(reserve).toContainText(/Reserved (GB|CH)-\d{4}/)
+      await until(conductor.idle())
+      await sleep(800)
+
+      // Scene 5: Generate, from the panel: a second card, the files and the drawing
+      await reviewStep('Generate files…')
+      const generate = await confirmCard('Generate design files')
+      const generating = conductor.now()
+      await expect(generate).toContainText(/Files written for (GB|CH)-\d{4} rev [A-Z]+/, { timeout: 180_000 })
+      conductor.wait(generating, 'CadQuery, the drawing and the files')
+      await until(conductor.idle())
+      const generated = conductor.lastConfirm('generate_design')
+      const { sku, rev } = generated.result
+      // The Render step opens by itself; set it aside to look at the drawing first.
+      await app.getByRole('form', { name: 'Render…' }).press('Escape')
+      await app.getByRole('tab', { name: /Drawing/ }).click()
+      const drawing = app.locator('iframe[title]').first()
+      await drawing.scrollIntoViewIfNeeded()
+      await sleep(3000) // the PDF viewer draws the sheet
+      await assertNoPaths(page, 'Drawing tab')
+      // A zoom on the title block, in the app's frame only (the PDF is the generated one); the
+      // row about the title block is read while it is zoomed in.
+      await drawing.evaluate((el) => {
+        const frame = el as HTMLIFrameElement
+        frame.parentElement!.style.overflow = 'hidden'
+        frame.style.transition = 'transform 1.2s ease-in-out'
+        frame.style.transformOrigin = '100% 100%'
+        frame.style.transform = 'scale(2.2)'
+      })
+      await sleep(1300)
+      await conductor.step('drawing')
+      await drawing.evaluate((el) => ((el as HTMLIFrameElement).style.transform = ''))
+      await sleep(800)
+
+      // Scene 6: queue the render, then FreeCAD while Blender works
+      await app.getByRole('button', { name: 'Render…' }).click()
+      await reviewStep('Render…')
+      const render = await confirmCard('Queue catalog render')
+      // The card's result is in: its row has been shown before the wait for FreeCAD starts.
+      await expect(render).toContainText(/Render job #\d+/)
+      await until(conductor.idle())
+      const queued = conductor.now()
+      const color = generated.payload?.params?.color ?? generated.result?.params?.color ?? 'amber'
+      const families = await request.get('/api/families/FAC?lang=en').then((r) => r.json())
+      const hex = families.swatches?.find((s: any) => s.id === color)?.hex ?? '#c9822b'
+      const freecad = await until(captureFreecad({ sku, rev, color: hex, outDir, now: () => conductor.now(), seconds: FREECAD_SECONDS }), 180_000, 'FreeCAD')
+      // FreeCAD's start (the take shows the render job running meanwhile): a labelled cut.
+      conductor.waits.push({ from_ms: queued, to_ms: freecad.info.start_ms, what: 'FreeCAD starting (Blender rendering)' })
+
+      // Scene 7: back in the app while FreeCAD closes, the finished render
+      await app.getByRole('tab', { name: /Renders/ }).click()
+      const image = app.getByRole('img', { name: new RegExp(`^Render of ${sku}`) })
+      await expect(image).toBeVisible({ timeout: 600_000 })
+      conductor.wait(freecad.info.end_ms, 'Blender rendering')
+      await until(freecad.exited, 60_000, 'FreeCAD closing')
+      await image.scrollIntoViewIfNeeded()
+      await sleep(800)
+      posterMs = conductor.now()
+      await conductor.step('render_done')
+      await assertNoPaths(page, 'Renders tab')
+
+      await conductor.step('end')
+      await sleep(1000)
+      conductor.finish()
+      const missing = conductor.missing()
+      if (missing.length) console.warn(`rows that never matched (kept out of the video): ${missing.join(', ')}`)
+    } finally {
+      await saveTake(conductor, page, context, outDir, { poster_ms: posterMs, design_name: name })
+    }
+  })

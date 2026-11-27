@@ -3,18 +3,32 @@ rem Bead Studio launcher for local development on Windows.
 rem   start.cmd                 checks Dahl, Groq, Ollama, then the demo model, and asks which one
 rem                             (LLM_PROVIDER=fake or anthropic in .env skips the check)
 rem   start.cmd groq            or: dahl, anthropic, ollama, fake: that one, without the check
+rem   start.cmd video [groq]    the same on fresh seed data in data-video\ (re-seeded at every
+rem                             start, faster renders): for the video takes; data\ is not touched
 rem Opens three windows (mock SAP :8100, backend :8000, UI :5173) and the browser. If one of
 rem those ports is taken, it shows what holds it and offers to stop it first.
 rem Close the three windows to stop. Setup: see "Quick start" in README.md.
 setlocal
 cd /d "%~dp0"
 
-if not "%~1"=="" (
-  if /i not "%~1"=="fake" if /i not "%~1"=="ollama" if /i not "%~1"=="anthropic" if /i not "%~1"=="dahl" if /i not "%~1"=="groq" (
-    echo Unknown LLM provider "%~1". Use fake, ollama, anthropic, dahl or groq.
+rem Video mode (decision 0026): environment variables win over .env, so both services and the
+rem designs move to data-video\. The reset below empties it at every start.
+set "VIDEO="
+set "PROVIDER=%~1"
+if /i "%~1"=="video" (
+  set "VIDEO=1"
+  set "PROVIDER=%~2"
+  set "DATA_DIR=%~dp0data-video"
+  set "DESIGNS_ROOT=%~dp0data-video\designs"
+  if not defined RENDER_SAMPLES set "RENDER_SAMPLES=16"
+)
+
+if not "%PROVIDER%"=="" (
+  if /i not "%PROVIDER%"=="fake" if /i not "%PROVIDER%"=="ollama" if /i not "%PROVIDER%"=="anthropic" if /i not "%PROVIDER%"=="dahl" if /i not "%PROVIDER%"=="groq" (
+    echo Unknown LLM provider "%PROVIDER%". Use fake, ollama, anthropic, dahl or groq.
     exit /b 1
   )
-  set "LLM_PROVIDER=%~1"
+  set "LLM_PROVIDER=%PROVIDER%"
 )
 
 set "MISSING="
@@ -47,18 +61,34 @@ if errorlevel 1 (
 )
 popd
 
-rem No provider named: check them and let the designer choose (decisions 0019 and 0021). The questions
-rem are on this console; the answer comes back in a file under data\ (gitignored).
-if "%~1"=="" (
+rem Video mode: back to the seed catalog in data-video\ (the same code as demo-reset, decision 0024).
+rem The ports are free now, so no SQLite file is open.
+if defined VIDEO (
   pushd backend
-  ".venv\Scripts\python.exe" -m app.cli llm-check --out "%~dp0data\llm-provider.txt" >nul
+  ".venv\Scripts\python.exe" -m app.cli demo-reset --yes >nul
+  if errorlevel 1 (
+    popd
+    echo The video data in data-video\ could not be reset; nothing was started.
+    exit /b 1
+  )
+  popd
+  echo Video mode: fresh seed data in data-video\ ^(your data\ folder is not touched^), %RENDER_SAMPLES% render samples.
+)
+set "CHOICE=%~dp0data\llm-provider.txt"
+if defined VIDEO set "CHOICE=%DATA_DIR%\llm-provider.txt"
+
+rem No provider named: check them and let the designer choose (decisions 0019 and 0021). The questions
+rem are on this console; the answer comes back in a file under data\ (data-video\ in video mode; gitignored).
+if "%PROVIDER%"=="" (
+  pushd backend
+  ".venv\Scripts\python.exe" -m app.cli llm-check --out "%CHOICE%" >nul
   if errorlevel 1 (
     popd
     echo The model check stopped; nothing was started.
     exit /b 1
   )
   popd
-  set /p LLM_PROVIDER=<"data\llm-provider.txt"
+  set /p LLM_PROVIDER=<"%CHOICE%"
 )
 
 rem Renders need Blender: use BLENDER_BIN if set, else the newest standard install.

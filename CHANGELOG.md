@@ -6,6 +6,38 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-27
+
+Phase 10 of [`PLAN.md`](PLAN.md): the README video, the full-flow GIF and the README to the
+portfolio standard.
+
+### Added
+
+- `start.cmd video` / `./start.sh video`: every video take runs on fresh seed data in
+  `data-video/` (designs and the mock SAP), with 16 render samples; `data/` is never touched
+  (decision 0026).
+- The README video, a real model under the hood: `video/` records the app with Groq
+  `openai/gpt-oss-120b` beside an "Under the hood" panel (the code and the data behind each
+  step, the manual search's own FTS5 terms and ranking), cuts model waits over 3 s with a
+  label, and ends with the STEP file in FreeCAD while Blender renders. Ported from
+  hl-create-design (decision 0027); what it shows and how to record it again in
+  [`docs/video.md`](docs/video.md).
+- The README GIF of the whole flow, from one sentence to the drawing and the render gallery
+  (`npm run showcase:gif` in `e2e/`), and showcase shots of the 3D viewer, the Drawing tab and
+  the Renders tab.
+- `docs/assistant.md`, `docs/studio-ui.md`, `docs/development.md`, `docs/online-safety.md`,
+  and `scripts/check_links.py` for the relative links, images and anchors in the docs.
+- Groq run 1 part 3: the last 8 core scenarios, 7 passed. The run is complete at 14/30; the
+  safety checks held in all 30.
+
+### Changed
+
+- The README follows the portfolio standard: badges, the video, a quick start, "What this
+  demonstrates", "Before and after", the nine invariants with the file and the tests that
+  enforce each, one evaluation table, a screenshot grid, "What each feature needs", and test
+  counts from a real run. The long sections moved to `docs/`.
+- The LinkedIn post and video script drafts left the repo.
+
 ## [1.0.0] - 2026-11-26
 
 The first release: Phases 0 to 9 of [`PLAN.md`](PLAN.md).
@@ -185,5 +217,6 @@ The first release: Phases 0 to 9 of [`PLAN.md`](PLAN.md).
 - The 3D viewer: clearer glass, fully metallic plating, and a flat metal face that is never
   black.
 
-[Unreleased]: https://github.com/carlosgild-web/hl-bead-studio/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/carlosgild-web/hl-bead-studio/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/carlosgild-web/hl-bead-studio/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/carlosgild-web/hl-bead-studio/releases/tag/v1.0.0
