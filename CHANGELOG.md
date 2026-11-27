@@ -6,6 +6,15 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-11-27
+
+Docs only: the README gets the portfolio standard's "How it was built" section.
+
+### Added
+
+- README: `## How it was built` (Claude Code as the coding assistant; the author's part and
+  Claude Code's part), before About.
+
 ## [1.1.0] - 2026-11-27
 
 Phase 10 of [`PLAN.md`](PLAN.md): the README video, the full-flow GIF and the README to the
@@ -217,6 +226,7 @@ The first release: Phases 0 to 9 of [`PLAN.md`](PLAN.md).
 - The 3D viewer: clearer glass, fully metallic plating, and a flat metal face that is never
   black.
 
-[Unreleased]: https://github.com/carlosgild-web/hl-bead-studio/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/carlosgild-web/hl-bead-studio/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/carlosgild-web/hl-bead-studio/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/carlosgild-web/hl-bead-studio/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/carlosgild-web/hl-bead-studio/releases/tag/v1.0.0
