@@ -148,8 +148,19 @@ test('recorded demo for the README GIF @gif', async ({ playwright, baseURL }) =>
   if (toGif(webm, join(OUT, 'demo.gif'), Math.max(0, startS), endS)) rmSync(webm)
 })
 
-test('a confirmation card, then the workflow after Generate', async ({ page }) => {
+/**
+ * The confirm card, the workflow, then the 3D viewer, the Drawing tab and the Renders tab of the
+ * same design. Chromium's new headless mode, as in the GIF test, so the drawing PDF is drawn.
+ */
+test('a confirmation card, the workflow after Generate, then the model, drawing and renders', async ({
+  playwright,
+  baseURL,
+}) => {
+  test.setTimeout(120_000)
+  const browser = await playwright.chromium.launch({ channel: 'chromium' })
+  const page = await browser.newPage({ baseURL, viewport: SIZE })
   await open(page)
+  await page.getByRole('button', { name: 'Demo guide' }).evaluate((el) => ((el as HTMLElement).style.display = 'none'))
   await page
     .getByLabel('Describe the bead or charm…')
     .fill('A 10 mm faceted amber bead for the Amber Hollow collection; reserve a SKU for it')
@@ -173,6 +184,21 @@ test('a confirmation card, then the workflow after Generate', async ({ page }) =
   await page.getByText('Workflow', { exact: true }).scrollIntoViewIfNeeded()
   await page.waitForTimeout(1500)
   await shot(page, 'workflow')
+
+  await page.getByRole('img', { name: /3D model of the/ }).scrollIntoViewIfNeeded()
+  await page.waitForTimeout(1500)
+  await shot(page, 'viewer-3d')
+
+  await page.getByRole('tab', { name: /Drawing/ }).click()
+  await page.locator('iframe[title]').first().scrollIntoViewIfNeeded()
+  await page.waitForTimeout(4500) // the PDF viewer takes 1-3 s to draw
+  await shot(page, 'drawing-tab')
+
+  await page.getByRole('tab', { name: /Renders/ }).click()
+  await page.getByRole('heading', { name: /gallery/i }).scrollIntoViewIfNeeded()
+  await page.waitForTimeout(2500)
+  await shot(page, 'renders-tab')
+  await browser.close()
 })
 
 test('the studio in Spanish', async ({ page }) => {
