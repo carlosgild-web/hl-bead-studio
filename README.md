@@ -267,6 +267,16 @@ render queue, the README images and the stack: [docs/development.md](docs/develo
 | `scripts/` | The e2e server, the gallery builder, the Q&A bank's Markdown |
 | `docs/` | Product Design Manual (ES/EN), Q&A bank, decision records, eval reports, showcase |
 
+## How it was built
+
+I built this project with [Claude Code](https://claude.com/claude-code) as an AI coding assistant, phase by phase from [PLAN.md](PLAN.md).
+
+**My part:** the requirements and the product decisions (the confirmation gate, the Product Design Manual's rules as validators, the ending that opens the STEP in FreeCAD and shows the Blender render), the plan for each phase, the evaluations on real models, and the review of every change.
+
+**Claude Code's part:** most of the code, under that direction, and the technical options it proposed and measured.
+
+Every deviation from the plan is a decision record in [`docs/decisions/`](docs/decisions/).
+
 ## About
 
 Portfolio project #4 of the Hilda & Luna series, AI tools for a fictional bead-making company:
