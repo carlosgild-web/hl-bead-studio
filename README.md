@@ -21,7 +21,7 @@ catalog render in Blender. **The AI guides; the code decides.**
 
 ### The 2¾-minute video: a real model, under the hood
 
-<!-- V9: the user-attachments URL of video-readme.mp4 goes on the next line. -->
+https://github.com/user-attachments/assets/6efe5239-311a-418f-9eb8-fb8e67a50b90
 
 A real model (Groq, `gpt-oss-120b`), with the code and the data behind each step on the
 right. It ends with the STEP file in FreeCAD while Blender renders the catalog image. What it
